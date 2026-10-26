@@ -155,7 +155,7 @@ namespace InvAuto.Features.SheetMetal
 
         /// <summary>Для колонки «Линии гиба»: режим, пометка о персональной настройке и число линий со своими.</summary>
         public string BendSummary =>
-            (_bendsPersonal ? "своя: " : string.Empty) + _bends.Summary +
+            (_bendsPersonal ? "своя: " : string.Empty) + _bends.FullSummary +
             (_personalLines > 0 ? $" · своих линий: {_personalLines}" : string.Empty);
 
         public bool BendsPersonal => _bendsPersonal;

@@ -133,6 +133,7 @@ namespace InvAuto.Core.Tests
                     double d => d + 1,
                     int i => i + 1,
                     Enum e => Enum.GetValues(e.GetType()).Cast<object>().First(v => !v.Equals(e)),
+                    string s => s + "X",
                     _ => throw new InvalidOperationException(property.Name)
                 };
                 property.SetValue(c, changed);

@@ -35,6 +35,25 @@ namespace InvAuto.Core.Bends
         /// <summary>Торцы вырезов — полуокружности радиусом SlotHalfWidth (паз), а не прямые.</summary>
         public bool RoundedEnds { get; }
 
+        /// <summary>Законцовки на концах линии (для схемы линии и описания).</summary>
+        public BendEndShape EndShape { get; private set; }
+        public double EndSize { get; private set; }
+        public double EndOffset { get; private set; }
+
+        /// <summary>Копия с законцовками и их описанием.</summary>
+        internal BendLineLayout WithEnds(BendLineOptions o)
+        {
+            string ends = BendEnds.Describe(o);
+            if (ends.Length == 0)
+                return this;
+            return new BendLineLayout(LineLength, Segments, Description + "; законцовки: " + ends, SlotHalfWidth, RoundedEnds)
+            {
+                EndShape = o.EndShape,
+                EndSize = o.EndSize,
+                EndOffset = o.EndOffset
+            };
+        }
+
         /// <summary>
         /// 0 — участки остаются отрезками на линии гиба; больше нуля — каждый участок становится
         /// прямоугольным вырезом с этим смещением сторон от линии.
@@ -81,7 +100,7 @@ namespace InvAuto.Core.Bends
             All.FirstOrDefault(s => s.Mode == mode) ?? All[0];
 
         public static BendLineLayout Layout(double lineLength, BendLineOptions options) =>
-            For(options.Mode).Layout(lineLength, options);
+            For(options.Mode).Layout(lineLength, options).WithEnds(options);
 
         internal static string Mm(double value) => value.ToString("0.#", CultureInfo.CurrentCulture);
     }

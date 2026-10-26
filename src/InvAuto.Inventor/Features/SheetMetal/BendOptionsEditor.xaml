@@ -150,5 +150,55 @@
             <TextBlock Text="Подгонка под длину" Style="{StaticResource FieldLabel}" />
             <ComboBox x:Name="FitBox" Grid.Column="2" Style="{StaticResource Choice}" SelectionChanged="OnChanged" />
         </Grid>
+
+        <!-- Законцовки: вырезы на концах линии гиба, с любым способом -->
+        <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Margin="0,8,0,10" />
+        <Grid Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Законцовки" Style="{StaticResource FieldLabel}" FontWeight="SemiBold" />
+            <ComboBox x:Name="EndShapeBox" Grid.Column="2" Style="{StaticResource Choice}" DisplayMemberPath="Title" SelectionChanged="OnChanged" />
+        </Grid>
+        <TextBlock x:Name="EndHint" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,10"
+                   Text="Вырез на каждом конце линии гиба, где она выходит на край детали. Работает с любым способом выше." />
+
+        <Grid x:Name="EndSizeRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="EndSizeLabel" Text="Диаметр" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="EndSizeBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged" />
+            <TextBlock Grid.Column="3" Text="мм" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <Grid x:Name="EndOffsetRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Центр внутрь от края" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="EndOffsetBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged"
+                     ToolTip="0 — центр выреза на краю детали (вырез наполовину выходит за край); больше — вырез сдвигается внутрь вдоль линии гиба" />
+            <TextBlock Grid.Column="3" Text="мм" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <Grid x:Name="EndLayerRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Слой в DXF" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="EndLayerBox" Grid.Column="2" Width="220" HorizontalAlignment="Left" TextChanged="OnChanged"
+                     ToolTip="Законцовки вырезаются, поэтому по умолчанию — слой отверстий IV_INTERIOR_PROFILES" />
+        </Grid>
     </StackPanel>
 </UserControl>

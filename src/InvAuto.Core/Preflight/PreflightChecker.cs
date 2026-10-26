@@ -221,7 +221,7 @@ namespace InvAuto.Core.Preflight
             if (clearance > 0 && part.BendLines.Count > 0)
             {
                 var near = new List<(Contour Hole, double Distance)>();
-                foreach (var hole in holes)
+                foreach (var hole in holes.Where(h => !IsBendEnd(h, part.BendLines)))
                 {
                     double d = part.BendLines.Min(l => hole.DistanceTo(new Point2(l.X1, l.Y1), new Point2(l.X2, l.Y2)));
                     if (d < clearance - 1e-6)
@@ -236,6 +236,28 @@ namespace InvAuto.Core.Preflight
                         near.Select(n => n.Hole.Center).ToList()));
                 }
             }
+        }
+
+        /// <summary>
+        /// Законцовка линии гиба: вырез с центром на линии гиба не дальше своего размера от её конца
+        /// (на краю детали или немного внутрь). Такие вырезы делаются нарочно — замечание «отверстие у линии гиба»
+        /// для них не нужно; отверстие дальше от конца линии проверяется как обычно.
+        /// </summary>
+        private static bool IsBendEnd(Contour hole, IReadOnlyList<BendLineInfo> lines)
+        {
+            var c = hole.Center;
+            foreach (var l in lines)
+            {
+                var a = new Point2(l.X1, l.Y1);
+                var b = new Point2(l.X2, l.Y2);
+                if (Geometry2.Distance(c, new Segment2(a, b, null).Nearest(c)) > 0.05)
+                    continue;
+                double toEnd = Math.Min(Geometry2.Distance(c, a), Geometry2.Distance(c, b));
+                double size = Math.Max(hole.MaxX - hole.MinX, hole.MaxY - hole.MinY);
+                if (toEnd <= size + 0.05)
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>Проверка набора деталей: каждая отдельно плюс повторяющиеся обозначения у разных файлов.</summary>

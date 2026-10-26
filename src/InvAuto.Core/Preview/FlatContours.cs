@@ -53,6 +53,50 @@ namespace InvAuto.Core.Preview
             }
         }
 
+        /// <summary>Точка внутри замкнутого контура (правило чётности пересечений).</summary>
+        public bool Contains(Point2 p)
+        {
+            if (!Closed || p.X < MinX || p.X > MaxX || p.Y < MinY || p.Y > MaxY)
+                return false;
+            bool inside = false;
+            for (int i = 0, j = Points.Count - 1; i < Points.Count; j = i++)
+            {
+                var a = Points[i];
+                var b = Points[j];
+                if ((a.Y > p.Y) != (b.Y > p.Y) && p.X < (b.X - a.X) * (p.Y - a.Y) / (b.Y - a.Y) + a.X)
+                    inside = !inside;
+            }
+            return inside;
+        }
+
+        /// <summary>
+        /// Какая доля площади этого контура лежит внутри other (оценка по сетке 24 × 24): законцовка на краю
+        /// детали выходит за контур наполовину — вычитать из площади детали нужно только внутреннюю часть.
+        /// </summary>
+        public double FractionInside(Contour other)
+        {
+            if (!Closed || other == null || !other.Closed)
+                return 0;
+            if (Points.All(other.Contains))
+                return 1; // целиком внутри — частый случай, без сетки
+            const int n = 24;
+            int inSelf = 0, inBoth = 0;
+            double w = MaxX - MinX, h = MaxY - MinY;
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    var p = new Point2(MinX + w * (i + 0.5) / n, MinY + h * (j + 0.5) / n);
+                    if (!Contains(p))
+                        continue;
+                    inSelf++;
+                    if (other.Contains(p))
+                        inBoth++;
+                }
+            }
+            return inSelf == 0 ? 0 : (double)inBoth / inSelf;
+        }
+
         /// <summary>Наименьшее расстояние от контура до отрезка (0 — пересекает).</summary>
         public double DistanceTo(Point2 a, Point2 b)
         {

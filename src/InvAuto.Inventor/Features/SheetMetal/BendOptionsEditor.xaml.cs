@@ -30,6 +30,7 @@ namespace InvAuto.Features.SheetMetal
         {
             InitializeComponent();
             ModeBox.ItemsSource = BendLineStrategies.All;
+            EndShapeBox.ItemsSource = BendEnds.All;
             Fill(SlotPatternBox, (SlotPattern.Dashed, "прерывисто, с перемычками"), (SlotPattern.Full, "один вырез по всей длине"));
             Fill(SpecBox, (DashSpec.Step, "длину и перемычку"), (DashSpec.Count, "длину и количество"));
             Fill(EndsBox, (DashEnds.Cut, "прорезь"), (DashEnds.Bridge, "перемычка"));
@@ -59,6 +60,10 @@ namespace InvAuto.Features.SheetMetal
                 CountBox.Text = o.DashCount.ToString(CultureInfo.CurrentCulture);
                 EndsBox.SelectedValue = o.Ends;
                 FitBox.SelectedValue = o.Fit;
+                EndShapeBox.SelectedItem = BendEnds.For(o.EndShape);
+                EndSizeBox.Text = Format(o.EndSize);
+                EndOffsetBox.Text = Format(o.EndOffset);
+                EndLayerBox.Text = o.EndLayer;
             }
             finally
             {
@@ -77,8 +82,23 @@ namespace InvAuto.Features.SheetMetal
                 SlotPattern = SlotPatternBox.SelectedValue is SlotPattern pattern ? pattern : SlotPattern.Dashed,
                 Spec = SpecBox.SelectedValue is DashSpec spec ? spec : DashSpec.Step,
                 Ends = EndsBox.SelectedValue is DashEnds ends ? ends : DashEnds.Cut,
-                Fit = FitBox.SelectedValue is DashFit fit ? fit : DashFit.Proportional
+                Fit = FitBox.SelectedValue is DashFit fit ? fit : DashFit.Proportional,
+                EndShape = (EndShapeBox.SelectedItem as IBendEndShape)?.Shape ?? BendEndShape.None
             };
+
+            bool ends = o.EndShape != BendEndShape.None;
+            o.EndSize = Positive(EndSizeBox.Text, Fallback.EndSize, BendEnds.For(o.EndShape).SizeTitle + " законцовки", ends, ref error);
+            double? offset = Parse(EndOffsetBox.Text);
+            if (offset >= 0)
+                o.EndOffset = offset.Value;
+            else
+            {
+                o.EndOffset = Fallback.EndOffset;
+                if (ends && error.Length == 0)
+                    error = "«Центр внутрь от края»: число не меньше нуля.";
+            }
+            string layer = EndLayerBox.Text.Trim();
+            o.EndLayer = layer.Length > 0 ? layer : BendLineOptions.DefaultEndLayer;
 
             // Проверяем только поля, которые видны для выбранного способа.
             bool slots = o.IsSlots;
@@ -129,6 +149,12 @@ namespace InvAuto.Features.SheetMetal
             SetVisible(CountRow, byCount);
             SetVisible(EndsRow, dashed);
             SetVisible(FitRow, dashed && !byCount);
+
+            bool ends = o.EndShape != BendEndShape.None;
+            SetVisible(EndSizeRow, ends);
+            SetVisible(EndOffsetRow, ends);
+            SetVisible(EndLayerRow, ends);
+            EndSizeLabel.Text = BendEnds.For(o.EndShape).SizeTitle;
 
             DashLabel.Text = slots ? "Длина выреза" : "Длина прорези";
             CountLabel.Text = slots ? "Количество вырезов" : "Количество прорезей";

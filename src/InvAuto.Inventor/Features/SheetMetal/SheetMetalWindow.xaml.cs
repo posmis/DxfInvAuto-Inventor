@@ -1103,7 +1103,7 @@ namespace InvAuto.Features.SheetMetal
 
             _bendSettings.Default = dialog.Result;
             SaveBendSettings();
-            SetStatus("Линии гиба по умолчанию: " + _bendSettings.Default.Summary);
+            SetStatus("Линии гиба по умолчанию: " + _bendSettings.Default.FullSummary);
         }
 
         private void OnBendSelected(object sender, RoutedEventArgs e)
@@ -1139,7 +1139,7 @@ namespace InvAuto.Features.SheetMetal
             SaveBendSettings();
             SetStatus(dialog.Result == null
                 ? $"Деталей на общих настройках линий гиба: {rows.Count}"
-                : $"Свои линии гиба ({dialog.Result.Summary}) для деталей: {rows.Count}");
+                : $"Свои линии гиба ({dialog.Result.FullSummary}) для деталей: {rows.Count}");
         }
 
         #region Просмотр развертки
@@ -1221,7 +1221,7 @@ namespace InvAuto.Features.SheetMetal
             }
 
             string key = row.Part.FullFileName;
-            string partSummary = (_bendSettings.HasOverride(key) ? "своя — " : "общие — ") + _bendSettings.For(key).Summary;
+            string partSummary = (_bendSettings.HasOverride(key) ? "своя — " : "общие — ") + _bendSettings.For(key).FullSummary;
             var dialog = new BendLinesWindow(row.FileName, row.Preview, _bendSettings.For(key), partSummary,
                 _bendSettings.LineOverrides(key), BendLayers) { Owner = this };
             if (dialog.ShowDialog() != true)

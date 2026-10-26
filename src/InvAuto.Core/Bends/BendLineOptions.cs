@@ -101,6 +101,20 @@ namespace InvAuto.Core.Bends
         /// <summary>RectSlots: по всей длине или прерывисто (длины выреза и перемычки — DashLength и BridgeLength).</summary>
         public SlotPattern SlotPattern { get; set; } = SlotPattern.Dashed;
 
+        /// <summary>Законцовки — вырезы на обоих концах линии гиба (работают с любым способом обработки линии).</summary>
+        public BendEndShape EndShape { get; set; } = BendEndShape.None;
+
+        /// <summary>Размер законцовки, мм: диаметр окружности или сторона квадрата.</summary>
+        public double EndSize { get; set; } = 3;
+
+        /// <summary>Смещение центра законцовки внутрь детали вдоль линии гиба, мм (0 — на конце линии, на краю детали).</summary>
+        public double EndOffset { get; set; }
+
+        /// <summary>Слой законцовок в DXF. Законцовки — сквозные вырезы, поэтому по умолчанию слой отверстий.</summary>
+        public string EndLayer { get; set; } = DefaultEndLayer;
+
+        public const string DefaultEndLayer = "IV_INTERIOR_PROFILES";
+
         /// <summary>Режим с вырезами заданной ширины (прямоугольными или со скруглениями).</summary>
         public bool IsSlots => Mode == BendLineMode.RectSlots || Mode == BendLineMode.RoundSlots;
 
@@ -130,6 +144,16 @@ namespace InvAuto.Core.Bends
             }
         }
 
+        /// <summary>Описание вместе с законцовками: «прерывистая 20/10 + окружность Ø3».</summary>
+        public string FullSummary
+        {
+            get
+            {
+                string ends = BendEnds.Describe(this);
+                return ends.Length > 0 ? Summary + " + " + ends : Summary;
+            }
+        }
+
         private string DashSummary(CultureInfo c) => Spec == DashSpec.Count
             ? string.Format(c, "{0} × {1:0.##}", DashCount, DashLength)
             : string.Format(c, "{0:0.##}/{1:0.##}", DashLength, BridgeLength);
@@ -145,6 +169,10 @@ namespace InvAuto.Core.Bends
             Spec == other.Spec &&
             DashCount == other.DashCount &&
             SlotWidth.Equals(other.SlotWidth) &&
-            SlotPattern == other.SlotPattern;
+            SlotPattern == other.SlotPattern &&
+            EndShape == other.EndShape &&
+            EndSize.Equals(other.EndSize) &&
+            EndOffset.Equals(other.EndOffset) &&
+            string.Equals(EndLayer, other.EndLayer, System.StringComparison.OrdinalIgnoreCase);
     }
 }

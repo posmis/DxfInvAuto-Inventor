@@ -159,6 +159,13 @@ namespace InvAuto.Core.Bends
                                     : Slot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles));
                         }
                     }
+
+                    // Законцовки — отдельные замкнутые контуры на своём слое, с любым способом обработки линии.
+                    foreach (var outline in BendEnds.Outlines(start[0], start[1], finish[0], finish[1], options))
+                    {
+                        changed = true;
+                        output.AddRange(EndEntity(entity, outline, start[2], options.EndLayer, handles));
+                    }
                 }
                 else
                 {
@@ -308,6 +315,62 @@ namespace InvAuto.Core.Bends
             parts.Add(Arc(entity, b, radius, angle - 90, angle + 90, handles));   // торец у конца участка
             parts.Add(Arc(entity, a, radius, angle + 90, angle + 270, handles));  // торец у начала участка
             return parts.SelectMany(p => p);
+        }
+
+        /// <summary>
+        /// Законцовка в DXF: окружность — CIRCLE, многоугольник — замкнутая LWPOLYLINE (в R12 — отрезки LINE).
+        /// Слой — заданный, цвет, тип и вес линии — «по слою»: это вырез, а не линия гиба.
+        /// </summary>
+        private static IEnumerable<Pair> EndEntity(List<Pair> entity, EndOutline outline, double z, string layer, HandleAllocator handles)
+        {
+            var template = AsCut(entity, string.IsNullOrWhiteSpace(layer) ? BendLineOptions.DefaultEndLayer : layer.Trim());
+            bool hasSubclasses = template.Any(p => p.Code == 100 && p.Value.Trim() == "AcDbLine");
+            if (outline.IsCircle)
+                return Circle(template, new[] { outline.CenterX, outline.CenterY, z }, outline.Radius, handles);
+
+            var corners = outline.Vertices.Select(v => new[] { v.X, v.Y, z }).ToArray();
+            if (hasSubclasses)
+                return Polyline(template, corners, handles, outline.Vertices.Select(v => v.Bulge).ToArray());
+            return Enumerable.Range(0, corners.Length).SelectMany(k => Line(template, corners[k], corners[(k + 1) % corners.Length], handles));
+        }
+
+        /// <summary>Копия LINE для выреза: другой слой, без цвета, типа и веса линии (6, 62, 370, 420, 48).</summary>
+        private static List<Pair> AsCut(List<Pair> entity, string layer) =>
+            entity.Where(p => p.Code != 6 && p.Code != 62 && p.Code != 370 && p.Code != 420 && p.Code != 48)
+                .Select(p => p.Code == 8 ? p.With(layer) : p)
+                .ToList();
+
+        /// <summary>CIRCLE на месте исходного LINE (подкласс AcDbLine заменяется на AcDbCircle).</summary>
+        private static IEnumerable<Pair> Circle(List<Pair> entity, double[] center, double radius, HandleAllocator handles)
+        {
+            int width = entity[0].CodeText.Length;
+            Pair New(int code, string value) => new Pair(code.ToString(CultureInfo.InvariantCulture).PadLeft(width), value);
+            bool has30 = entity.Any(p => p.Code == 30);
+            string handle = null;
+            foreach (var pair in entity)
+            {
+                switch (pair.Code)
+                {
+                    case 0: yield return pair.With("CIRCLE"); break;
+                    case 5: yield return pair.With(handle = handle ?? handles.Next()); break;
+                    case 100: yield return pair.Value.Trim() == "AcDbLine" ? pair.With("AcDbCircle") : pair; break;
+                    case 10: yield return pair.With(Format(center[0])); break;
+                    case 20:
+                        yield return pair.With(Format(center[1]));
+                        if (!has30)
+                            yield return New(40, Format(radius)); // радиус — сразу за центром, как пишет AutoCAD
+                        break;
+                    case 30:
+                        yield return pair.With(Format(center[2]));
+                        yield return New(40, Format(radius));
+                        break;
+                    case 11:
+                    case 21:
+                    case 31:
+                        break;
+                    default: yield return pair; break;
+                }
+            }
         }
 
         /// <summary>Дуга ARC (R12) на месте исходного LINE: углы в градусах, против часовой стрелки.</summary>

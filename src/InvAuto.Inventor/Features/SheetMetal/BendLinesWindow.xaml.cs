@@ -46,7 +46,7 @@ namespace InvAuto.Features.SheetMetal
             PartTitle.Text = $"Линии гиба детали «{partName}»";
             PartText.Text = $"Параметры детали: {partSummary}. Линия со своими параметрами обрабатывается по ним, " +
                             "остальные — как деталь.";
-            AsPartBox.Content = "Как у детали (" + partOptions.Summary + ")";
+            AsPartBox.Content = "Как у детали (" + partOptions.FullSummary + ")";
             Editor.Fallback = partOptions;
 
             Preview.Labels = lines.Select(l => new FlatLabel(new Point2((l.X1 + l.X2) / 2, (l.Y1 + l.Y2) / 2), l.Index.ToString())).ToList();
@@ -225,7 +225,7 @@ namespace InvAuto.Features.SheetMetal
             public void Update(BendLineOptions own, BendLineOptions part)
             {
                 IsOwn = own != null;
-                Summary = own != null ? "своя: " + own.Summary : "как у детали: " + part.Summary;
+                Summary = own != null ? "своя: " + own.FullSummary : "как у детали: " + part.FullSummary;
             }
         }
     }

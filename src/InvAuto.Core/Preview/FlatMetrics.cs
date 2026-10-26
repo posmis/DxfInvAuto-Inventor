@@ -58,7 +58,8 @@ namespace InvAuto.Core.Preview
             if (outer != null)
             {
                 metrics.OuterArea = outer.Area;
-                metrics.Area = Math.Max(0, outer.Area - contours.Where(c => c.Closed && !c.IsOuter).Sum(c => c.Area));
+                // Отверстие на краю (например, законцовка линии гиба) вычитается только своей частью внутри детали.
+                metrics.Area = Math.Max(0, outer.Area - contours.Where(c => c.Closed && !c.IsOuter).Sum(c => c.Area * c.FractionInside(outer)));
             }
             return metrics;
         }

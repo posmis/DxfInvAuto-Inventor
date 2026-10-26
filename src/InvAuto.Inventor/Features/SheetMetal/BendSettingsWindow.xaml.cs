@@ -36,7 +36,7 @@ namespace InvAuto.Features.SheetMetal
 
             ScopeTitle.Text = personal ? "Свои настройки для выделенных деталей" : "Общие настройки для всех деталей";
             ScopeText.Text = scope;
-            UseDefaultBox.Content = "Использовать общие настройки (" + defaults.Summary + ")";
+            UseDefaultBox.Content = "Использовать общие настройки (" + defaults.FullSummary + ")";
             UseDefaultBox.Visibility = personal ? Visibility.Visible : Visibility.Collapsed;
             UseDefaultBox.IsChecked = personal && usesDefaults;
 

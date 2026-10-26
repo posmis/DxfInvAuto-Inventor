@@ -44,6 +44,39 @@ namespace InvAuto.Features.SheetMetal
                 double r = System.Math.Min(corner, w / 2);
                 dc.DrawRoundedRectangle(CutBrush, null, new Rect(x, middle - height / 2 + 0.5, w, height), r, r);
             }
+
+            // Законцовки — значок формы на каждом конце (с учётом смещения внутрь).
+            if (layout.EndShape != InvAuto.Core.Bends.BendEndShape.None)
+            {
+                double offset = System.Math.Min(layout.EndOffset * scale, width / 2);
+                foreach (double cx in new[] { offset, width - offset })
+                    DrawEnd(dc, layout.EndShape, new Point(cx, middle + 0.5), 5.5);
+            }
+        }
+
+        private static readonly Pen EndPen = Freeze(new Pen(Brushes.White, 1));
+
+        private void DrawEnd(DrawingContext dc, InvAuto.Core.Bends.BendEndShape shape, Point c, double r)
+        {
+            switch (shape)
+            {
+                case InvAuto.Core.Bends.BendEndShape.Circle:
+                    dc.DrawEllipse(CutBrush, EndPen, c, r, r);
+                    break;
+                case InvAuto.Core.Bends.BendEndShape.Square:
+                    dc.DrawRectangle(CutBrush, EndPen, new Rect(c.X - r, c.Y - r, 2 * r, 2 * r));
+                    break;
+                default:
+                    var g = new StreamGeometry();
+                    using (var ctx = g.Open())
+                    {
+                        ctx.BeginFigure(new Point(c.X, c.Y - r * 1.3), true, true);
+                        ctx.PolyLineTo(new[] { new Point(c.X + r * 1.3, c.Y), new Point(c.X, c.Y + r * 1.3), new Point(c.X - r * 1.3, c.Y) }, true, true);
+                    }
+                    g.Freeze();
+                    dc.DrawGeometry(CutBrush, EndPen, g);
+                    break;
+            }
         }
 
         private static T Freeze<T>(T freezable) where T : Freezable
