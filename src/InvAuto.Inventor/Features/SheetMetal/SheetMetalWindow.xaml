@@ -1,0 +1,345 @@
+<Window x:Class="InvAuto.Features.SheetMetal.SheetMetalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:InvAuto.Framework.Ui"
+        Title="Листовые детали"
+        Width="1400" Height="800" MinWidth="960" MinHeight="520"
+        Background="{DynamicResource WindowBrush}"
+        FontFamily="Segoe UI" FontSize="12"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ===== Ячейки дерева ===== -->
+
+            <Style x:Key="ExpanderToggle" TargetType="ToggleButton">
+                <Setter Property="Width" Value="16" />
+                <Setter Property="Height" Value="16" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border Background="Transparent">
+                                <TextBlock x:Name="Glyph" Style="{StaticResource IconText}" FontSize="9"
+                                           Foreground="{StaticResource MutedTextBrush}" Text="&#xE76C;" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Glyph" Property="Text" Value="&#xE70D;" />
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource TextBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding HasChildren}" Value="False">
+                        <Setter Property="Visibility" Value="Hidden" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <DataTemplate x:Key="TreeTitleCell">
+                <StackPanel Orientation="Horizontal" Margin="{Binding Indent}" ToolTip="{Binding ToolTip}">
+                    <ToggleButton Style="{StaticResource ExpanderToggle}" IsChecked="{Binding IsExpanded, Mode=OneWay}" Click="OnTreeToggle" />
+                    <TextBlock x:Name="Icon" Text="{Binding Icon}" Style="{StaticResource IconText}" FontSize="13"
+                               Margin="3,0,6,0" Foreground="{StaticResource MutedTextBrush}" />
+                    <TextBlock x:Name="Title" Text="{Binding Title}" VerticalAlignment="Center" />
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsSheetMetal}" Value="True">
+                        <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource AccentBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsAssembly}" Value="True">
+                        <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource TextBrush}" />
+                        <Setter TargetName="Title" Property="FontWeight" Value="SemiBold" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+            <!-- ===== Ячейки списка деталей ===== -->
+
+            <DataTemplate x:Key="CheckCell">
+                <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Focusable="False" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="FlatCell">
+                <Grid Height="48" Width="96">
+                    <ui:FlatPatternView x:Name="View" Drawing="{Binding Flat}"
+                                        ProfileBrush="{StaticResource FlatProfileBrush}"
+                                        BendBrush="{StaticResource FlatBendBrush}"
+                                        AuxiliaryBrush="{StaticResource FlatAuxBrush}" />
+                    <TextBlock x:Name="NoFlat" Text="нет развертки" Style="{StaticResource MutedText}" FontSize="11"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+                </Grid>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding HasFlatPattern}" Value="False">
+                        <Setter TargetName="NoFlat" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+            <DataTemplate x:Key="ThumbnailCell">
+                <Image Source="{Binding Thumbnail}" Height="48" Width="64" Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="FlatStateCell">
+                <TextBlock x:Name="Text" Text="{Binding FlatState}" Foreground="{StaticResource OkBrush}" />
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding HasFlatPattern}" Value="False">
+                        <Setter TargetName="Text" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+            <DataTemplate x:Key="StatusCell">
+                <StackPanel Orientation="Horizontal" ToolTip="{Binding Status}">
+                    <Ellipse x:Name="Dot" Width="7" Height="7" Margin="0,0,6,0" Fill="Transparent" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding StatusKind}" Value="Ok">
+                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource OkBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding StatusKind}" Value="Warning">
+                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource WarningBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding StatusKind}" Value="Error">
+                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource ErrorBrush}" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+            <Style x:Key="RightAligned" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Right" />
+            </Style>
+
+            <Style x:Key="PropertyName" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                <Setter Property="Margin" Value="0,2,10,2" />
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+
+            <Style x:Key="PropertyValue" TargetType="TextBox">
+                <Setter Property="IsReadOnly" Value="True" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0,2" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <DockPanel>
+
+        <!-- ===================== Лента команд ===================== -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource RibbonBar}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,6,10">
+                    <Grid Width="240">
+                        <TextBox x:Name="SearchBox" Padding="24,3,4,3" TextChanged="OnSearchChanged" />
+                        <TextBlock Text="&#xE721;" Style="{StaticResource IconText}" HorizontalAlignment="Left" Margin="7,0,0,0"
+                                   Foreground="{StaticResource MutedTextBrush}" IsHitTestVisible="False" />
+                        <TextBlock Text="Поиск по деталям" Margin="25,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <HeaderedContentControl Header="Состав" Style="{StaticResource RibbonGroup}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonButton}" Tag="&#xE72C;" Click="OnRefresh"
+                                    ToolTip="Заново прочитать состав активной сборки">Обновить</Button>
+                            <StackPanel>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="&#xE70D;" Click="OnExpandAll">Развернуть всё</Button>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="&#xE70E;" Click="OnCollapseAll">Свернуть всё</Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonPrimaryButton}" Tag="&#xEDE1;" Click="OnExportChecked"
+                                    ToolTip="Выгрузить отмеченные детали выбранного узла дерева">Выгрузить отмеченные</Button>
+                            <Button Style="{StaticResource RibbonButton}" Tag="&#xE8B3;" Click="OnExportAll"
+                                    ToolTip="Выгрузить все листовые детали изделия, независимо от выбора">Выгрузить всё</Button>
+                            <StackPanel Margin="2,0,0,0">
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="&#xE838;" Click="OnOpenFolder">Открыть папку</Button>
+                                <StackPanel Orientation="Horizontal" Margin="6,3,4,0" ToolTip="Количество каждой детали умножается на это число">
+                                    <TextBlock Text="Изделий:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <TextBox x:Name="ProductQuantityBox" Width="46" Text="1" HorizontalContentAlignment="Right"
+                                             LostFocus="OnProductQuantityChanged" KeyDown="OnProductQuantityKeyDown" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Header="Отметка" Style="{StaticResource RibbonGroup}">
+                        <StackPanel>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="&#xE73A;" Click="OnCheckAll">Отметить все</Button>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="&#xE739;" Click="OnCheckNone">Снять все</Button>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="&#xE762;" Click="OnCheckSelected"
+                                    ToolTip="Отметить только выделенные строки (выделение — Ctrl/Shift + щелчок)">Только выделенные</Button>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Header="Вид" Style="{StaticResource RibbonGroup}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="ColumnsButton" Style="{StaticResource RibbonButton}" Tag="&#xE8FD;" Click="OnColumns"
+                                    ToolTip="Выбор колонок списка деталей">Колонки</Button>
+                            <ToggleButton x:Name="DetailsToggle" Style="{StaticResource RibbonButton}" Tag="&#xE8A0;"
+                                          Click="OnToggleDetails" ToolTip="Панель свойств выбранной детали">Свойства</ToggleButton>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
+                    <HeaderedContentControl Header="Настройки" Style="{StaticResource RibbonGroup}">
+                        <Button Style="{StaticResource RibbonButton}" Tag="&#xE713;" Click="OnSettings"
+                                ToolTip="Папка, имена файлов, способ выгрузки DXF">Параметры выгрузки</Button>
+                    </HeaderedContentControl>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ===================== Строка состояния ===================== -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource StatusBar}">
+            <DockPanel>
+                <ProgressBar x:Name="Progress" DockPanel.Dock="Right" Width="220" Height="12" Visibility="Collapsed" />
+                <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- ===================== Рабочая область ===================== -->
+        <Grid x:Name="Body">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="TreeColumn" Width="420" MinWidth="220" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="300" />
+                <ColumnDefinition x:Name="DetailsSplitterColumn" Width="Auto" />
+                <ColumnDefinition x:Name="DetailsColumn" Width="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Дерево состава -->
+            <DockPanel Grid.Column="0">
+                <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
+                    <TextBlock Text="Состав изделия" Style="{StaticResource PanelTitle}" />
+                </Border>
+                <DataGrid x:Name="TreeGrid" IsReadOnly="True" SelectionMode="Single" CanUserSortColumns="False"
+                          CanUserReorderColumns="False" RowHeight="24" SelectionChanged="OnTreeSelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Обозначение" Width="2*" CellTemplate="{StaticResource TreeTitleCell}" />
+                        <DataGridTextColumn Header="Наименование" Width="1.4*" Binding="{Binding Description}" />
+                        <DataGridTextColumn Header="Кол." Width="44" Binding="{Binding QuantityInParent}"
+                                            ElementStyle="{StaticResource RightAligned}" />
+                        <DataGridTextColumn Header="Всего" Width="50" Binding="{Binding TotalQuantity}"
+                                            ElementStyle="{StaticResource RightAligned}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+
+            <GridSplitter Grid.Column="1" Style="{StaticResource Splitter}" />
+
+            <!-- Листовые детали выбранного узла -->
+            <DockPanel Grid.Column="2">
+                <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
+                    <DockPanel>
+                        <TextBlock x:Name="CounterText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" VerticalAlignment="Center" />
+                        <TextBlock x:Name="PartsTitle" Style="{StaticResource PanelTitle}" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+                </Border>
+                <Grid>
+                    <DataGrid x:Name="PartsGrid" IsReadOnly="True" SelectionMode="Extended" RowHeight="56"
+                              SelectionChanged="OnPartSelectionChanged" PreviewKeyDown="OnPartsKeyDown"
+                              ColumnReordered="OnColumnReordered">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Отметить выделенные" Click="OnCheckSelectedRows" />
+                                <MenuItem Header="Снять отметку с выделенных" Click="OnUncheckSelectedRows" />
+                                <Separator />
+                                <MenuItem Header="Показать файл детали в проводнике" Click="OnRevealPart" />
+                                <MenuItem Header="Показать DXF в проводнике" Click="OnRevealDxf" />
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                    </DataGrid>
+                    <TextBlock x:Name="EmptyText" Style="{StaticResource MutedText}" HorizontalAlignment="Center"
+                               VerticalAlignment="Center" Text="В выбранном узле нет листовых деталей" Visibility="Collapsed" />
+                </Grid>
+            </DockPanel>
+
+            <GridSplitter x:Name="DetailsSplitter" Grid.Column="3" Style="{StaticResource Splitter}" />
+
+            <!-- Свойства выбранной детали -->
+            <DockPanel x:Name="DetailsPanel" Grid.Column="4">
+                <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
+                    <TextBlock Text="Свойства" Style="{StaticResource PanelTitle}" />
+                </Border>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="Details" Margin="10" DataContext="{x:Null}">
+                        <TextBlock x:Name="DetailsHint" Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                                   Text="Выберите деталь в списке" />
+
+                        <StackPanel x:Name="DetailsContent" Visibility="Collapsed">
+                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Height="200" Background="{StaticResource WindowBrush}">
+                                <Grid>
+                                    <ui:FlatPatternView Drawing="{Binding Flat}" Margin="10"
+                                                        ProfileBrush="{StaticResource FlatProfileBrush}"
+                                                        BendBrush="{StaticResource FlatBendBrush}"
+                                                        AuxiliaryBrush="{StaticResource FlatAuxBrush}" />
+                                    <TextBlock Text="Нет развертки" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasFlatPattern}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+                            <DockPanel Margin="0,4,0,10">
+                                <TextBlock DockPanel.Dock="Right" Style="{StaticResource MutedText}" Text="{Binding FlatSizeText}" />
+                                <TextBlock Text="Развертка" Style="{StaticResource MutedText}" />
+                            </DockPanel>
+
+                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Height="160" Background="{StaticResource WindowBrush}">
+                                <Image Source="{Binding Thumbnail}" Margin="6" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Border>
+                            <TextBlock Text="Деталь" Style="{StaticResource MutedText}" Margin="0,4,0,12" />
+
+                            <Grid x:Name="PropertiesGrid">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

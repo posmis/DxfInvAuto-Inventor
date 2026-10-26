@@ -13,15 +13,15 @@ namespace InvAuto.InventorApi
         private readonly FlatPatternExportSettings _settings;
         private readonly string _outputFolder;
         private readonly string _assemblyName;
-        private readonly string _formatString;
+        private readonly IFlatPatternWriter _writer;
         private readonly HashSet<string> _usedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public FlatPatternExporter(FlatPatternExportSettings settings, string outputFolder, string assemblyName)
+        public FlatPatternExporter(FlatPatternExportSettings settings, string outputFolder, string assemblyName, IFlatPatternWriter writer)
         {
             _settings = settings;
             _outputFolder = outputFolder;
             _assemblyName = assemblyName;
-            _formatString = DxfFormatString.Build(settings);
+            _writer = writer;
         }
 
         public ExportResult Export(CollectedPart part)
@@ -37,18 +37,19 @@ namespace InvAuto.InventorApi
                 if (!definition.HasFlatPattern)
                 {
                     if (!_settings.CreateMissingFlatPatterns)
-                        return new ExportResult(info, ExportStatus.Skipped, path, "Нет развертки");
+                        return new ExportResult(info, ExportStatus.Skipped, path, "нет развертки");
 
                     definition.Unfold();
                     definition.FlatPattern.ExitEdit();
-                    note = "Развертка создана автоматически — сохраните деталь";
+                    info.HasFlatPattern = true;
+                    note = "развертка создана автоматически, сохраните деталь";
                 }
 
                 if (IO.File.Exists(path) && !_settings.OverwriteExisting)
-                    return new ExportResult(info, ExportStatus.Skipped, path, "Файл уже существует");
+                    return new ExportResult(info, ExportStatus.Skipped, path, "файл уже существует");
 
                 IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(path));
-                definition.DataIO.WriteDataToFile(_formatString, path);
+                _writer.Write(definition, path);
 
                 return new ExportResult(info, ExportStatus.Exported, path, note);
             }

@@ -1,0 +1,303 @@
+<!--
+  Общая тема окон InvAuto: спокойная светлая палитра в духе Inventor, лента команд, таблицы.
+  Все цвета — здесь, чтобы при необходимости добавить тёмную тему одним файлом.
+  Подключение в окне:
+    <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml"/>
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Палитра -->
+    <SolidColorBrush x:Key="WindowBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="RibbonBrush" Color="#F3F4F6" />
+    <SolidColorBrush x:Key="PanelHeaderBrush" Color="#F7F8F9" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#D6D9DD" />
+    <SolidColorBrush x:Key="GridLineBrush" Color="#ECEEF0" />
+    <SolidColorBrush x:Key="TextBrush" Color="#1F2328" />
+    <SolidColorBrush x:Key="MutedTextBrush" Color="#6A737D" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#0696D7" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#E8F2FA" />
+    <SolidColorBrush x:Key="HoverBorderBrush" Color="#BFDCF2" />
+    <SolidColorBrush x:Key="PressedBrush" Color="#CFE6F7" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#D7EBFA" />
+    <SolidColorBrush x:Key="OkBrush" Color="#2E7D32" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#B26A00" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#C62828" />
+
+    <!-- Цвета превью развертки -->
+    <SolidColorBrush x:Key="FlatProfileBrush" Color="#2B2F33" />
+    <SolidColorBrush x:Key="FlatBendBrush" Color="#0696D7" />
+    <SolidColorBrush x:Key="FlatAuxBrush" Color="#A0A6AD" />
+
+    <!-- Иконки — системный шрифт Windows 10/11, без файлов картинок -->
+    <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <Style x:Key="IconText" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="MutedText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+    </Style>
+
+    <!-- ===== Лента команд ===== -->
+
+    <Style x:Key="RibbonBar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource RibbonBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="4,4,4,2" />
+    </Style>
+
+    <!-- Группа команд: содержимое сверху, подпись снизу, разделитель справа -->
+    <Style x:Key="RibbonGroup" TargetType="HeaderedContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="HeaderedContentControl">
+                    <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0" Margin="0,2" Padding="4,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <ContentPresenter VerticalAlignment="Top" />
+                            <ContentPresenter Grid.Row="1" ContentSource="Header" HorizontalAlignment="Center" Margin="0,2,0,0"
+                                              TextElement.Foreground="{StaticResource MutedTextBrush}" TextElement.FontSize="11" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Большая кнопка: иконка над текстом. Иконка задаётся через Tag (символ шрифта). -->
+    <Style x:Key="RibbonButton" TargetType="ButtonBase">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="MinWidth" Value="58" />
+        <Setter Property="MaxWidth" Value="88" />
+        <Setter Property="Height" Value="66" />
+        <Setter Property="Margin" Value="1,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonBase">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="2" Padding="4,4,4,2">
+                        <StackPanel>
+                            <TextBlock x:Name="Icon" Text="{TemplateBinding Tag}" Style="{StaticResource IconText}" FontSize="22" Margin="0,0,0,4" />
+                            <ContentPresenter HorizontalAlignment="Center" TextBlock.TextAlignment="Center">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap" />
+                                        <Setter Property="LineHeight" Value="13" />
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource HoverBorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="ToggleButton.IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource HoverBorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Основная команда окна: та же кнопка с иконкой в акцентном цвете -->
+    <Style x:Key="RibbonPrimaryButton" TargetType="ButtonBase" BasedOn="{StaticResource RibbonButton}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonBase">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="2" Padding="4,4,4,2">
+                        <StackPanel>
+                            <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource IconText}" FontSize="22" Margin="0,0,0,4"
+                                       Foreground="{StaticResource AccentBrush}" />
+                            <ContentPresenter HorizontalAlignment="Center" TextBlock.TextAlignment="Center">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap" />
+                                        <Setter Property="LineHeight" Value="13" />
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource HoverBorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Маленькая кнопка: иконка слева от текста, для вертикальных столбиков команд -->
+    <Style x:Key="RibbonSmallButton" TargetType="ButtonBase">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Height" Value="22" />
+        <Setter Property="Margin" Value="1,0,1,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ButtonBase">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="2" Padding="4,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{TemplateBinding Tag}" Style="{StaticResource IconText}" FontSize="13" Width="16" Margin="0,0,6,0" />
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource HoverBorderBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="ToggleButton.IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource PressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== Панели ===== -->
+
+    <Style x:Key="PanelHeader" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource PanelHeaderBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="8,5" />
+    </Style>
+
+    <Style x:Key="PanelTitle" TargetType="TextBlock">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="Splitter" TargetType="GridSplitter">
+        <Setter Property="Width" Value="5" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{StaticResource RibbonBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1,0" />
+    </Style>
+
+    <Style x:Key="StatusBar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource RibbonBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="Padding" Value="8,3" />
+    </Style>
+
+    <!-- ===== Таблицы (неявные стили — применяются ко всем DataGrid окна) ===== -->
+
+    <Style TargetType="DataGrid">
+        <Setter Property="Background" Value="{StaticResource WindowBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource GridLineBrush}" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="AutoGenerateColumns" Value="False" />
+        <Setter Property="CanUserAddRows" Value="False" />
+        <Setter Property="CanUserDeleteRows" Value="False" />
+        <Setter Property="CanUserResizeRows" Value="False" />
+        <Setter Property="CanUserReorderColumns" Value="True" />
+        <Setter Property="SelectionUnit" Value="FullRow" />
+        <Setter Property="RowBackground" Value="{StaticResource WindowBrush}" />
+        <Setter Property="AlternatingRowBackground" Value="{StaticResource WindowBrush}" />
+        <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
+        <Setter Property="EnableRowVirtualization" Value="True" />
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{StaticResource PanelHeaderBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,1" />
+        <Setter Property="Padding" Value="6,5" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+
+    <Style TargetType="DataGridRow">
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="DataGridCell">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="6,2" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{StaticResource SelectionBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ===== Формы ===== -->
+
+    <Style TargetType="TextBox">
+        <Setter Property="Padding" Value="3,2" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="DialogButton" TargetType="Button">
+        <Setter Property="MinWidth" Value="88" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+    </Style>
+
+</ResourceDictionary>

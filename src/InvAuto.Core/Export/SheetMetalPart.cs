@@ -16,12 +16,27 @@ namespace InvAuto.Core.Export
         public string Material { get; set; } = string.Empty;
         public double ThicknessMm { get; set; }
 
+        public bool HasFlatPattern { get; set; }
+
+        /// <summary>Габариты развертки, мм. 0 — развертки нет или размер неизвестен.</summary>
+        public double FlatLengthMm { get; set; }
+        public double FlatWidthMm { get; set; }
+
         /// <summary>Количество вхождений в сборку (для детали, открытой отдельно, равно 1).</summary>
         public int Quantity { get; set; }
 
         /// <summary>Пользовательские iProperties детали.</summary>
-        public IDictionary<string, string> CustomProperties { get; } =
+        public IDictionary<string, string> CustomProperties { get; private set; } =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Копия с другим количеством — для подсчёта по разным узлам сборки.</summary>
+        public SheetMetalPart WithQuantity(int quantity)
+        {
+            var copy = (SheetMetalPart)MemberwiseClone();
+            copy.Quantity = quantity;
+            copy.CustomProperties = new Dictionary<string, string>(CustomProperties, StringComparer.OrdinalIgnoreCase);
+            return copy;
+        }
 
         /// <summary>
         /// Значения для подстановки в шаблоны имён. Пользовательские свойства доступны по своему имени,
@@ -38,6 +53,8 @@ namespace InvAuto.Core.Export
             values["Description"] = Description;
             values["Material"] = Material;
             values["Thickness"] = ThicknessMm;
+            values["Length"] = FlatLengthMm;
+            values["Width"] = FlatWidthMm;
             values["Qty"] = Quantity * Math.Max(1, quantityMultiplier);
             values["Assembly"] = assemblyName ?? string.Empty;
             return values;

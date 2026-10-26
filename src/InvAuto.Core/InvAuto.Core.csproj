@@ -8,4 +8,8 @@
     <RootNamespace>InvAuto.Core</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="InvAuto.Core.Tests" />
+  </ItemGroup>
+
 </Project>

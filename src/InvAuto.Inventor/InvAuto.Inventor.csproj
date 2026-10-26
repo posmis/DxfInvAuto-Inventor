@@ -1,15 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    Версия Inventor задаётся свойством InventorVersion (по умолчанию 2024):
-      dotnet build -p:InventorVersion=2023
+    Версия Inventor задаётся свойством InventorVersion (по умолчанию 2025):
+      dotnet build -p:InventorVersion=2024
     Inventor 2025+ работает на .NET 8, более ранние версии — на .NET Framework 4.8,
     поэтому целевой фреймворк выбирается автоматически.
   -->
   <PropertyGroup>
-    <InventorVersion Condition="'$(InventorVersion)' == ''">2024</InventorVersion>
+    <InventorVersion Condition="'$(InventorVersion)' == ''">2025</InventorVersion>
     <TargetFramework Condition="$(InventorVersion) &gt;= 2025">net8.0-windows</TargetFramework>
     <TargetFramework Condition="$(InventorVersion) &lt; 2025">net48</TargetFramework>
+    <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <LangVersion>latest</LangVersion>
     <PlatformTarget>x64</PlatformTarget>
@@ -45,6 +46,7 @@
     <!-- Иконки кнопок: Resources\Icons\{FeatureId}.16.png и {FeatureId}.32.png -->
     <EmbeddedResource Include="Resources\Icons\*.png" />
     <None Update="InvAuto.addin" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Config\dxf_export_config.ini" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="CheckInventorInterop" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(InventorInteropPath)')">
