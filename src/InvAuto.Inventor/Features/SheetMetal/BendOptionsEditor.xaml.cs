@@ -86,15 +86,15 @@ namespace InvAuto.Features.SheetMetal
                 EndShape = (EndShapeBox.SelectedItem as IBendEndShape)?.Shape ?? BendEndShape.None
             };
 
-            bool ends = o.EndShape != BendEndShape.None;
-            o.EndSize = Positive(EndSizeBox.Text, Fallback.EndSize, BendEnds.For(o.EndShape).SizeTitle + " законцовки", ends, ref error);
+            bool hasEnds = o.EndShape != BendEndShape.None;
+            o.EndSize = Positive(EndSizeBox.Text, Fallback.EndSize, BendEnds.For(o.EndShape).SizeTitle + " законцовки", hasEnds, ref error);
             double? offset = Parse(EndOffsetBox.Text);
             if (offset >= 0)
                 o.EndOffset = offset.Value;
             else
             {
                 o.EndOffset = Fallback.EndOffset;
-                if (ends && error.Length == 0)
+                if (hasEnds && error.Length == 0)
                     error = "«Центр внутрь от края»: число не меньше нуля.";
             }
             string layer = EndLayerBox.Text.Trim();
@@ -150,10 +150,10 @@ namespace InvAuto.Features.SheetMetal
             SetVisible(EndsRow, dashed);
             SetVisible(FitRow, dashed && !byCount);
 
-            bool ends = o.EndShape != BendEndShape.None;
-            SetVisible(EndSizeRow, ends);
-            SetVisible(EndOffsetRow, ends);
-            SetVisible(EndLayerRow, ends);
+            bool hasEnds = o.EndShape != BendEndShape.None;
+            SetVisible(EndSizeRow, hasEnds);
+            SetVisible(EndOffsetRow, hasEnds);
+            SetVisible(EndLayerRow, hasEnds);
             EndSizeLabel.Text = BendEnds.For(o.EndShape).SizeTitle;
 
             DashLabel.Text = slots ? "Длина выреза" : "Длина прорези";
