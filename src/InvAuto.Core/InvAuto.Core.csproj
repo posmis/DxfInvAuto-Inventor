@@ -12,4 +12,9 @@
     <InternalsVisibleTo Include="InvAuto.Core.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Булевы операции над многоугольниками (законцовки, сходящиеся в угол): Clipper2, лицензия Boost, без зависимостей. -->
+    <PackageReference Include="Clipper2" Version="2.0.0" />
+  </ItemGroup>
+
 </Project>

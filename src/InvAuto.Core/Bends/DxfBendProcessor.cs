@@ -143,11 +143,20 @@ namespace InvAuto.Core.Bends
             int container = 0, index = 0;
             while (index < pairs.Count)
             {
-                int end = index + 1;
-                while (end < pairs.Count && pairs[end].Code != 0)
-                    end++;
+                int end = NextEntity(pairs, index);
+                string type = pairs[index].Value.Trim();
+                if (type == "POLYLINE")
+                {
+                    // Вершины и SEQEND — часть полилинии: удаляются и заменяются вместе с ней.
+                    while (end < pairs.Count && (pairs[end].Value.Trim() == "VERTEX" || pairs[end].Value.Trim() == "SEQEND"))
+                    {
+                        bool last = pairs[end].Value.Trim() == "SEQEND";
+                        end = NextEntity(pairs, end);
+                        if (last)
+                            break;
+                    }
+                }
                 var e = new Entity(pairs.GetRange(index, end - index));
-                string type = e.Pairs[0].Value.Trim();
                 if (type == "SECTION" || type == "BLOCK" || type == "ENDBLK" || type == "ENDSEC")
                     container++; // выемки — только в контуре того же блока или раздела, что и линия гиба
                 e.Container = container;
@@ -162,46 +171,57 @@ namespace InvAuto.Core.Bends
                         e.Outer = OuterShape.FromLine(e.Pairs);
                     else if (type == "LWPOLYLINE")
                         e.Outer = OuterShape.FromPolyline(e.Pairs);
+                    e.OuterType = type; // ломаная контура строится, только если у линий гиба есть законцовки
                 }
                 entities.Add(e);
                 index = end;
             }
 
-            // ===== План: параметры линий, выемки, укорочение линий у законцовок =====
+            // ===== План: параметры линий, законцовки (выемки, вычитание, вырезы), укорочение линий =====
             var items = new List<ProcessedBendLine>();
             var endFeatures = new List<Preview.Polyline2>();
+            var ends = new List<EndWork>();
+            var bends = entities.Where(x => x.Bend != null).ToList();
             bool changed = false;
-            foreach (var e in entities.Where(x => x.Bend != null))
+            int number = 0;
+            foreach (var e in bends)
             {
                 var w = e.Bend;
-                w.Info = new BendLineInfo(items.Count + 1, w.Layer, w.Start[0], w.Start[1], w.Finish[0], w.Finish[1]);
+                w.Info = new BendLineInfo(++number, w.Layer, w.Start[0], w.Start[1], w.Finish[0], w.Finish[1]);
                 w.Options = resolve(w.Info) ?? new BendLineOptions();
                 double length = Distance(w.Start, w.Finish);
                 var outlines = BendEnds.Outlines(w.Start[0], w.Start[1], w.Finish[0], w.Finish[1], w.Options);
+                if (outlines.Count != 2 || length <= 0)
+                    continue;
 
-                if (outlines.Count == 2 && length > 0)
+                changed = true;
+                double ux = (w.Finish[0] - w.Start[0]) / length, uy = (w.Finish[1] - w.Start[1]) / length;
+                double reach = BendEnds.For(w.Options.EndShape).Reach(w.Options.EndSize);
+                double offset = Math.Min(w.Options.EndOffset, length / 2);
+                for (int k = 0; k < 2; k++)
                 {
-                    changed = true;
-                    double ux = (w.Finish[0] - w.Start[0]) / length, uy = (w.Finish[1] - w.Start[1]) / length;
-                    double reach = BendEnds.For(w.Options.EndShape).Reach(w.Options.EndSize);
-                    double offset = Math.Min(w.Options.EndOffset, length / 2);
-                    for (int k = 0; k < 2; k++)
+                    ends.Add(new EndWork(e, k, outlines[k], k == 0 ? ux : -ux, k == 0 ? uy : -uy));
+                    // Линия гиба внутри выреза не нужна — там пустота: укорачиваем, если вырез накрывает конец.
+                    if (offset <= reach + 1e-9)
                     {
-                        double ix = k == 0 ? ux : -ux, iy = k == 0 ? uy : -uy;
-                        var notch = MergeIntoOuter(entities, e.Container, outlines[k], ix, iy);
-                        if (notch == null)
-                            w.SeparateEnds.Add(outlines[k]);
-                        endFeatures.Add(EndFeature(outlines[k], notch));
-
-                        // Линия гиба внутри выреза не нужна — там пустота: укорачиваем, если вырез накрывает конец.
-                        if (offset <= reach + 1e-9)
-                        {
-                            double trim = Math.Min(offset + reach, length / 2);
-                            if (k == 0) w.TrimStart = trim; else w.TrimEnd = trim;
-                        }
+                        double trim = Math.Min(offset + reach, length / 2);
+                        if (k == 0) w.TrimStart = trim; else w.TrimEnd = trim;
                     }
                 }
+            }
 
+            if (ends.Count > 0)
+            {
+                // Любой элемент контура — для проверки, что задевает законцовка, и для вычитания.
+                foreach (var e in entities.Where(x => x.OuterType != null))
+                    e.Curve = OuterCurve.From(e.Pairs, e.OuterType);
+                PlanEnds(entities, ends, endFeatures);
+            }
+
+            foreach (var e in bends)
+            {
+                var w = e.Bend;
+                double length = Distance(w.Start, w.Finish);
                 w.Layout = BendLineStrategies.Layout(Math.Max(0, length - w.TrimStart - w.TrimEnd), w.Options);
                 items.Add(new ProcessedBendLine(w.Info, w.Options, w.Layout));
                 if (w.Options.Mode != BendLineMode.Keep)
@@ -217,6 +237,18 @@ namespace InvAuto.Core.Bends
             {
                 if (e.Bend != null)
                     output.AddRange(WriteBend(e.Pairs, e.Bend, handles));
+                else if (e.NewContours != null)
+                {
+                    // Контур после вычитания законцовок — вместо всех элементов контура блока.
+                    string layer = e.Pairs.FirstOrDefault(p => p.Code == 8).Value?.Trim() ?? "IV_OUTER_PROFILE";
+                    double z = Number(e.Pairs, 38) + Number(e.Pairs, 30);
+                    foreach (var (vertices, holeLayer) in e.NewContours)
+                        output.AddRange(ContourEntities(holeLayer == null ? e.Pairs : AsCut(e.Pairs, holeLayer), holeLayer ?? layer, vertices, z, handles));
+                }
+                else if (e.Removed)
+                {
+                    // Элемент контура заменён новым контуром.
+                }
                 else if (e.Outer != null && e.Outer.Notches.Count > 0)
                     output.AddRange(e.Outer.Write(e.Pairs, handles));
                 else
@@ -259,6 +291,9 @@ namespace InvAuto.Core.Bends
 
             foreach (var outline in w.SeparateEnds)
                 output.AddRange(EndEntity(entity, outline, w.Start[2], w.Options.EndLayer, handles));
+            string layer = string.IsNullOrWhiteSpace(w.Options.EndLayer) ? BendLineOptions.DefaultEndLayer : w.Options.EndLayer.Trim();
+            foreach (var hole in w.UnionHoles)
+                output.AddRange(ContourEntities(AsCut(entity, layer), layer, hole, w.Start[2], handles));
             return output;
         }
 
@@ -271,8 +306,15 @@ namespace InvAuto.Core.Bends
         {
             OuterShape shape = null;
             int edge = -1;
-            foreach (var e in entities.Where(x => x.Outer != null && x.Container == container))
+            foreach (var e in entities.Where(x => x.Curve != null && x.Container == container))
             {
+                if (e.Outer == null)
+                {
+                    // Дуга, сплайн и т. п.: выемку в них не делаем — задевает, значит, простой выемки нет.
+                    if (Touches(e.Curve.Points, outline))
+                        return null;
+                    continue;
+                }
                 for (int seg = 0; seg < e.Outer.SegmentCount; seg++)
                 {
                     if (!Touches(e.Outer.SegmentPoints(seg), outline))
@@ -429,6 +471,26 @@ namespace InvAuto.Core.Bends
             public int Container { get; set; }
             public BendWork Bend { get; set; }
             public OuterShape Outer { get; set; }
+
+            /// <summary>Тип объекта на слое наружного контура (null — не контур).</summary>
+            public string OuterType { get; set; }
+
+            /// <summary>Элемент наружного контура (любого типа) ломаной.</summary>
+            public OuterCurve Curve { get; set; }
+
+            /// <summary>Новый контур блока после вычитания законцовок: вершины и слой (null — слой этого элемента).</summary>
+            public List<(List<CVertex> Vertices, string Layer)> NewContours { get; set; }
+
+            /// <summary>Элемент контура заменён новым контуром — не записывается.</summary>
+            public bool Removed { get; set; }
+        }
+
+        private static int NextEntity(List<Pair> pairs, int index)
+        {
+            int end = index + 1;
+            while (end < pairs.Count && pairs[end].Code != 0)
+                end++;
+            return end;
         }
 
         /// <summary>Линия гиба в обработке.</summary>
@@ -450,6 +512,9 @@ namespace InvAuto.Core.Bends
             public double TrimStart { get; set; }
             public double TrimEnd { get; set; }
             public List<EndOutline> SeparateEnds { get; } = new List<EndOutline>();
+
+            /// <summary>Общие вырезы перекрывающихся законцовок внутри детали.</summary>
+            public List<List<CVertex>> UnionHoles { get; } = new List<List<CVertex>>();
         }
 
         /// <summary>
