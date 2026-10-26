@@ -106,12 +106,21 @@ namespace InvAuto.Core.Preview
     public sealed class FlatDrawing
     {
         private readonly Lazy<FlatGeometry> _geometry;
+        private readonly Lazy<IReadOnlyList<Contour>> _contours;
 
         /// <param name="geometry">Точные отрезки и дуги для измерений; null — построить из полилиний.</param>
         public FlatDrawing(IReadOnlyList<Polyline2> polylines, FlatGeometry geometry = null, IReadOnlyList<FlatText> texts = null)
+            : this(polylines, geometry, texts, null)
+        {
+        }
+
+        private FlatDrawing(IReadOnlyList<Polyline2> polylines, FlatGeometry geometry, IReadOnlyList<FlatText> texts,
+            Lazy<IReadOnlyList<Contour>> contours)
         {
             Polylines = polylines;
             Texts = texts ?? Array.Empty<FlatText>();
+            // Контуры нужны маркировке, показателям и проверке — сшиваются один раз на чертёж.
+            _contours = contours ?? new Lazy<IReadOnlyList<Contour>>(() => FlatContours.Compute(polylines));
             _geometry = geometry != null
                 ? new Lazy<FlatGeometry>(() => geometry)
                 : new Lazy<FlatGeometry>(() => FlatGeometry.FromPolylines(polylines));
@@ -133,6 +142,9 @@ namespace InvAuto.Core.Preview
         /// <summary>Маркировка (в габарит и геометрию для измерений не входит).</summary>
         public IReadOnlyList<FlatText> Texts { get; }
 
+        /// <summary>Замкнутые контуры и цепочки резки (см. FlatContours.Build), посчитанные один раз.</summary>
+        public IReadOnlyList<Contour> Contours => _contours.Value;
+
         /// <summary>Отрезки и дуги в том виде, как они записаны в DXF, — для привязок при измерениях.</summary>
         public FlatGeometry Geometry => _geometry.Value;
 
@@ -146,10 +158,15 @@ namespace InvAuto.Core.Preview
 
         /// <summary>Тот же чертёж плюс законцовки для показа (геометрия для измерений не меняется).</summary>
         public FlatDrawing WithEndFeatures(IReadOnlyList<Polyline2> features) =>
-            features == null || features.Count == 0 ? this : new FlatDrawing(Polylines.Concat(features).ToList(), Geometry, Texts);
+            features == null || features.Count == 0
+                ? this
+                : new FlatDrawing(Polylines.Concat(features).ToList(), Geometry, Texts, _contours); // законцовки — не контуры резки
 
         /// <summary>Тот же чертёж с текстом маркировки.</summary>
         public FlatDrawing WithText(FlatText text) =>
-            text == null ? this : new FlatDrawing(Polylines, Geometry, Texts.Concat(new[] { text }).ToList());
+            text == null ? this : new FlatDrawing(Polylines, Geometry, Texts.Concat(new[] { text }).ToList(), _contours);
+
+        /// <summary>Тот же чертёж без текстов (контуры и геометрия общие).</summary>
+        public FlatDrawing WithoutTexts() => Texts.Count == 0 ? this : new FlatDrawing(Polylines, Geometry, null, _contours);
     }
 }

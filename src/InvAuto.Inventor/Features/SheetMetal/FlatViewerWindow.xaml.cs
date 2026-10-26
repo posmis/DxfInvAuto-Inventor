@@ -416,7 +416,7 @@ namespace InvAuto.Features.SheetMetal
             if (row?.Flat == null)
                 return;
             _draft = draft;
-            View.Drawing = new FlatDrawing(row.Flat.Polylines, row.Flat.Geometry).WithText(draft);
+            View.Drawing = row.Flat.WithoutTexts().WithText(draft);
             bool fits = Area().Fits(draft, row.MarkingOptions.Normalized().Margin);
             View.MarkingConflict = !fits;
             CursorText.Text = fits ? "Маркировка: место подходит" : "Маркировка: задевает контур или в вырезе";

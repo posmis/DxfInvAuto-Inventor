@@ -262,28 +262,109 @@ namespace InvAuto.Core.Bends
             return output;
         }
 
-        /// <summary>Ищет прямое ребро наружного контура, которое законцовка пересекает, и планирует в нём выемку.</summary>
+        /// <summary>
+        /// Планирует выемку в наружном контуре: законцовка должна задевать ровно одно ребро контура, и это ребро —
+        /// прямое. Задевает два ребра (угол, скругление, узкий паз рядом) — выемка изменила бы контур неверно,
+        /// тогда null и законцовка остаётся отдельным вырезом.
+        /// </summary>
         private static EdgeNotch MergeIntoOuter(List<Entity> entities, int container, EndOutline outline, double ix, double iy)
         {
+            OuterShape shape = null;
+            int edge = -1;
             foreach (var e in entities.Where(x => x.Outer != null && x.Container == container))
             {
-                var shape = e.Outer;
-                for (int seg = 0; seg < shape.SegmentCount; seg++)
+                for (int seg = 0; seg < e.Outer.SegmentCount; seg++)
                 {
-                    if (!shape.IsStraight(seg))
+                    if (!Touches(e.Outer.SegmentPoints(seg), outline))
                         continue;
-                    var (a, b) = shape.Segment(seg);
-                    var notch = EdgeNotch.Find(a[0], a[1], b[0], b[1], outline, ix, iy);
-                    if (notch == null)
-                        continue;
-                    // Две выемки на одном ребре не должны перекрываться — иначе вторая остаётся отдельным вырезом.
-                    if (shape.Notches.Any(n => n.Segment == seg && n.Notch.T1 < notch.T2 && notch.T1 < n.Notch.T2))
-                        return null;
-                    shape.Notches.Add((seg, notch));
-                    return notch;
+                    if (shape != null)
+                        return null; // второе ребро
+                    shape = e.Outer;
+                    edge = seg;
                 }
             }
-            return null;
+            if (shape == null || !shape.IsStraight(edge))
+                return null;
+
+            var (a, b) = shape.Segment(edge);
+            var notch = EdgeNotch.Find(a[0], a[1], b[0], b[1], outline, ix, iy);
+            if (notch == null)
+                return null;
+            // Две выемки на одном ребре не должны перекрываться — иначе вторая остаётся отдельным вырезом.
+            if (shape.Notches.Any(n => n.Segment == edge && n.Notch.T1 < notch.T2 && notch.T1 < n.Notch.T2))
+                return null;
+            shape.Notches.Add((edge, notch));
+            return notch;
+        }
+
+        /// <summary>Ломаная заходит внутрь формы законцовки (пересекает её или лежит в ней; касание не считается).</summary>
+        private static bool Touches(IReadOnlyList<double[]> points, EndOutline outline)
+        {
+            const double eps = 1e-7;
+            for (int i = 1; i < points.Count; i++)
+            {
+                double[] p = points[i - 1], q = points[i];
+                if (outline.IsCircle)
+                {
+                    var d = Geometry2Distance(p, q, outline.CenterX, outline.CenterY);
+                    if (d < outline.Radius - eps)
+                        return true;
+                    continue;
+                }
+
+                if (ClipsConvex(outline.Vertices, p, q, eps))
+                    return true;
+            }
+            return false;
+        }
+
+        private static double Geometry2Distance(double[] a, double[] b, double x, double y)
+        {
+            double dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy;
+            double t = len2 < 1e-18 ? 0 : Math.Max(0, Math.Min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2));
+            double px = a[0] + dx * t - x, py = a[1] + dy * t - y;
+            return Math.Sqrt(px * px + py * py);
+        }
+
+        /// <summary>
+        /// Часть отрезка p→q лежит строго внутри выпуклого многоугольника (отсечение Сайруса — Бека по сторонам,
+        /// сдвинутым внутрь на eps): проход через вершину или вдоль стороны не считается.
+        /// </summary>
+        private static bool ClipsConvex(IReadOnlyList<EndVertex> v, double[] p, double[] q, double eps)
+        {
+            double area = 0;
+            for (int k = 0; k < v.Count; k++)
+                area += v[k].X * v[(k + 1) % v.Count].Y - v[(k + 1) % v.Count].X * v[k].Y;
+            double orientation = Math.Sign(area); // > 0 — вершины против часовой, внутренняя сторона слева
+            if (orientation == 0)
+                return false;
+
+            double t0 = 0, t1 = 1, dx = q[0] - p[0], dy = q[1] - p[1];
+            for (int k = 0; k < v.Count; k++)
+            {
+                var a = v[k];
+                var b = v[(k + 1) % v.Count];
+                double ex = b.X - a.X, ey = b.Y - a.Y, len = Math.Sqrt(ex * ex + ey * ey);
+                if (len < 1e-12)
+                    continue;
+                // Расстояние до стороны со знаком «внутрь»: f(t) = f0 + t·df ≥ eps.
+                double f0 = orientation * (ex * (p[1] - a.Y) - ey * (p[0] - a.X)) / len;
+                double df = orientation * (ex * dy - ey * dx) / len;
+                if (Math.Abs(df) < 1e-15)
+                {
+                    if (f0 < eps)
+                        return false;
+                    continue;
+                }
+                double t = (eps - f0) / df;
+                if (df > 0)
+                    t0 = Math.Max(t0, t);
+                else
+                    t1 = Math.Min(t1, t);
+                if (t1 <= t0)
+                    return false;
+            }
+            return true;
         }
 
         /// <summary>Законцовка для показа в окне (красным): выемка — путь по форме, отдельный вырез — вся форма.</summary>
@@ -401,6 +482,29 @@ namespace InvAuto.Core.Bends
 
             public (double[] A, double[] B) Segment(int segment) =>
                 (_points[segment], _points[(segment + 1) % _points.Count]);
+
+            /// <summary>Участок контура ломаной: прямой — два конца, дуга (bulge) — точки через 5°.</summary>
+            public IReadOnlyList<double[]> SegmentPoints(int segment)
+            {
+                var (a, b) = Segment(segment);
+                if (IsStraight(segment))
+                    return new[] { a, b };
+                double theta = 4 * Math.Atan(_bulges[segment]); // угол дуги со знаком: > 0 — против часовой
+                double dx = b[0] - a[0], dy = b[1] - a[1], chord = Math.Sqrt(dx * dx + dy * dy);
+                if (chord < 1e-12)
+                    return new[] { a, b };
+                // Центр — на перпендикуляре к хорде (влево для дуги против часовой).
+                double offset = chord / 2 / Math.Tan(theta / 2);
+                double cx = (a[0] + b[0]) / 2 - dy / chord * offset, cy = (a[1] + b[1]) / 2 + dx / chord * offset;
+                double r = Math.Sqrt((a[0] - cx) * (a[0] - cx) + (a[1] - cy) * (a[1] - cy));
+                double a0 = Math.Atan2(a[1] - cy, a[0] - cx);
+                int steps = Math.Max(2, (int)Math.Ceiling(Math.Abs(theta) / (Math.PI / 36)));
+                var points = new List<double[]>(steps + 1) { a };
+                for (int k = 1; k < steps; k++)
+                    points.Add(new[] { cx + r * Math.Cos(a0 + theta * k / steps), cy + r * Math.Sin(a0 + theta * k / steps) });
+                points.Add(b);
+                return points;
+            }
 
             public static OuterShape FromLine(List<Pair> e) => new OuterShape(
                 new List<double[]> { new[] { Number(e, 10), Number(e, 20) }, new[] { Number(e, 11), Number(e, 21) } },

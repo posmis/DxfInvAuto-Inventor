@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using InvAuto.Core.Formatting;
 using InvAuto.Core.Bends;
 
 namespace InvAuto.Features.SheetMetal
@@ -81,11 +82,11 @@ namespace InvAuto.Features.SheetMetal
 
             IEnumerable<double> lengths = _sampleLines.Count > 0
                 ? _sampleLines
-                : new[] { BendOptionsEditor.Parse(SampleLengthBox.Text) is double l && l > 0 ? l : 200 };
+                : new[] { NumberText.Parse(SampleLengthBox.Text) is double l && l > 0 ? l : 200 };
             LayoutList.ItemsSource = lengths
                 .Select((length, i) => new
                 {
-                    Title = (_sampleLines.Count > 1 ? $"Линия {i + 1} · " : string.Empty) + BendOptionsEditor.Format(length) + " мм",
+                    Title = (_sampleLines.Count > 1 ? $"Линия {i + 1} · " : string.Empty) + NumberText.Format(length) + " мм",
                     Layout = BendLineStrategies.Layout(length, shown)
                 })
                 .ToList();

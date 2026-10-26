@@ -180,8 +180,7 @@ namespace InvAuto.Core.Materials
         /// <summary>Число с запятой или точкой: Excel пишет так, как настроено в Windows.</summary>
         private static double ParseNumber(string value, int line, string what)
         {
-            string v = value.Trim().Replace(" ", string.Empty).Replace(' '.ToString(), string.Empty).Replace(',', '.');
-            if (double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))
+            if (Formatting.NumberText.TryParse(value, out double result))
                 return result;
             throw new FormatException($"Строка {line}: {what} «{value.Trim()}» — не число");
         }

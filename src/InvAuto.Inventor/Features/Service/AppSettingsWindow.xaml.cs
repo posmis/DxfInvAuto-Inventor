@@ -329,8 +329,7 @@ namespace InvAuto.Features.Service
 
         private bool ReadNumber(TextBox box, double min, double max, string what, out double value)
         {
-            string text = box.Text.Trim().Replace(" ", string.Empty).Replace(',', '.');
-            if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && value >= min && value <= max)
+            if (InvAuto.Core.Formatting.NumberText.TryParse(box.Text, min, max, out value))
                 return true;
             NavList.SelectedIndex = 1;
             Warn($"{what} — число от {Num(min)} до {Num(max)}.");

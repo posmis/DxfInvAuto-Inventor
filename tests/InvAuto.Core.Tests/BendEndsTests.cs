@@ -223,6 +223,25 @@ namespace InvAuto.Core.Tests
         }
 
         [Fact]
+        public void EndTouchingTwoEdges_StaysSeparateHole()
+        {
+            // У левого конца линии гиба (0; 50) — узкий паз в контуре сверху до y = 51: окружность Ø4 задевает и край x = 0,
+            // и стенки паза. Выемка в одном ребре испортила бы контур — законцовка остаётся отдельным вырезом.
+            var pts = new[] { (0.0, 0.0), (200.0, 0.0), (200.0, 100.0), (1.5, 100.0), (1.5, 51.0), (1.0, 51.0), (1.0, 100.0), (0.0, 100.0) };
+            string poly = "  0\r\nLWPOLYLINE\r\n  5\r\n2A\r\n100\r\nAcDbEntity\r\n  8\r\nIV_OUTER_PROFILE\r\n100\r\nAcDbPolyline\r\n" +
+                          $" 90\r\n{pts.Length}\r\n 70\r\n1\r\n" +
+                          string.Concat(pts.Select(q => FormattableString.Invariant($" 10\r\n{q.Item1}\r\n 20\r\n{q.Item2}\r\n")));
+            var result = DxfBendProcessor.Process(Dxf(poly + ModernLine), DxfBendProcessor.DefaultLayers, Ends(BendEndShape.Circle, 4));
+            DxfValidator.AssertValid(result.Text);
+            var drawing = Read(result.Text);
+
+            var hole = Assert.Single(drawing.Polylines, p => p.Layer == "IV_INTERIOR_PROFILES");
+            Assert.Equal(0, hole.Points.Average(q => q.X), 1);                      // левый конец — отдельный вырез
+            Assert.Contains("\r\n 90\r\n10\r\n", result.Text);                  // правый — выемка: 8 вершин + 2
+            Assert.Single(FlatContours.Build(drawing), c => c.IsOuter);
+        }
+
+        [Fact]
         public void OverlappingNotches_SecondBecomesSeparateHole()
         {
             string second = ModernLine.Replace("2B", "2C").Replace(" 20\r\n50.0", " 20\r\n51.0").Replace(" 21\r\n50.0", " 21\r\n51.0");

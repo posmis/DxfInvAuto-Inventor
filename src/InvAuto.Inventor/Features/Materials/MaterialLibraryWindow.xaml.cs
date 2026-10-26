@@ -331,11 +331,8 @@ namespace InvAuto.Features.Materials
                 OnPropertyChanged(nameof(HasError));
             }
 
-            private static bool Parse(string text, double min, double max, out double value)
-            {
-                string v = (text ?? string.Empty).Trim().Replace(" ", string.Empty).Replace(' '.ToString(), string.Empty).Replace(',', '.');
-                return double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && value >= min && value <= max;
-            }
+            private static bool Parse(string text, double min, double max, out double value) =>
+                InvAuto.Core.Formatting.NumberText.TryParse(text, min, max, out value);
         }
     }
 }

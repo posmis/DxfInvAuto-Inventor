@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using InvAuto.Core.Formatting;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
@@ -170,7 +171,7 @@ namespace InvAuto.Features.SheetMetal
                     .Where(p => selected.Contains(p.Line.Key))
                     .Select(p => new
                     {
-                        Title = $"Линия {p.Line.Index} · {BendOptionsEditor.Format(p.Line.Length)} мм",
+                        Title = $"Линия {p.Line.Index} · {NumberText.Format(p.Line.Length)} мм",
                         p.Layout
                     })
                     .ToList();
@@ -208,7 +209,7 @@ namespace InvAuto.Features.SheetMetal
 
             public BendLineInfo Line { get; }
             public int Number => Line.Index;
-            public string Title => $"{(Line.IsDown ? "Вниз" : "Вверх")} · {BendOptionsEditor.Format(Line.Length)} мм";
+            public string Title => $"{(Line.IsDown ? "Вниз" : "Вверх")} · {NumberText.Format(Line.Length)} мм";
 
             public string Summary
             {

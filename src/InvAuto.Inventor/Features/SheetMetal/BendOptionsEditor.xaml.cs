@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using InvAuto.Core.Bends;
+using InvAuto.Core.Formatting;
 
 namespace InvAuto.Features.SheetMetal
 {
@@ -180,12 +181,8 @@ namespace InvAuto.Features.SheetMetal
             return fallback;
         }
 
-        internal static double? Parse(string text)
-        {
-            text = (text ?? string.Empty).Trim().Replace(',', '.');
-            return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : (double?)null;
-        }
+        internal static double? Parse(string text) => NumberText.Parse(text);
 
-        internal static string Format(double value) => value.ToString("0.##", CultureInfo.CurrentCulture);
+        internal static string Format(double value) => NumberText.Format(value);
     }
 }

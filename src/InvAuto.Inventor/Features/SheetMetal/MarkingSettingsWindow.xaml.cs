@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using InvAuto.Core.Formatting;
 using InvAuto.Core.Marking;
 using InvAuto.Core.Preview;
 
@@ -42,9 +43,9 @@ namespace InvAuto.Features.SheetMetal
 
             var o = initial ?? new MarkingOptions();
             EnabledBox.IsChecked = o.Enabled;
-            HeightBox.Text = BendOptionsEditor.Format(o.Height);
-            MinHeightBox.Text = BendOptionsEditor.Format(o.MinHeight);
-            MarginBox.Text = BendOptionsEditor.Format(o.Margin);
+            HeightBox.Text = NumberText.Format(o.Height);
+            MinHeightBox.Text = NumberText.Format(o.MinHeight);
+            MarginBox.Text = NumberText.Format(o.Margin);
             LayerBox.Text = o.Layer;
 
             _loading = false;
@@ -72,7 +73,7 @@ namespace InvAuto.Features.SheetMetal
                     error = "Наименьшая высота больше высоты текста.";
                 o.MinHeight = o.Height;
             }
-            double? margin = BendOptionsEditor.Parse(MarginBox.Text);
+            double? margin = NumberText.Parse(MarginBox.Text);
             if (margin >= 0)
                 o.Margin = margin.Value;
             else
@@ -88,7 +89,7 @@ namespace InvAuto.Features.SheetMetal
 
         private static double Positive(string text, double fallback, string name, bool check, ref string error)
         {
-            double? value = BendOptionsEditor.Parse(text);
+            double? value = NumberText.Parse(text);
             if (value > 0)
                 return value.Value;
             if (check && error.Length == 0)

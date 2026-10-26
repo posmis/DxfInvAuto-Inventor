@@ -112,6 +112,15 @@ namespace InvAuto.Core.Marking
         private readonly List<Contour> _holes;
         private readonly List<(Point2 A, Point2 B)> _segments = new List<(Point2, Point2)>();
 
+        // Сетка по габариту детали: в ячейке — номера отрезков, задевающих её. Проверка места смотрит только
+        // отрезки рядом с текстом — при тысячах отверстий перебор всех отрезков на каждое место слишком долог.
+        private const int GridSize = 64;
+        private List<int>[] _grid;
+        private List<int>[] _holeGrid;
+        private double _gridX, _gridY, _cell;
+        private int[] _seen;
+        private int _query;
+
         public MarkingArea(FlatDrawing drawing)
         {
             var contours = FlatContours.Build(drawing ?? FlatDrawing.Empty);
@@ -125,6 +134,44 @@ namespace InvAuto.Core.Marking
                 if (p.Closed && p.Points.Count > 2)
                     _segments.Add((p.Points[p.Points.Count - 1], p.Points[0]));
             }
+            BuildGrid();
+        }
+
+        private void BuildGrid()
+        {
+            if (_outer == null)
+                return;
+            _gridX = _outer.MinX;
+            _gridY = _outer.MinY;
+            _cell = Math.Max(Math.Max(_outer.MaxX - _outer.MinX, _outer.MaxY - _outer.MinY) / GridSize, 1e-6);
+            _grid = new List<int>[GridSize * GridSize];
+            _holeGrid = new List<int>[GridSize * GridSize];
+            _seen = new int[_segments.Count];
+            for (int h = 0; h < _holes.Count; h++)
+            {
+                Cells(_holes[h].MinX, _holes[h].MinY, _holes[h].MaxX, _holes[h].MaxY, out int i0, out int j0, out int i1, out int j1);
+                for (int x = i0; x <= i1; x++)
+                    for (int y = j0; y <= j1; y++)
+                        (_holeGrid[x * GridSize + y] ?? (_holeGrid[x * GridSize + y] = new List<int>())).Add(h);
+            }
+            for (int i = 0; i < _segments.Count; i++)
+            {
+                var (a, b) = _segments[i];
+                Cells(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Max(a.X, b.X), Math.Max(a.Y, b.Y), out int i0, out int j0, out int i1, out int j1);
+                for (int x = i0; x <= i1; x++)
+                    for (int y = j0; y <= j1; y++)
+                        (_grid[x * GridSize + y] ?? (_grid[x * GridSize + y] = new List<int>())).Add(i);
+            }
+        }
+
+        /// <summary>Ячейки, которые задевает прямоугольник (за пределами габарита — крайние).</summary>
+        private void Cells(double x0, double y0, double x1, double y1, out int i0, out int j0, out int i1, out int j1)
+        {
+            int Clamp(double v) => (int)Math.Max(0, Math.Min(GridSize - 1, Math.Floor(v)));
+            i0 = Clamp((x0 - _gridX) / _cell);
+            i1 = Clamp((x1 - _gridX) / _cell);
+            j0 = Clamp((y0 - _gridY) / _cell);
+            j1 = Clamp((y1 - _gridY) / _cell);
         }
 
         /// <summary>Есть наружный контур — можно маркировать.</summary>
@@ -134,7 +181,14 @@ namespace InvAuto.Core.Marking
         public Point2 Center => _outer == null ? new Point2(0, 0) : new Point2((_outer.MinX + _outer.MaxX) / 2, (_outer.MinY + _outer.MaxY) / 2);
 
         /// <summary>Точка на металле: внутри наружного контура и не в вырезе.</summary>
-        public bool OnMetal(Point2 p) => _outer != null && _outer.Contains(p) && !_holes.Any(h => h.Contains(p));
+        public bool OnMetal(Point2 p)
+        {
+            if (_outer == null || !_outer.Contains(p))
+                return false;
+            Cells(p.X, p.Y, p.X, p.Y, out int i, out int j, out _, out _);
+            var holes = _holeGrid[i * GridSize + j];
+            return holes == null || !holes.Any(h => _holes[h].Contains(p));
+        }
 
         /// <summary>Центр детали вырезан (попадает в отверстие).</summary>
         public bool CenterCut => _outer != null && _holes.Any(h => h.Contains(Center));
@@ -146,7 +200,7 @@ namespace InvAuto.Core.Marking
                 return false;
             var center = new Point2((text.MinX + text.MaxX) / 2, (text.MinY + text.MaxY) / 2);
             // Рамку не пересекает ни одна линия — значит, она целиком там же, где её центр.
-            return OnMetal(center) && Clear(text.MinX - margin, text.MinY - margin, text.MaxX + margin, text.MaxY + margin);
+            return Clear(text.MinX - margin, text.MinY - margin, text.MaxX + margin, text.MaxY + margin) && OnMetal(center);
         }
 
         /// <summary>Место для текста; null — не помещается.</summary>
@@ -188,12 +242,29 @@ namespace InvAuto.Core.Marking
         /// <summary>Ни один отрезок не задевает прямоугольник.</summary>
         private bool Clear(double x0, double y0, double x1, double y1)
         {
-            foreach (var (a, b) in _segments)
+            if (_grid == null)
+                return true;
+            _query++;
+            Cells(x0, y0, x1, y1, out int i0, out int j0, out int i1, out int j1);
+            for (int x = i0; x <= i1; x++)
             {
-                if (Math.Max(a.X, b.X) < x0 || Math.Min(a.X, b.X) > x1 || Math.Max(a.Y, b.Y) < y0 || Math.Min(a.Y, b.Y) > y1)
-                    continue;
-                if (Crosses(a, b, x0, y0, x1, y1))
-                    return false;
+                for (int y = j0; y <= j1; y++)
+                {
+                    var cell = _grid[x * GridSize + y];
+                    if (cell == null)
+                        continue;
+                    foreach (int i in cell)
+                    {
+                        if (_seen[i] == _query)
+                            continue; // отрезок в нескольких ячейках — проверяем один раз
+                        _seen[i] = _query;
+                        var (a, b) = _segments[i];
+                        if (Math.Max(a.X, b.X) < x0 || Math.Min(a.X, b.X) > x1 || Math.Max(a.Y, b.Y) < y0 || Math.Min(a.Y, b.Y) > y1)
+                            continue;
+                        if (Crosses(a, b, x0, y0, x1, y1))
+                            return false;
+                    }
+                }
             }
             return true;
         }

@@ -134,19 +134,23 @@ namespace InvAuto.Core.Preview
     {
         public const double JoinTolerance = 0.01;
 
-        /// <summary>Контуры резки (слои контура и отверстий). Самый большой замкнутый помечен как наружный.</summary>
-        public static IReadOnlyList<Contour> Build(FlatDrawing drawing)
+        /// <summary>
+        /// Контуры резки (слои контура и отверстий). Самый большой замкнутый помечен как наружный.
+        /// Считаются один раз на чертёж (FlatDrawing.Contours).
+        /// </summary>
+        public static IReadOnlyList<Contour> Build(FlatDrawing drawing) =>
+            drawing == null || drawing.IsEmpty ? Array.Empty<Contour>() : drawing.Contours;
+
+        internal static IReadOnlyList<Contour> Compute(IReadOnlyList<Polyline2> polylines)
         {
             var result = new List<Contour>();
-            if (drawing == null || drawing.IsEmpty)
-                return result;
-
-            var profile = drawing.Polylines.Where(p => p.Kind == LayerKind.Profile && p.Points.Count >= 2).ToList();
+            var profile = polylines.Where(p => p.Kind == LayerKind.Profile && p.Points.Count >= 2).ToList();
             foreach (var p in profile.Where(p => p.Closed))
                 result.Add(new Contour(p.Points.ToList(), true));
 
             var pieces = profile.Where(p => !p.Closed).Select(p => p.Points.ToList()).ToList();
             var used = new bool[pieces.Count];
+            var ends = new EndIndex(pieces);
             for (int i = 0; i < pieces.Count; i++)
             {
                 if (used[i])
@@ -154,31 +158,24 @@ namespace InvAuto.Core.Preview
                 used[i] = true;
                 var chain = new List<Point2>(pieces[i]);
 
-                bool extended = true;
-                while (extended && !Near(chain[0], chain[chain.Count - 1]))
+                while (!Near(chain[0], chain[chain.Count - 1]))
                 {
-                    extended = false;
-                    for (int j = 0; j < pieces.Count; j++)
-                    {
-                        if (used[j])
-                            continue;
-                        var piece = pieces[j];
-                        var end = chain[chain.Count - 1];
-                        var start = chain[0];
-                        if (Near(end, piece[0]))
-                            chain.AddRange(piece.Skip(1));
-                        else if (Near(end, piece[piece.Count - 1]))
-                            chain.AddRange(Enumerable.Reverse(piece).Skip(1));
-                        else if (Near(start, piece[piece.Count - 1]))
-                            chain.InsertRange(0, piece.Take(piece.Count - 1));
-                        else if (Near(start, piece[0]))
-                            chain.InsertRange(0, Enumerable.Reverse(piece).Take(piece.Count - 1));
-                        else
-                            continue;
-                        used[j] = true;
-                        extended = true;
+                    var end = chain[chain.Count - 1];
+                    var start = chain[0];
+                    // Первый по порядку файла неиспользованный кусок, который стыкуется с любым концом цепочки.
+                    int j = Math.Min(ends.FirstNear(end, used), ends.FirstNear(start, used));
+                    if (j == int.MaxValue)
                         break;
-                    }
+                    var piece = pieces[j];
+                    if (Near(end, piece[0]))
+                        chain.AddRange(piece.Skip(1));
+                    else if (Near(end, piece[piece.Count - 1]))
+                        chain.AddRange(Enumerable.Reverse(piece).Skip(1));
+                    else if (Near(start, piece[piece.Count - 1]))
+                        chain.InsertRange(0, piece.Take(piece.Count - 1));
+                    else
+                        chain.InsertRange(0, Enumerable.Reverse(piece).Take(piece.Count - 1));
+                    used[j] = true;
                 }
 
                 bool closed = chain.Count > 2 && Near(chain[0], chain[chain.Count - 1]);
@@ -191,6 +188,62 @@ namespace InvAuto.Core.Preview
             if (outer != null)
                 outer.IsOuter = true;
             return result;
+        }
+
+        /// <summary>
+        /// Концы кусков по ячейкам сетки со стороной JoinTolerance: совпадающий конец — в той же или соседней ячейке.
+        /// Сшивка без перебора всех кусков на каждом шаге (в развертке бывают тысячи отрезков и дуг).
+        /// </summary>
+        private sealed class EndIndex
+        {
+            private readonly List<List<Point2>> _pieces;
+            private readonly Dictionary<(long, long), List<int>> _cells = new Dictionary<(long, long), List<int>>();
+
+            public EndIndex(List<List<Point2>> pieces)
+            {
+                _pieces = pieces;
+                for (int j = 0; j < pieces.Count; j++)
+                {
+                    Add(pieces[j][0], j);
+                    Add(pieces[j][pieces[j].Count - 1], j);
+                }
+            }
+
+            private static (long, long) Cell(Point2 p) =>
+                ((long)Math.Floor(p.X / JoinTolerance), (long)Math.Floor(p.Y / JoinTolerance));
+
+            private void Add(Point2 p, int j)
+            {
+                var key = Cell(p);
+                if (!_cells.TryGetValue(key, out var list))
+                    _cells[key] = list = new List<int>(2);
+                if (list.Count == 0 || list[list.Count - 1] != j)
+                    list.Add(j);
+            }
+
+            /// <summary>Наименьший номер неиспользованного куска с концом рядом с p; int.MaxValue — нет такого.</summary>
+            public int FirstNear(Point2 p, bool[] used)
+            {
+                int best = int.MaxValue;
+                var (cx, cy) = Cell(p);
+                for (long x = cx - 1; x <= cx + 1; x++)
+                {
+                    for (long y = cy - 1; y <= cy + 1; y++)
+                    {
+                        if (!_cells.TryGetValue((x, y), out var list))
+                            continue;
+                        foreach (int j in list)
+                        {
+                            if (j >= best || used[j])
+                                continue;
+                            var piece = _pieces[j];
+                            if (Near(p, piece[0]) || Near(p, piece[piece.Count - 1]))
+                                best = j;
+                        }
+                    }
+                }
+                return best;
+            }
         }
 
         private static bool Near(Point2 a, Point2 b) => Math.Abs(a.X - b.X) <= JoinTolerance && Math.Abs(a.Y - b.Y) <= JoinTolerance;
