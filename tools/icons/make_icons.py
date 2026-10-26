@@ -397,6 +397,43 @@ def sort_icon(size):
 write('sort', 32, sort_icon(32))
 write('sort', 16, sort_icon(16))
 
+# ---------- панель инструментов просмотра развертки (только 16 px) ----------
+write('nav-prev', 16, [line([(10, 3), (5, 8), (10, 13)], INK, 1.6)])
+write('nav-next', 16, [line([(6, 3), (11, 8), (6, 13)], INK, 1.6)])
+
+def magnifier(sign):
+    body = [f'<circle cx="6.5" cy="6.5" r="4.5" fill="#FFFFFF" stroke="{INK}" stroke-width="1.3"/>',
+            line([(9.8, 9.8), (14, 14)], INK, 2)]
+    body.append(line([(4.5, 6.5), (8.5, 6.5)], BLUE, 1.3))
+    if sign == '+':
+        body.append(line([(6.5, 4.5), (6.5, 8.5)], BLUE, 1.3))
+    return body
+write('zoom-in', 16, magnifier('+'), snap=False)
+write('zoom-out', 16, magnifier('-'), snap=False)
+
+write('zoom-fit', 16, [
+    line([(2, 5), (2, 2), (5, 2)], INK, 1.2), line([(11, 2), (14, 2), (14, 5)], INK, 1.2),
+    line([(14, 11), (14, 14), (11, 14)], INK, 1.2), line([(5, 14), (2, 14), (2, 11)], INK, 1.2),
+    poly([(4.5, 5.5), (11.5, 5.5), (11.5, 10.5), (4.5, 10.5)], S_TOP, S_INK, 1)])
+
+def dimension(y=8):
+    return [line([(1.5, y - 4), (1.5, y + 4)], INK2, 1), line([(14.5, y - 4), (14.5, y + 4)], INK2, 1),
+            line([(4, y), (12, y)], BLUE, 1.2),
+            poly([(2, y), (5, y - 2.2), (5, y + 2.2)], BLUE, None), poly([(14, y), (11, y - 2.2), (11, y + 2.2)], BLUE, None)]
+write('measure-distance', 16, dimension())
+
+write('measure-angle', 16, [
+    line([(2, 13.5), (14.5, 13.5)], INK, 1.3), line([(2, 13.5), (11.5, 3)], INK, 1.3),
+    line(arc_points(2, 13.5, 8, math.radians(-48), 0, 4), BLUE, 1.3)])
+
+write('bend-numbers', 16, [
+    line([(1.5, 14.5), (14.5, 1.5)], BLUE, 1, ' stroke-dasharray="1.5 1"'),
+    f'<circle cx="8" cy="8" r="4.6" fill="#FFFFFF" stroke="{INK}" stroke-width="1"/>',
+    line([(7.2, 6.4), (8.3, 5.6), (8.3, 10.6)], INK, 1.1)], snap=False)
+
+write('measure-clear', 16, [line([(1.5, 2), (1.5, 8)], INK2, 1), line([(11.5, 2), (11.5, 8)], INK2, 1),
+                            line([(1.5, 5), (11.5, 5)], BLUE, 1.2)] + badge(11, 11, 3.8, 'x', 1.5))
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')

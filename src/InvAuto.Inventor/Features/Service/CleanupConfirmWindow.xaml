@@ -13,10 +13,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                <Setter Property="TextWrapping" Value="Wrap" />
-                <Setter Property="FontSize" Value="11" />
-            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -27,7 +23,7 @@
                 <Button DockPanel.Dock="Left" Style="{StaticResource DialogButton}" Margin="0" Click="OnCopy"
                         ToolTip="Скопировать список файлов в буфер обмена">Копировать список</Button>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="DeleteButton" Style="{StaticResource DialogButton}" MinWidth="140" IsEnabled="False" Click="OnDelete" />
+                    <Button x:Name="DeleteButton" Style="{StaticResource DangerButton}" MinWidth="140" IsEnabled="False" Click="OnDelete" />
                     <Button x:Name="CloseButton" Style="{StaticResource DialogButton}" IsCancel="True">Отмена</Button>
                 </StackPanel>
             </DockPanel>

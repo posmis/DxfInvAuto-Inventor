@@ -38,8 +38,14 @@ namespace InvAuto.Core.SheetMetal
         public bool ShowDetails { get; set; } = true;
         public double TreeWidth { get; set; } = 420;
         public double DetailsWidth { get; set; } = 300;
-        public double WindowWidth { get; set; } = 1400;
-        public double WindowHeight { get; set; } = 800;
+        public double WindowWidth { get; set; } = 1600;
+        public double WindowHeight { get; set; } = 860;
+
+        /// <summary>Версия раскладки окна: при её смене размеры по умолчанию обновляются у сохранённых настроек.</summary>
+        public int LayoutVersion { get; set; }
+
+        /// <summary>С версии 2 лента шире: окно меньше 1600 px растягивается до нового размера по умолчанию.</summary>
+        public const int CurrentLayoutVersion = 2;
         public bool Maximized { get; set; }
 
         /// <summary>Убирает повторы и подставляет колонки по умолчанию для новых и устаревших настроек.</summary>
@@ -49,6 +55,13 @@ namespace InvAuto.Core.SheetMetal
                 ResetColumns();
             else
                 Columns = Columns.Distinct(StringComparer.Ordinal).ToList();
+
+            if (LayoutVersion < CurrentLayoutVersion)
+            {
+                WindowWidth = Math.Max(WindowWidth, 1600);
+                WindowHeight = Math.Max(WindowHeight, 860);
+                LayoutVersion = CurrentLayoutVersion;
+            }
         }
 
         public void ResetColumns()

@@ -16,11 +16,6 @@
                 <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <Style x:Key="SectionTitle" TargetType="TextBlock">
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-                <Setter Property="Margin" Value="0,0,0,10" />
-            </Style>
 
             <!-- Строка списка линий: номер в кружке, направление и длина, применённые параметры -->
             <DataTemplate x:Key="LineTemplate">

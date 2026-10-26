@@ -19,18 +19,9 @@
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="Margin" Value="0,0,0,4" />
             </Style>
-            <Style x:Key="Section" TargetType="TextBlock">
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Margin" Value="0,16,0,6" />
-            </Style>
             <Style x:Key="Label" TargetType="TextBlock">
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Margin" Value="0,3,12,3" />
-            </Style>
-            <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                <Setter Property="TextWrapping" Value="Wrap" />
-                <Setter Property="FontSize" Value="11" />
-                <Setter Property="Margin" Value="0,3,0,0" />
             </Style>
             <Style x:Key="PathBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                 <Setter Property="IsReadOnly" Value="True" />
@@ -50,8 +41,9 @@
                 <Setter Property="Margin" Value="0,0,8,0" />
                 <Setter Property="Padding" Value="10,0" />
             </Style>
-            <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource ActionButton}">
-                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+            <Style x:Key="DangerAction" TargetType="Button" BasedOn="{StaticResource DangerButton}">
+                <Setter Property="Margin" Value="0,0,8,0" />
+                <Setter Property="Padding" Value="10,0" />
             </Style>
             <Style x:Key="NavItem" TargetType="ListBoxItem">
                 <Setter Property="Padding" Value="12,7" />
@@ -128,7 +120,7 @@
                         <TextBlock x:Name="CacheSizeText" Grid.Row="1" Grid.Column="1" Style="{StaticResource Label}" Text="подсчёт…" />
                     </Grid>
 
-                    <TextBlock Text="Автоматическая очистка" Style="{StaticResource Section}" />
+                    <TextBlock Text="Автоматическая очистка" Style="{StaticResource FormSection}" />
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Удалять развертки, не использовавшиеся дольше" VerticalAlignment="Center" />
                         <TextBox x:Name="CacheDaysBox" Style="{StaticResource DaysBox}" />
@@ -136,10 +128,10 @@
                     </StackPanel>
                     <TextBlock Style="{StaticResource Hint}" Text="Проверяется при каждом открытии окна «Листовые детали». От 1 до 3650 дней." />
 
-                    <TextBlock Text="Действия" Style="{StaticResource Section}" />
+                    <TextBlock Text="Действия" Style="{StaticResource FormSection}" />
                     <StackPanel Orientation="Horizontal">
                         <Button Style="{StaticResource ActionButton}" Click="OnOpenCacheFolder">Открыть папку</Button>
-                        <Button x:Name="ClearCacheButton" Style="{StaticResource DangerButton}" Click="OnClearCache">Очистить кэш…</Button>
+                        <Button x:Name="ClearCacheButton" Style="{StaticResource DangerAction}" Click="OnClearCache">Очистить кэш…</Button>
                     </StackPanel>
                     <TextBlock Style="{StaticResource Hint}">
                         Перед удалением будет показан полный список файлов. Удаляются только файлы *.dxf внутри папки кэша;
@@ -169,7 +161,7 @@
                         <TextBlock x:Name="LogSizeText" Grid.Row="1" Grid.Column="1" Style="{StaticResource Label}" Text="подсчёт…" />
                     </Grid>
 
-                    <TextBlock Text="Автоматическая очистка" Style="{StaticResource Section}" />
+                    <TextBlock Text="Автоматическая очистка" Style="{StaticResource FormSection}" />
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Удалять файлы журнала старше" VerticalAlignment="Center" />
                         <TextBox x:Name="LogDaysBox" Style="{StaticResource DaysBox}" />
@@ -177,11 +169,11 @@
                     </StackPanel>
                     <TextBlock Style="{StaticResource Hint}" Text="Проверяется при запуске Inventor. От 1 до 3650 дней." />
 
-                    <TextBlock Text="Действия" Style="{StaticResource Section}" />
+                    <TextBlock Text="Действия" Style="{StaticResource FormSection}" />
                     <StackPanel Orientation="Horizontal">
                         <Button Style="{StaticResource ActionButton}" Click="OnOpenLogFolder">Открыть папку</Button>
                         <Button Style="{StaticResource ActionButton}" Click="OnOpenCurrentLog">Открыть сегодняшний</Button>
-                        <Button Style="{StaticResource DangerButton}" Click="OnClearLog">Очистить журнал…</Button>
+                        <Button Style="{StaticResource DangerAction}" Click="OnClearLog">Очистить журнал…</Button>
                     </StackPanel>
                     <TextBlock Style="{StaticResource Hint}">
                         Удаляются только файлы *.log; сегодняшний файл, в который идёт запись, сохраняется.
@@ -204,7 +196,7 @@
                         </Grid.ColumnDefinitions>
                     </Grid>
 
-                    <TextBlock Text="Папка настроек" Style="{StaticResource Section}" />
+                    <TextBlock Text="Папка настроек" Style="{StaticResource FormSection}" />
                     <TextBox x:Name="SettingsFolderText" Style="{StaticResource PathBox}" />
                     <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                         <Button Style="{StaticResource ActionButton}" Click="OnOpenSettingsFolder">Открыть папку</Button>

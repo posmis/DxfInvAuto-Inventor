@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -9,13 +10,16 @@ namespace InvAuto.Features.SheetMetal
     /// <summary>Строка дерева состава. Дерево показывается плоским списком с отступами — так у него есть колонки.</summary>
     public sealed class TreeRow : ObservableObject, IFlatTreeItem<TreeRow>
     {
+        private readonly Func<string, bool> _isListed;
         private bool _isExpanded;
         private List<TreeRow> _children;
 
-        public TreeRow(AssemblyNode node, int level)
+        /// <param name="isListed">Есть ли деталь (по пути файла) в списке окна — для отметки в дереве.</param>
+        public TreeRow(AssemblyNode node, int level, Func<string, bool> isListed = null)
         {
             Node = node;
             Level = level;
+            _isListed = isListed;
         }
 
         public AssemblyNode Node { get; }
@@ -31,7 +35,32 @@ namespace InvAuto.Features.SheetMetal
         public bool IsStandard => Node.Kind == NodeKind.Standard;
         public Thickness Indent => new Thickness(Level * 16, 0, 0, 0);
 
-        public string ToolTip => $"{Node.Name}\n{Node.FullFileName}";
+        public string ToolTip => $"{Node.Name}\n{Node.FullFileName}" + (InList ? "\nВ списке деталей" : string.Empty);
+
+        /// <summary>
+        /// Листовая деталь уже в списке; для сборки — в списке все её листовые детали.
+        /// </summary>
+        public bool InList
+        {
+            get
+            {
+                if (_isListed == null)
+                    return false;
+                if (IsSheetMetal)
+                    return _isListed(Node.FullFileName);
+                if (!IsAssembly)
+                    return false;
+                var parts = Node.CollectSheetMetal();
+                return parts.Count > 0 && parts.All(p => _isListed(p.FullFileName));
+            }
+        }
+
+        /// <summary>Список деталей изменился — перечитать отметку.</summary>
+        public void RefreshListMark()
+        {
+            OnPropertyChanged(nameof(InList));
+            OnPropertyChanged(nameof(ToolTip));
+        }
 
         public bool IsExpanded
         {
@@ -40,6 +69,6 @@ namespace InvAuto.Features.SheetMetal
         }
 
         public IReadOnlyList<TreeRow> Children =>
-            _children ?? (_children = Node.Children.Select(c => new TreeRow(c, Level + 1)).ToList());
+            _children ?? (_children = Node.Children.Select(c => new TreeRow(c, Level + 1, _isListed)).ToList());
     }
 }

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="clr-namespace:InvAuto.Framework.Ui"
         Title="Листовые детали"
-        Width="1400" Height="800" MinWidth="960" MinHeight="520"
+        Width="1600" Height="860" MinWidth="960" MinHeight="520"
         Background="{DynamicResource WindowBrush}"
         FontFamily="Segoe UI" FontSize="12"
         TextOptions.TextFormattingMode="Display"
@@ -53,10 +53,15 @@
                     <ToggleButton Style="{StaticResource ExpanderToggle}" IsChecked="{Binding IsExpanded, Mode=OneWay}" Click="OnTreeToggle" />
                     <Image x:Name="Icon" Width="16" Height="16" Margin="3,0,6,0" Source="{StaticResource Icon.Part.Small}" />
                     <TextBlock x:Name="Title" Text="{Binding Title}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="ListedMark" Style="{StaticResource IconText}" Text="&#xE73E;" FontSize="11" Margin="6,1,0,0"
+                               Foreground="{StaticResource OkBrush}" Visibility="Collapsed" />
                 </StackPanel>
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding IsSheetMetal}" Value="True">
                         <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.SheetMetalPart.Small}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding InList}" Value="True">
+                        <Setter TargetName="ListedMark" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsStandard}" Value="True">
                         <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.StandardPart.Small}" />
@@ -130,6 +135,13 @@
                 </DataTemplate.Triggers>
             </DataTemplate>
 
+            <!-- Кнопки в заголовке панели — той же высоты, что поле поиска -->
+            <Style x:Key="HeaderToolButton" TargetType="ButtonBase" BasedOn="{StaticResource ToolButton}">
+                <Setter Property="Height" Value="24" />
+                <Setter Property="MinWidth" Value="24" />
+                <Setter Property="Padding" Value="2,0" />
+            </Style>
+
             <Style x:Key="RightAligned" TargetType="TextBlock">
                 <Setter Property="HorizontalAlignment" Value="Right" />
             </Style>
@@ -152,127 +164,105 @@
 
     <DockPanel>
 
-        <!-- ===================== Лента команд ===================== -->
+        <!-- ===================== Лента команд =====================
+             Группы слева направо — по ходу работы: собрать список, отметить, проверить развертки,
+             настроить линии гиба, выгрузить. Редкие команды — маленькими кнопками, чтобы лента
+             помещалась в окно. -->
         <Border DockPanel.Dock="Top" Style="{StaticResource RibbonBar}">
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,6,10">
-                    <Grid Width="240">
-                        <TextBox x:Name="SearchBox" Padding="24,3,4,3" TextChanged="OnSearchChanged" />
-                        <TextBlock Text="&#xE721;" Style="{StaticResource IconText}" HorizontalAlignment="Left" Margin="7,0,0,0"
-                                   Foreground="{StaticResource MutedTextBrush}" IsHitTestVisible="False" />
-                        <TextBlock Text="Поиск по деталям" Margin="25,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
-                </StackPanel>
+            <!-- На узком экране лента прокручивается, а не обрезается: ни одна команда не пропадает -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Focusable="False">
+            <StackPanel Orientation="Horizontal">
+                <HeaderedContentControl Header="Состав" Style="{StaticResource RibbonGroup}">
+                    <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Refresh}" Click="OnRefresh"
+                            ToolTip="Заново прочитать состав активной сборки. Список деталей сохраняется.">Обновить</Button>
+                </HeaderedContentControl>
 
-                <StackPanel Orientation="Horizontal">
-                    <HeaderedContentControl Header="Состав" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Refresh}" Click="OnRefresh"
-                                    ToolTip="Заново прочитать состав активной сборки">Обновить</Button>
-                            <StackPanel>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ExpandAll.Small}" Click="OnExpandAll">Развернуть всё</Button>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CollapseAll.Small}" Click="OnCollapseAll">Свернуть всё</Button>
-                            </StackPanel>
+                <HeaderedContentControl Header="Список" Style="{StaticResource RibbonGroup}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ListAdd}" Click="OnAddSelected"
+                                ToolTip="Добавить в список листовые детали выделенных узлов дерева&#x0a;(также двойной щелчок, Enter или Insert в дереве)">Добавить</Button>
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ListAddAll}" Click="OnAddAll"
+                                ToolTip="Добавить в список все листовые детали изделия (Ctrl+Shift+A)">Добавить все</Button>
+                        <StackPanel Margin="2,0,0,0">
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ListRemove.Small}" Click="OnRemoveSelected"
+                                    ToolTip="Убрать выделенные строки из списка (Delete)">Удалить</Button>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ListClear.Small}" Click="OnClearList"
+                                    ToolTip="Убрать из списка все детали">Очистить</Button>
                         </StackPanel>
-                    </HeaderedContentControl>
+                    </StackPanel>
+                </HeaderedContentControl>
 
-                    <HeaderedContentControl Header="Список" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ListAdd}" Click="OnAddSelected"
-                                    ToolTip="Добавить в список листовые детали выделенных узлов дерева (Enter или Insert в дереве, двойной щелчок)">Добавить</Button>
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ListAddAll}" Click="OnAddAll"
-                                    ToolTip="Добавить в список все листовые детали изделия (Ctrl+Shift+A)">Добавить все</Button>
-                            <StackPanel Margin="2,0,0,0">
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ListRemove.Small}" Click="OnRemoveSelected"
-                                        ToolTip="Убрать выделенные строки из списка (Delete)">Удалить</Button>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ListClear.Small}" Click="OnClearList"
-                                        ToolTip="Убрать из списка все детали">Очистить</Button>
-                            </StackPanel>
-                        </StackPanel>
-                    </HeaderedContentControl>
+                <HeaderedContentControl Header="Отметка" Style="{StaticResource RibbonGroup}">
+                    <StackPanel>
+                        <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckAll.Small}" Click="OnCheckAll">Отметить все</Button>
+                        <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckNone.Small}" Click="OnCheckNone">Снять все</Button>
+                        <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckSelected.Small}" Click="OnCheckSelected"
+                                ToolTip="Отметить только выделенные строки (выделение — Ctrl/Shift + щелчок)">Только выделенные</Button>
+                    </StackPanel>
+                </HeaderedContentControl>
 
-                    <HeaderedContentControl Header="Развертки" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
+                <HeaderedContentControl Header="Развертки" Style="{StaticResource RibbonGroup}">
+                    <StackPanel Orientation="Horizontal">
                         <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.FlatView}" Click="OnOpenViewer"
                                 ToolTip="Просмотр развертки выделенной детали: масштаб колесом мыши, перемещение мышью.&#x0a;Также — двойной щелчок по строке.">Просмотр</Button>
                         <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.FlatPattern}" Click="OnGenerateFlats"
                                 ToolTip="Сформировать развертки отмеченных деталей для просмотра перед выгрузкой.&#x0a;DXF создаётся тем же способом, что и при выгрузке, и хранится во временной папке.">Сформировать развертки</Button>
-                        </StackPanel>
-                    </HeaderedContentControl>
+                    </StackPanel>
+                </HeaderedContentControl>
 
-                    <HeaderedContentControl Header="Линии гиба" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLines}" Click="OnBendSelected"
-                                    ToolTip="Свои параметры линий гиба для выделенных деталей (все линии детали)">Для выделенных</Button>
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLinesEach}" Click="OnBendLines"
-                                    ToolTip="Настроить линии гиба выделенной детали по отдельности">По линиям</Button>
-                            <StackPanel Margin="2,0,0,0">
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings.Small}" Click="OnBendDefaults"
-                                        ToolTip="Параметры линий гиба для всех деталей без своих настроек">По умолчанию</Button>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh.Small}" Click="OnBendReset"
-                                        ToolTip="Вернуть выделенным деталям общие параметры (и для всей детали, и для отдельных линий)">Сбросить к общим</Button>
+                <HeaderedContentControl Header="Линии гиба" Style="{StaticResource RibbonGroup}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLines}" Click="OnBendSelected"
+                                ToolTip="Свои параметры линий гиба для выделенных деталей (все линии детали)">Для выделенных</Button>
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLinesEach}" Click="OnBendLines"
+                                ToolTip="Настроить линии гиба выделенной детали по отдельности">По линиям</Button>
+                        <StackPanel Margin="2,0,0,0">
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings.Small}" Click="OnBendDefaults"
+                                    ToolTip="Параметры линий гиба для всех деталей без своих настроек">По умолчанию</Button>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh.Small}" Click="OnBendReset"
+                                    ToolTip="Вернуть выделенным деталям общие параметры (и для всей детали, и для отдельных линий)">Сбросить к общим</Button>
+                        </StackPanel>
+                    </StackPanel>
+                </HeaderedContentControl>
+
+                <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource RibbonPrimaryButton}" Tag="{StaticResource Icon.Export}" Click="OnExportChecked"
+                                ToolTip="Выгрузить детали списка, отмеченные галочкой">Выгрузить отмеченные</Button>
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ExportAll}" Click="OnExportAll"
+                                ToolTip="Выгрузить все листовые детали изделия, независимо от выбора">Выгрузить всё</Button>
+                        <StackPanel Margin="2,0,0,0">
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.OpenFolder.Small}" Click="OnOpenFolder">Открыть папку</Button>
+                            <StackPanel Orientation="Horizontal" Margin="6,3,4,0" ToolTip="Количество каждой детали умножается на это число">
+                                <TextBlock Text="Изделий:" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBox x:Name="ProductQuantityBox" Width="46" Text="1" HorizontalContentAlignment="Right"
+                                         LostFocus="OnProductQuantityChanged" KeyDown="OnProductQuantityKeyDown" />
                             </StackPanel>
                         </StackPanel>
-                    </HeaderedContentControl>
+                    </StackPanel>
+                </HeaderedContentControl>
 
-                    <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource RibbonPrimaryButton}" Tag="{StaticResource Icon.Export}" Click="OnExportChecked"
-                                    ToolTip="Выгрузить детали списка, отмеченные галочкой">Выгрузить отмеченные</Button>
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ExportAll}" Click="OnExportAll"
-                                    ToolTip="Выгрузить все листовые детали изделия, независимо от выбора">Выгрузить всё</Button>
-                            <StackPanel Margin="2,0,0,0">
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.OpenFolder.Small}" Click="OnOpenFolder">Открыть папку</Button>
-                                <StackPanel Orientation="Horizontal" Margin="6,3,4,0" ToolTip="Количество каждой детали умножается на это число">
-                                    <TextBlock Text="Изделий:" VerticalAlignment="Center" Margin="0,0,6,0" />
-                                    <TextBox x:Name="ProductQuantityBox" Width="46" Text="1" HorizontalContentAlignment="Right"
-                                             LostFocus="OnProductQuantityChanged" KeyDown="OnProductQuantityKeyDown" />
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </HeaderedContentControl>
+                <HeaderedContentControl Header="Вид" Style="{StaticResource RibbonGroup}">
+                    <StackPanel>
+                        <Button x:Name="ColumnsButton" Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Columns.Small}"
+                                Click="OnColumns" ToolTip="Выбор колонок списка деталей">Колонки</Button>
+                        <Button x:Name="SortButton" Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Sort.Small}" Click="OnSortMenu"
+                                ToolTip="Порядок деталей в списке: по колонке, по возрастанию или убыванию.&#x0a;Также — щелчок по заголовку колонки, повторный щелчок меняет направление.">Сортировка</Button>
+                        <ToggleButton x:Name="DetailsToggle" Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Details.Small}"
+                                      Click="OnToggleDetails" ToolTip="Панель свойств выбранной детали">Свойства</ToggleButton>
+                    </StackPanel>
+                </HeaderedContentControl>
 
-                    <HeaderedContentControl Header="Отметка" Style="{StaticResource RibbonGroup}">
-                        <StackPanel>
-                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckAll.Small}" Click="OnCheckAll">Отметить все</Button>
-                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckNone.Small}" Click="OnCheckNone">Снять все</Button>
-                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckSelected.Small}" Click="OnCheckSelected"
-                                    ToolTip="Отметить только выделенные строки (выделение — Ctrl/Shift + щелчок)">Только выделенные</Button>
-                        </StackPanel>
-                    </HeaderedContentControl>
-
-                    <HeaderedContentControl Header="Вид" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button x:Name="ColumnsButton" Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Columns}" Click="OnColumns"
-                                    ToolTip="Выбор колонок списка деталей">Колонки</Button>
-                            <Button x:Name="SortButton" Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Sort}" Click="OnSortMenu"
-                                    ToolTip="Порядок деталей в списке: по колонке, по возрастанию или убыванию.&#x0a;Также — щелчок по заголовку колонки, повторный щелчок меняет направление.">Сортировка</Button>
-                            <ToggleButton x:Name="DetailsToggle" Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Details}"
-                                          Click="OnToggleDetails" ToolTip="Панель свойств выбранной детали">Свойства</ToggleButton>
-                        </StackPanel>
-                    </HeaderedContentControl>
-
-                    <HeaderedContentControl Header="Настройки" Style="{StaticResource RibbonGroup}">
-                        <StackPanel Orientation="Horizontal">
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Settings}" Click="OnSettings"
-                                    ToolTip="Папка, имена файлов, способ выгрузки DXF">Параметры выгрузки</Button>
-                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.DataFolder}" Click="OnAppSettings"
-                                    ToolTip="Кэш разверток, журнал, сброс настроек">Настройки приложения</Button>
-                        </StackPanel>
-                    </HeaderedContentControl>
-                </StackPanel>
-            </DockPanel>
+                <HeaderedContentControl Header="Настройки" Style="{StaticResource RibbonGroup}">
+                    <StackPanel>
+                        <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings.Small}" Click="OnSettings"
+                                ToolTip="Папка, имена файлов, способ выгрузки DXF">Параметры выгрузки</Button>
+                        <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.DataFolder.Small}" Click="OnAppSettings"
+                                ToolTip="Кэш разверток, журнал, сброс настроек">Настройки приложения</Button>
+                    </StackPanel>
+                </HeaderedContentControl>
+            </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- ===================== Строка состояния ===================== -->
@@ -299,9 +289,15 @@
             <DockPanel Grid.Column="0">
                 <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
                     <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource MutedText}" VerticalAlignment="Center"
-                                   Text="двойной щелчок — в список" />
-                        <TextBlock Text="Состав изделия" Style="{StaticResource PanelTitle}" />
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource HeaderToolButton}" Tag="{StaticResource Icon.ExpandAll.Small}" Click="OnExpandAll"
+                                    ToolTip="Развернуть всё" />
+                            <Button Style="{StaticResource HeaderToolButton}" Tag="{StaticResource Icon.CollapseAll.Small}" Click="OnCollapseAll"
+                                    ToolTip="Свернуть всё" />
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Text="двойной щелчок — в список" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="Состав изделия" Style="{StaticResource PanelTitle}" Margin="0,0,8,0" />
                     </DockPanel>
                 </Border>
                 <DataGrid x:Name="TreeGrid" IsReadOnly="True" SelectionMode="Extended" CanUserSortColumns="False"
@@ -333,6 +329,24 @@
             <DockPanel Grid.Column="2">
                 <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
                     <DockPanel>
+                        <Grid DockPanel.Dock="Right" Width="220" Margin="12,0,0,0">
+                            <TextBox x:Name="SearchBox" Height="24" Padding="22,1,4,1" TextChanged="OnSearchChanged"
+                                     ToolTip="Фильтр списка: имя файла, обозначение, наименование, материал, свойства" />
+                            <TextBlock Text="&#xE721;" Style="{StaticResource IconText}" FontSize="11" HorizontalAlignment="Left" Margin="7,0,0,0"
+                                       Foreground="{StaticResource MutedTextBrush}" IsHitTestVisible="False" />
+                            <TextBlock Text="Поиск в списке" Margin="24,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
                         <TextBlock x:Name="CounterText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" VerticalAlignment="Center" />
                         <TextBlock x:Name="PartsTitle" Text="Список деталей" Style="{StaticResource PanelTitle}" TextTrimming="CharacterEllipsis" />
                     </DockPanel>

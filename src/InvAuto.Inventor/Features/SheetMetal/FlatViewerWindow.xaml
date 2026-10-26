@@ -16,35 +16,7 @@
                 <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <Style x:Key="ToolButton" TargetType="ButtonBase">
-                <Setter Property="MinWidth" Value="32" />
-                <Setter Property="Height" Value="26" />
-                <Setter Property="Margin" Value="2,0" />
-                <Setter Property="Padding" Value="8,0" />
-                <Setter Property="Focusable" Value="False" />
-            </Style>
             <SolidColorBrush x:Key="MeasureBrush" Color="#D9480F" />
-            <Style x:Key="LinkButton" TargetType="Button">
-                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
-                <Setter Property="Cursor" Value="Hand" />
-                <Setter Property="Focusable" Value="False" />
-                <Setter Property="Padding" Value="4,0" />
-                <Setter Property="VerticalAlignment" Value="Top" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                                <ContentPresenter />
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
             <Style x:Key="PropertyName" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
                 <Setter Property="Margin" Value="0,2,10,2" />
                 <Setter Property="VerticalAlignment" Value="Top" />
@@ -61,22 +33,28 @@
         <Border DockPanel.Dock="Top" Style="{StaticResource RibbonBar}" Padding="8,6">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                    <Button x:Name="PrevButton" Style="{StaticResource ToolButton}" Click="OnPrev" ToolTip="Предыдущая деталь (PageUp)">‹</Button>
-                    <Button x:Name="NextButton" Style="{StaticResource ToolButton}" Click="OnNext" ToolTip="Следующая деталь (PageDown)">›</Button>
-                    <Border Width="1" Margin="8,3" Background="{StaticResource BorderBrush}" />
-                    <ToggleButton x:Name="DistanceTool" Style="{StaticResource ToolButton}" Click="OnDistanceTool"
-                                  ToolTip="Расстояние между двумя точками (D). Привязки: конец, середина, центр, точка на линии; Ctrl — без привязки">Расстояние</ToggleButton>
-                    <ToggleButton x:Name="AngleTool" Style="{StaticResource ToolButton}" Click="OnAngleTool"
-                                  ToolTip="Угол между двумя отрезками (A). Щёлкайте по тем частям отрезков, между которыми нужен угол">Угол</ToggleButton>
-                    <Button x:Name="ClearMeasuresButton" Style="{StaticResource ToolButton}" Click="OnClearMeasures" IsEnabled="False"
-                            ToolTip="Удалить все измерения">Очистить</Button>
+                    <Button x:Name="PrevButton" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.NavPrev.Small}" Click="OnPrev"
+                            ToolTip="Предыдущая деталь (PageUp)" />
+                    <Button x:Name="NextButton" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.NavNext.Small}" Click="OnNext"
+                            ToolTip="Следующая деталь (PageDown)" />
+                    <Border Style="{StaticResource ToolSeparator}" />
+                    <ToggleButton x:Name="DistanceTool" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.MeasureDistance.Small}"
+                                  Click="OnDistanceTool"
+                                  ToolTip="Расстояние между двумя точками (D).&#x0a;Привязки: конец, середина, центр, точка на линии; Ctrl — без привязки.">Расстояние</ToggleButton>
+                    <ToggleButton x:Name="AngleTool" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.MeasureAngle.Small}"
+                                  Click="OnAngleTool"
+                                  ToolTip="Угол между двумя отрезками (A).&#x0a;Щёлкайте по тем частям отрезков, между которыми нужен угол.">Угол</ToggleButton>
+                    <Button x:Name="ClearMeasuresButton" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.MeasureClear.Small}"
+                            Click="OnClearMeasures" IsEnabled="False" ToolTip="Удалить все измерения">Очистить</Button>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <ToggleButton x:Name="NumbersToggle" Style="{StaticResource ToolButton}" IsChecked="True" Click="OnNumbersToggle"
-                                  ToolTip="Номера линий гиба на развертке">Номера линий</ToggleButton>
-                    <Button Style="{StaticResource ToolButton}" Click="OnZoomOut" ToolTip="Уменьшить (−)">−</Button>
-                    <Button Style="{StaticResource ToolButton}" Click="OnZoomIn" ToolTip="Увеличить (+)">+</Button>
-                    <Button Style="{StaticResource ToolButton}" Click="OnFit" ToolTip="Показать развертку целиком (Home, двойной щелчок)">Вписать</Button>
+                    <ToggleButton x:Name="NumbersToggle" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.BendNumbers.Small}"
+                                  IsChecked="True" Click="OnNumbersToggle" ToolTip="Номера линий гиба на развертке">Номера линий</ToggleButton>
+                    <Border Style="{StaticResource ToolSeparator}" />
+                    <Button Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.ZoomOut.Small}" Click="OnZoomOut" ToolTip="Уменьшить (−)" />
+                    <Button Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.ZoomIn.Small}" Click="OnZoomIn" ToolTip="Увеличить (+)" />
+                    <Button Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.ZoomFit.Small}" Click="OnFit"
+                            ToolTip="Показать развертку целиком (Home, двойной щелчок)">Вписать</Button>
                 </StackPanel>
                 <TextBlock x:Name="PartTitle" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="12,0"
                            TextTrimming="CharacterEllipsis" />

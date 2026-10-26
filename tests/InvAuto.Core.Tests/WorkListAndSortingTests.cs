@@ -81,6 +81,24 @@ namespace InvAuto.Core.Tests
         }
 
         [Fact]
+        public void ViewSettings_OldWindowSizeGrowsOnce_ForWiderRibbon()
+        {
+            var old = new SheetMetalViewSettings { WindowWidth = 1400, WindowHeight = 800, LayoutVersion = 0 };
+            old.Normalize();
+            Assert.Equal(1600, old.WindowWidth);
+            Assert.Equal(860, old.WindowHeight);
+
+            // Пользователь потом сам сделал окно уже — больше не трогаем.
+            old.WindowWidth = 1450;
+            old.Normalize();
+            Assert.Equal(1450, old.WindowWidth);
+
+            var big = new SheetMetalViewSettings { WindowWidth = 1900, LayoutVersion = 0 };
+            big.Normalize();
+            Assert.Equal(1900, big.WindowWidth);
+        }
+
+        [Fact]
         public void ViewSettings_SortSurvivesSave()
         {
             string dir = Path.Combine(Path.GetTempPath(), "InvAutoSort_" + System.Guid.NewGuid().ToString("N"));

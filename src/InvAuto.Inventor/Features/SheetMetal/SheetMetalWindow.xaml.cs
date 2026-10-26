@@ -135,7 +135,7 @@ namespace InvAuto.Features.SheetMetal
             _productParts = structure.Root.CollectSheetMetal()
                 .ToDictionary(p => p.FullFileName, StringComparer.OrdinalIgnoreCase);
 
-            _tree.Load(new TreeRow(structure.Root, 0), expandLevels: 1);
+            _tree.Load(new TreeRow(structure.Root, 0, _list.Contains), expandLevels: 1);
             TreeGrid.SelectedItem = _tree.Root;
 
             // После обновления состава в списке остаются только детали, которые ещё есть в изделии.
@@ -291,6 +291,8 @@ namespace InvAuto.Features.SheetMetal
 
         private void ListChanged()
         {
+            foreach (var node in _tree.Rows)
+                node.RefreshListMark();
             PartsTitle.Text = "Список деталей";
             EmptyText.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             UpdateCounter();
@@ -472,9 +474,17 @@ namespace InvAuto.Features.SheetMetal
 
             _checkColumn = new DataGridTemplateColumn
             {
-                Header = "",
+                // Значок вместо пустого заголовка: видно, что это колонка отметки, и по ней можно сортировать.
+                Header = new TextBlock
+                {
+                    Text = "\uE73E",
+                    FontFamily = (FontFamily)FindResource("IconFont"),
+                    FontSize = 11,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    ToolTip = "Отметка для выгрузки (пробел — отметить выделенные строки)"
+                },
                 CellTemplate = (DataTemplate)FindResource("CheckCell"),
-                Width = 32,
+                Width = 42,
                 CanUserReorder = false,
                 CanUserResize = false,
                 SortMemberPath = nameof(PartRow.IsChecked)
@@ -1522,8 +1532,10 @@ namespace InvAuto.Features.SheetMetal
 
         private void ApplyViewSettings()
         {
-            Width = Math.Max(MinWidth, _viewSettings.WindowWidth);
-            Height = Math.Max(MinHeight, _viewSettings.WindowHeight);
+            // Не больше рабочей области экрана: на ноутбуке окно не должно уходить за край.
+            var area = SystemParameters.WorkArea;
+            Width = Math.Max(MinWidth, Math.Min(area.Width, _viewSettings.WindowWidth));
+            Height = Math.Max(MinHeight, Math.Min(area.Height, _viewSettings.WindowHeight));
             if (_viewSettings.Maximized)
                 WindowState = WindowState.Maximized;
             TreeColumn.Width = new GridLength(Math.Max(220, _viewSettings.TreeWidth));

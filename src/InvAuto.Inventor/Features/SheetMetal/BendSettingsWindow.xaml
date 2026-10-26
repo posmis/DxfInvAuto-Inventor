@@ -21,11 +21,6 @@
                 <Setter Property="HorizontalContentAlignment" Value="Right" />
                 <Setter Property="HorizontalAlignment" Value="Left" />
             </Style>
-            <Style x:Key="SectionTitle" TargetType="TextBlock">
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-                <Setter Property="Margin" Value="0,0,0,10" />
-            </Style>
         </ResourceDictionary>
     </Window.Resources>
 

@@ -14,19 +14,9 @@
                 <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <Style x:Key="Section" TargetType="TextBlock">
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Margin" Value="0,14,0,6" />
-                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            </Style>
             <Style x:Key="Label" TargetType="TextBlock">
                 <Setter Property="VerticalAlignment" Value="Center" />
                 <Setter Property="Margin" Value="0,0,12,0" />
-            </Style>
-            <Style x:Key="Hint" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                <Setter Property="TextWrapping" Value="Wrap" />
-                <Setter Property="Margin" Value="0,3,0,0" />
-                <Setter Property="FontSize" Value="11" />
             </Style>
             <Style TargetType="CheckBox">
                 <Setter Property="Margin" Value="0,3" />
@@ -48,7 +38,7 @@
         <StackPanel Margin="16,4,16,14">
 
             <!-- Файлы -->
-            <TextBlock Text="Файлы" Style="{StaticResource Section}" />
+            <TextBlock Text="Файлы" Style="{StaticResource FormSection}" />
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120" />
@@ -93,7 +83,7 @@
             </Grid>
 
             <!-- Способ выгрузки -->
-            <TextBlock Text="Способ выгрузки DXF" Style="{StaticResource Section}" />
+            <TextBlock Text="Способ выгрузки DXF" Style="{StaticResource FormSection}" />
             <RadioButton x:Name="IniMethod" GroupName="Method" Checked="OnMethodChanged">
                 По ini-файлу через транслятор DXF Inventor (рекомендуется)
             </RadioButton>
@@ -150,7 +140,7 @@
             </Grid>
 
             <!-- Прочее -->
-            <TextBlock Text="Дополнительно" Style="{StaticResource Section}" />
+            <TextBlock Text="Дополнительно" Style="{StaticResource FormSection}" />
             <CheckBox x:Name="CreateFlatBox">Создавать развертку, если её нет (деталь потребует сохранения)</CheckBox>
             <CheckBox x:Name="OverwriteBox">Перезаписывать существующие файлы</CheckBox>
             <CheckBox x:Name="CsvBox">Создавать CSV-отчёт</CheckBox>

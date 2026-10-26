@@ -158,7 +158,7 @@ namespace InvAuto.Features.Service
                 var button = new Button
                 {
                     Content = "Сбросить…",
-                    Style = (Style)FindResource("DangerButton"),
+                    Style = (Style)FindResource("DangerAction"),
                     IsEnabled = changed,
                     VerticalAlignment = VerticalAlignment.Center,
                     Tag = item
