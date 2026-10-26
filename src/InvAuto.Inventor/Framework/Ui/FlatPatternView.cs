@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using InvAuto.Core.Preview;
 
@@ -28,7 +29,136 @@ namespace InvAuto.Framework.Ui
     {
         public static readonly DependencyProperty DrawingProperty = DependencyProperty.Register(
             nameof(Drawing), typeof(FlatDrawing), typeof(FlatPatternView),
-            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender, OnDrawingChanged));
+
+        /// <summary>
+        /// Интерактивный режим (окно просмотра): колесо — масштаб вокруг курсора, левая/средняя кнопка —
+        /// перемещение, двойной щелчок — вписать целиком.
+        /// </summary>
+        public static readonly DependencyProperty InteractiveProperty = DependencyProperty.Register(
+            nameof(Interactive), typeof(bool), typeof(FlatPatternView), new PropertyMetadata(false));
+
+        public bool Interactive
+        {
+            get => (bool)GetValue(InteractiveProperty);
+            set => SetValue(InteractiveProperty, value);
+        }
+
+        private readonly Viewport _viewport = new Viewport();
+        private Point? _dragFrom;
+
+        /// <summary>Масштаб или положение изменились (для подписи масштаба в окне).</summary>
+        public event EventHandler ViewChanged;
+
+        /// <summary>Курсор над чертежом: координаты в мм (null — курсор ушёл).</summary>
+        public event EventHandler<Point2?> CursorMoved;
+
+        /// <summary>Масштаб относительно «вписать целиком».</summary>
+        public double Zoom => _viewport.Zoom;
+
+        /// <summary>Пикселей на миллиметр.</summary>
+        public double PixelsPerMm => _viewport.Scale;
+
+        /// <summary>Чертёж целиком в окне.</summary>
+        public void Fit()
+        {
+            _viewport.Fit();
+            Changed();
+        }
+
+        /// <summary>Масштаб вокруг центра окна (кнопки «+» и «−»).</summary>
+        public void ZoomBy(double factor)
+        {
+            _viewport.SetViewSize(ActualWidth, ActualHeight);
+            _viewport.ZoomAt(ActualWidth / 2, ActualHeight / 2, factor);
+            Changed();
+        }
+
+        private void Changed()
+        {
+            InvalidateVisual();
+            ViewChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private static void OnDrawingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var view = (FlatPatternView)d;
+            if (e.NewValue is FlatDrawing drawing && !drawing.IsEmpty)
+            {
+                // Тот же чертёж после обработки линий гиба — оставляем текущий масштаб и положение.
+                bool sameBounds = e.OldValue is FlatDrawing old && !old.IsEmpty &&
+                                  Math.Abs(old.MinX - drawing.MinX) < 1e-6 && Math.Abs(old.MaxX - drawing.MaxX) < 1e-6 &&
+                                  Math.Abs(old.MinY - drawing.MinY) < 1e-6 && Math.Abs(old.MaxY - drawing.MaxY) < 1e-6;
+                if (!sameBounds || !view.Interactive)
+                    view._viewport.SetBounds(drawing.MinX, drawing.MinY, drawing.MaxX, drawing.MaxY);
+            }
+            view.ViewChanged?.Invoke(view, EventArgs.Empty);
+        }
+
+        #region Мышь
+
+        protected override void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            if (!Interactive || Drawing == null)
+                return;
+            var p = e.GetPosition(this);
+            _viewport.SetViewSize(ActualWidth, ActualHeight);
+            _viewport.ZoomAt(p.X, p.Y, Math.Pow(1.0015, e.Delta)); // один щелчок колеса (120) — около ×1,2
+            Changed();
+            e.Handled = true;
+        }
+
+        protected override void OnMouseDown(MouseButtonEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (!Interactive || (e.ChangedButton != MouseButton.Left && e.ChangedButton != MouseButton.Middle))
+                return;
+            if (e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
+            {
+                Fit();
+                e.Handled = true;
+                return;
+            }
+            _dragFrom = e.GetPosition(this);
+            CaptureMouse();
+            Cursor = Cursors.SizeAll;
+            e.Handled = true;
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (!Interactive)
+                return;
+            var p = e.GetPosition(this);
+            if (_dragFrom is Point from)
+            {
+                _viewport.Pan(p.X - from.X, p.Y - from.Y);
+                _dragFrom = p;
+                Changed();
+            }
+            CursorMoved?.Invoke(this, Drawing == null ? (Point2?)null : _viewport.ToModel(p.X, p.Y));
+        }
+
+        protected override void OnMouseUp(MouseButtonEventArgs e)
+        {
+            base.OnMouseUp(e);
+            if (_dragFrom == null)
+                return;
+            _dragFrom = null;
+            ReleaseMouseCapture();
+            Cursor = null;
+        }
+
+        protected override void OnMouseLeave(MouseEventArgs e)
+        {
+            base.OnMouseLeave(e);
+            if (Interactive && _dragFrom == null)
+                CursorMoved?.Invoke(this, null);
+        }
+
+        #endregion
 
         public static readonly DependencyProperty ProfileBrushProperty = DependencyProperty.Register(
             nameof(ProfileBrush), typeof(Brush), typeof(FlatPatternView),
@@ -91,6 +221,7 @@ namespace InvAuto.Framework.Ui
         public FlatPatternView()
         {
             SnapsToDevicePixels = true;
+            ClipToBounds = true; // при увеличении чертёж не вылезает за свою область
         }
 
         protected override void OnRender(DrawingContext dc)
@@ -102,17 +233,13 @@ namespace InvAuto.Framework.Ui
             if (drawing == null || drawing.IsEmpty || ActualWidth < 4 || ActualHeight < 4)
                 return;
 
-            const double padding = 3;
-            double width = Math.Max(drawing.Width, 1e-9);
-            double height = Math.Max(drawing.Height, 1e-9);
-            double scale = Math.Min((ActualWidth - 2 * padding) / width, (ActualHeight - 2 * padding) / height);
-            double offsetX = (ActualWidth - drawing.Width * scale) / 2;
-            double offsetY = (ActualHeight - drawing.Height * scale) / 2;
-
-            // В DXF ось Y направлена вверх, на экране — вниз.
-            Point Map(Point2 p) => new Point(
-                offsetX + (p.X - drawing.MinX) * scale,
-                offsetY + (drawing.MaxY - p.Y) * scale);
+            // Пересчёт мм → пиксели (ось Y в DXF вверх, на экране — вниз). Без интерактива — всегда «вписать».
+            _viewport.SetViewSize(ActualWidth, ActualHeight);
+            Point Map(Point2 p)
+            {
+                var screen = _viewport.ToScreen(p);
+                return new Point(screen.X, screen.Y);
+            }
 
             var highlights = Highlights;
             if (highlights != null && highlights.Count > 0)

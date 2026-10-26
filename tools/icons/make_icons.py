@@ -332,6 +332,20 @@ def bend_each(size):
 write('bend-lines-each', 32, bend_each(32))
 write('bend-lines-each', 16, bend_each(16))
 
+# ---------- просмотр развертки: развертка и лупа ----------
+def flat_view(size):
+    if size == 32:
+        body = net(0.5, 0.82, 1, '2 1.5')
+        cx, cy, r, w, handle = 20.5, 20.5, 5.5, 2, (25, 25, 29.5, 29.5)
+    else:
+        body = net(0.5, 0.4, 1, '1.5 1')
+        cx, cy, r, w, handle = 10, 10, 2.8, 1.4, (12.1, 12.1, 14, 14)
+    body.append(f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}" fill="#FFFFFF" fill-opacity="0.85" stroke="{INK}" stroke-width="{f(w)}"/>')
+    body.append(line([(handle[0], handle[1]), (handle[2], handle[3])], INK, w + 0.6))
+    return body
+write('flat-view', 32, flat_view(32), snap=False)
+write('flat-view', 16, flat_view(16), snap=False)
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')

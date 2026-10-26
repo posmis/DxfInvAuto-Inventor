@@ -771,6 +771,57 @@ namespace InvAuto.Features.SheetMetal
                 : $"Свои линии гиба ({dialog.Result.Summary}) для деталей: {rows.Count}");
         }
 
+        #region Просмотр развертки
+
+        private void OnOpenViewer(object sender, RoutedEventArgs e) => OpenViewer(PartsGrid.SelectedItem as PartRow);
+
+        private void OnPartsDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Только по строке: двойной щелчок по заголовку колонки — это подгонка ширины, а не просмотр.
+            var element = e.OriginalSource as DependencyObject;
+            while (element != null && !(element is DataGridRow) && !(element is System.Windows.Controls.Primitives.DataGridColumnHeader))
+                element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+            if (element is DataGridRow row && row.Item is PartRow part)
+            {
+                OpenViewer(part);
+                e.Handled = true;
+            }
+        }
+
+        private void OnDetailsFlatClick(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2 && Details.DataContext is PartRow row)
+                OpenViewer(row);
+        }
+
+        /// <summary>Окно просмотра: листает детали текущего списка (с учётом поиска), начиная с выбранной.</summary>
+        private void OpenViewer(PartRow start)
+        {
+            if (_busy)
+                return;
+            var rows = VisibleRows.ToList();
+            if (rows.Count == 0)
+            {
+                SetStatus("В списке нет деталей для просмотра");
+                return;
+            }
+            int index = start == null ? 0 : Math.Max(0, rows.IndexOf(start));
+
+            var viewer = new FlatViewerWindow(rows, index, async row =>
+            {
+                // Быстро листают, пока формируется предыдущая развертка, — дожидаемся её.
+                while (_busy)
+                    await Task.Delay(100);
+                if (row.FlatPreviewState == FlatPreviewState.Ready)
+                    return true;
+                await GenerateFlatsAsync(new List<PartRow> { row }, force: false);
+                return row.FlatPreviewState == FlatPreviewState.Ready;
+            }) { Owner = this };
+            viewer.ShowDialog();
+        }
+
+        #endregion
+
         /// <summary>Индивидуальная настройка линий гиба выделенной детали.</summary>
         private async void OnBendLines(object sender, RoutedEventArgs e)
         {

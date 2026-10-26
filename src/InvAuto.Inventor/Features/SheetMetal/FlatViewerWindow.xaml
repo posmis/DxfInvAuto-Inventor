@@ -1,0 +1,114 @@
+<Window x:Class="InvAuto.Features.SheetMetal.FlatViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:InvAuto.Framework.Ui"
+        Title="Просмотр развертки"
+        Width="1200" Height="780" MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBrush}"
+        FontFamily="Segoe UI" FontSize="12"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True"
+        PreviewKeyDown="OnKeyDown">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="ToolButton" TargetType="ButtonBase">
+                <Setter Property="MinWidth" Value="32" />
+                <Setter Property="Height" Value="26" />
+                <Setter Property="Margin" Value="2,0" />
+                <Setter Property="Padding" Value="8,0" />
+                <Setter Property="Focusable" Value="False" />
+            </Style>
+            <Style x:Key="PropertyName" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                <Setter Property="Margin" Value="0,2,10,2" />
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+            <Style x:Key="PropertyValue" TargetType="TextBlock">
+                <Setter Property="Margin" Value="0,2" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <DockPanel>
+        <!-- Панель инструментов -->
+        <Border DockPanel.Dock="Top" Style="{StaticResource RibbonBar}" Padding="8,6">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Button x:Name="PrevButton" Style="{StaticResource ToolButton}" Click="OnPrev" ToolTip="Предыдущая деталь (PageUp)">‹</Button>
+                    <Button x:Name="NextButton" Style="{StaticResource ToolButton}" Click="OnNext" ToolTip="Следующая деталь (PageDown)">›</Button>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <ToggleButton x:Name="NumbersToggle" Style="{StaticResource ToolButton}" IsChecked="True" Click="OnNumbersToggle"
+                                  ToolTip="Номера линий гиба на развертке">Номера линий</ToggleButton>
+                    <Button Style="{StaticResource ToolButton}" Click="OnZoomOut" ToolTip="Уменьшить (−)">−</Button>
+                    <Button Style="{StaticResource ToolButton}" Click="OnZoomIn" ToolTip="Увеличить (+)">+</Button>
+                    <Button Style="{StaticResource ToolButton}" Click="OnFit" ToolTip="Показать развертку целиком (Home, двойной щелчок)">Вписать</Button>
+                </StackPanel>
+                <TextBlock x:Name="PartTitle" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" Margin="12,0"
+                           TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- Строка состояния -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource StatusBar}">
+            <DockPanel>
+                <TextBlock x:Name="PositionText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" Margin="16,0,0,0" MinWidth="110" />
+                <TextBlock x:Name="CursorText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" Margin="16,0,0,0" MinWidth="170" />
+                <TextBlock x:Name="ZoomText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" MinWidth="110" />
+                <TextBlock Style="{StaticResource MutedText}"
+                           Text="Колесо мыши — масштаб · левая или средняя кнопка — перемещение · двойной щелчок — вписать" />
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="300" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Развертка -->
+            <Grid Background="{StaticResource WindowBrush}">
+                <ui:FlatPatternView x:Name="View" Interactive="True" Cursor="Cross" Margin="0"
+                                    ProfileBrush="{StaticResource FlatProfileBrush}"
+                                    BendBrush="{StaticResource FlatBendBrush}"
+                                    AuxiliaryBrush="{StaticResource FlatAuxBrush}"
+                                    ViewChanged="OnViewChanged" CursorMoved="OnCursorMoved" />
+                <TextBlock x:Name="EmptyText" Style="{StaticResource MutedText}" FontSize="13"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+            </Grid>
+
+            <Border Grid.Column="1" Width="1" Background="{StaticResource BorderBrush}" />
+
+            <!-- Свойства -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="14,12">
+                    <TextBlock Text="Деталь" Style="{StaticResource PanelTitle}" Margin="0,0,0,8" />
+                    <Grid x:Name="PropertiesGrid">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                    <TextBlock Text="Линии гиба" Style="{StaticResource PanelTitle}" Margin="0,16,0,8" />
+                    <TextBlock x:Name="NoBendsText" Style="{StaticResource MutedText}" Text="Линий гиба нет" Visibility="Collapsed" />
+                    <ItemsControl x:Name="BendList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource MutedText}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </DockPanel>
+</Window>

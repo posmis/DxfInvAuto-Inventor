@@ -187,8 +187,12 @@
                     </HeaderedContentControl>
 
                     <HeaderedContentControl Header="Развертки" Style="{StaticResource RibbonGroup}">
+                        <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.FlatView}" Click="OnOpenViewer"
+                                ToolTip="Просмотр развертки выделенной детали: масштаб колесом мыши, перемещение мышью.&#x0a;Также — двойной щелчок по строке.">Просмотр</Button>
                         <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.FlatPattern}" Click="OnGenerateFlats"
                                 ToolTip="Сформировать развертки отмеченных деталей для просмотра перед выгрузкой.&#x0a;DXF создаётся тем же способом, что и при выгрузке, и хранится во временной папке.">Сформировать развертки</Button>
+                        </StackPanel>
                     </HeaderedContentControl>
 
                     <HeaderedContentControl Header="Линии гиба" Style="{StaticResource RibbonGroup}">
@@ -300,13 +304,14 @@
                 <Grid>
                     <DataGrid x:Name="PartsGrid" IsReadOnly="True" SelectionMode="Extended" RowHeight="56"
                               SelectionChanged="OnPartSelectionChanged" PreviewKeyDown="OnPartsKeyDown"
-                              ColumnReordered="OnColumnReordered">
+                              ColumnReordered="OnColumnReordered" MouseDoubleClick="OnPartsDoubleClick">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Отметить выделенные" Click="OnCheckSelectedRows" />
                                 <MenuItem Header="Снять отметку с выделенных" Click="OnUncheckSelectedRows" />
                                 <Separator />
                                 <MenuItem Header="Показать файл детали в проводнике" Click="OnRevealPart" />
+                                <MenuItem Header="Просмотр развертки" Click="OnOpenViewer" FontWeight="SemiBold" />
                                 <MenuItem Header="Сформировать развертку заново" Click="OnRegenerateSelected" />
                                 <MenuItem Header="Линии гиба по отдельности…" Click="OnBendLines" />
                                 <Separator />
@@ -334,7 +339,8 @@
                         <StackPanel x:Name="DetailsContent" Visibility="Collapsed">
                             <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8" />
 
-                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Height="200" Background="{StaticResource WindowBrush}">
+                            <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Height="200" Background="{StaticResource WindowBrush}"
+                                    MouseLeftButtonDown="OnDetailsFlatClick" Cursor="Hand" ToolTip="Двойной щелчок — просмотр развертки">
                                 <Grid>
                                     <ui:FlatPatternView Drawing="{Binding Flat}" Margin="10"
                                                         ProfileBrush="{StaticResource FlatProfileBrush}"
