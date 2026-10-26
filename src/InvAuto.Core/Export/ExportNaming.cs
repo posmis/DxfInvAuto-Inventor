@@ -33,5 +33,17 @@ namespace InvAuto.Core.Export
             thicknessMm.ToString("0.0#", CultureInfo.InvariantCulture) + "мм";
 
         public static string NoSpaces(string name) => SpaceRun.Replace(name, "-");
+
+        /// <summary>
+        /// Путь к DXF, ещё не занятый в этой выгрузке: разные детали могут дать одно имя по шаблону —
+        /// тогда добавляется «_2», «_3»… Сравнение без учёта регистра, как в Windows.
+        /// </summary>
+        public static string UniquePath(string folder, string name, ISet<string> usedPaths)
+        {
+            string path = Path.Combine(folder, name + ".dxf");
+            for (int i = 2; !usedPaths.Add(path); i++)
+                path = Path.Combine(folder, $"{name}_{i}.dxf");
+            return path;
+        }
     }
 }

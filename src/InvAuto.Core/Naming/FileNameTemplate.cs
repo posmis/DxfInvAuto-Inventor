@@ -47,20 +47,37 @@ namespace InvAuto.Core.Naming
             return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
-        /// <summary>Заменяет недопустимые для имени файла символы на "_".</summary>
+        // Правила Windows независимо от ОС, на которой выполняется код (тесты идут и на Linux).
+        private static readonly HashSet<char> InvalidChars =
+            new HashSet<char>("<>:\"/\\|?*".Concat(Enumerable.Range(0, 32).Select(c => (char)c)));
+
+        private static readonly HashSet<string> ReservedNames = new HashSet<string>(
+            new[] { "CON", "PRN", "AUX", "NUL" }
+                .Concat(Enumerable.Range(1, 9).Select(i => "COM" + i))
+                .Concat(Enumerable.Range(1, 9).Select(i => "LPT" + i)),
+            StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Безопасное имя файла для Windows: недопустимые символы → "_", без пробелов и точек в конце,
+        /// зарезервированные имена (CON, NUL, COM1…) получают "_" в начале.
+        /// </summary>
         public static string SanitizeFileName(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return "_";
 
-            var invalid = new HashSet<char>(Path.GetInvalidFileNameChars());
             var sb = new StringBuilder(name.Length);
             foreach (char c in name)
-                sb.Append(invalid.Contains(c) ? '_' : c);
+                sb.Append(InvalidChars.Contains(c) ? '_' : c);
 
             // Windows не любит пробелы и точки в конце имени.
-            string result = sb.ToString().Trim().TrimEnd('.');
-            return result.Length == 0 ? "_" : result;
+            string result = sb.ToString().Trim().TrimEnd('.').TrimEnd();
+            if (result.Length == 0)
+                return "_";
+
+            int dot = result.IndexOf('.');
+            string stem = dot < 0 ? result : result.Substring(0, dot);
+            return ReservedNames.Contains(stem) ? "_" + result : result;
         }
 
         /// <summary>

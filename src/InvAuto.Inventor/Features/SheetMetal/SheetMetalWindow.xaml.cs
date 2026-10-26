@@ -16,6 +16,8 @@ using System.Windows.Threading;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
 using InvAuto.Core.Preview;
+using InvAuto.Core.SheetMetal;
+using InvAuto.Core.Structure;
 using InvAuto.Framework;
 using InvAuto.InventorApi;
 
@@ -37,7 +39,7 @@ namespace InvAuto.Features.SheetMetal
         private readonly SheetMetalViewSettings _viewSettings;
         private readonly BendSettings _bendSettings;
 
-        private readonly TreeModel _tree = new TreeModel();
+        private readonly FlatTree<TreeRow> _tree = new FlatTree<TreeRow>();
         private readonly ObservableCollection<PartRow> _rows = new ObservableCollection<PartRow>();
         private readonly ICollectionView _rowsView;
         private readonly Dictionary<DataGridColumn, string> _columnIds = new Dictionary<DataGridColumn, string>();
@@ -81,6 +83,11 @@ namespace InvAuto.Features.SheetMetal
             CleanupFlatCache();
             LoadStructure(structure);
             Closing += OnWindowClosing;
+
+            // Необработанное исключение в обработчике окна ушло бы в диспетчер Inventor и могло уронить его.
+            // Пока окно открыто, перехватываем, пишем в лог и показываем сообщение.
+            Dispatcher.UnhandledException += OnDispatcherUnhandledException;
+            Closed += (s, e) => Dispatcher.UnhandledException -= OnDispatcherUnhandledException;
         }
 
         private string AssemblyName => string.IsNullOrEmpty(_document.FullFileName)
@@ -113,7 +120,7 @@ namespace InvAuto.Features.SheetMetal
                 .GroupBy(n => n.FullFileName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First().SheetMetal, StringComparer.OrdinalIgnoreCase);
 
-            _tree.Load(structure.Root, expandLevels: 1);
+            _tree.Load(new TreeRow(structure.Root, 0), expandLevels: 1);
             TreeGrid.SelectedItem = _tree.Root;
             if (_currentNode != _tree.Root)
                 ShowNode(_tree.Root);
@@ -1061,7 +1068,8 @@ namespace InvAuto.Features.SheetMetal
         private void SetBusy(bool busy, int steps)
         {
             _busy = busy;
-            _cancelRequested = false;
+            if (busy)
+                _cancelRequested = false; // сбрасываем в начале операции, чтобы итог мог сообщить «остановлено»
             CancelButton.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
             Mouse.OverrideCursor = busy ? Cursors.Wait : null;
             Body.IsEnabled = !busy;
@@ -1115,6 +1123,15 @@ namespace InvAuto.Features.SheetMetal
             if (_viewSettings.ShowDetails)
                 _viewSettings.DetailsWidth = DetailsColumn.ActualWidth;
             SaveViewSettings();
+        }
+
+        private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        {
+            e.Handled = true;
+            _context.Log.Error("Необработанная ошибка в окне «Листовые детали»", e.Exception);
+            if (_busy)
+                SetBusy(false, 0);
+            ShowError("Произошла ошибка: " + e.Exception.Message + "\n\nПодробности в логе: %APPDATA%\\InvAuto\\logs");
         }
 
         private void SetStatus(string text) => StatusText.Text = text;

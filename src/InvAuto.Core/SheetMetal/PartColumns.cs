@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace InvAuto.Features.SheetMetal
+namespace InvAuto.Core.SheetMetal
 {
     /// <summary>Каталог колонок списка листовых деталей. Id сохраняются в настройках — не переименовывать.</summary>
     public static class PartColumns

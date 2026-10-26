@@ -26,7 +26,9 @@ namespace InvAuto
         {
             string dataFolder = System.IO.Path.Combine(
                 System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "InvAuto");
-            _log = new FileLogger(System.IO.Path.Combine(dataFolder, "logs"));
+            var logger = new FileLogger(System.IO.Path.Combine(dataFolder, "logs"));
+            logger.Cleanup(TimeSpan.FromDays(60));
+            _log = logger;
 
             try
             {

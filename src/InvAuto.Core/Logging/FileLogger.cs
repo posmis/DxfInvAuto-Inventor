@@ -15,6 +15,38 @@ namespace InvAuto.Core.Logging
             _folder = folder;
         }
 
+        /// <summary>Удаляет логи старше maxAge. Возвращает количество удалённых файлов; ошибки игнорируются.</summary>
+        public int Cleanup(TimeSpan maxAge)
+        {
+            int removed = 0;
+            try
+            {
+                if (!Directory.Exists(_folder))
+                    return 0;
+                DateTime limit = DateTime.Now - maxAge;
+                foreach (string file in Directory.GetFiles(_folder, "*.log"))
+                {
+                    try
+                    {
+                        if (File.GetLastWriteTime(file) < limit)
+                        {
+                            File.Delete(file);
+                            removed++;
+                        }
+                    }
+                    catch
+                    {
+                        // Файл занят — удалим в следующий раз.
+                    }
+                }
+            }
+            catch
+            {
+                // Лог не должен ронять Inventor.
+            }
+            return removed;
+        }
+
         public string CurrentLogFile => Path.Combine(_folder, DateTime.Now.ToString("yyyy-MM-dd") + ".log");
 
         public void Info(string message) => Write("INFO", message, null);

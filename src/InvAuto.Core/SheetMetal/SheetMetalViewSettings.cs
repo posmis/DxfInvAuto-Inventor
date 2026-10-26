@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace InvAuto.Features.SheetMetal
+namespace InvAuto.Core.SheetMetal
 {
     /// <summary>Настройки окна листовых деталей: колонки, размеры панелей. Сохраняются между запусками.</summary>
     public sealed class SheetMetalViewSettings

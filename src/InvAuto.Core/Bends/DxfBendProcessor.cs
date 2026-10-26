@@ -248,7 +248,10 @@ namespace InvAuto.Core.Bends
 
         private static string Format(double value) => value.ToString("0.0#########", CultureInfo.InvariantCulture);
 
-        /// <summary>Выдаёт новые handle выше всех существующих и обновляет $HANDSEED.</summary>
+        /// <summary>
+        /// Выдаёт новые handle: выше всех существующих и не ниже исходного $HANDSEED
+        /// (seed никогда не уменьшается — иначе AutoCAD может выдать уже занятый номер).
+        /// </summary>
         private sealed class HandleAllocator
         {
             private ulong _next;
@@ -256,14 +259,27 @@ namespace InvAuto.Core.Bends
             public HandleAllocator(List<Pair> pairs)
             {
                 ulong max = 0;
-                foreach (var p in pairs)
+                for (int k = 0; k < pairs.Count; k++)
                 {
-                    if ((p.Code == 5 || p.Code == 105) &&
-                        ulong.TryParse(p.Value.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong h))
+                    var p = pairs[k];
+                    bool isSeed = k > 0 && pairs[k - 1].Code == 9 && pairs[k - 1].Value.Trim() == "$HANDSEED";
+                    if (!isSeed && (p.Code == 5 || p.Code == 105) && TryHex(p.Value, out ulong h))
                         max = Math.Max(max, h);
                 }
-                _next = max + 1;
+                // Новые номера — с исходного seed (AutoCAD выдал бы их так же), но всегда выше занятых.
+                _next = Math.Max(max + 1, Seed(pairs));
             }
+
+            private static ulong Seed(List<Pair> pairs)
+            {
+                for (int k = 0; k + 1 < pairs.Count; k++)
+                    if (pairs[k].Code == 9 && pairs[k].Value.Trim() == "$HANDSEED" && TryHex(pairs[k + 1].Value, out ulong seed))
+                        return seed;
+                return 0;
+            }
+
+            private static bool TryHex(string value, out ulong result) =>
+                ulong.TryParse(value.Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out result);
 
             public string Next() => (_next++).ToString("X", CultureInfo.InvariantCulture);
 
