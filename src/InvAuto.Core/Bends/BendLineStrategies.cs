@@ -130,7 +130,31 @@ namespace InvAuto.Core.Bends
         public BendLineMode Mode => BendLineMode.Dashed;
         public string Title => "Прерывистая линия";
 
-        public BendLineLayout Layout(double length, BendLineOptions o)
+        public BendLineLayout Layout(double length, BendLineOptions o) =>
+            o.Spec == DashSpec.Count ? ByCount(length, o) : ByStep(length, o);
+
+        /// <summary>
+        /// Задано количество и длина прорези — перемычки делят остаток поровну. Одна прорезь ставится по центру.
+        /// </summary>
+        private static BendLineLayout ByCount(double length, BendLineOptions o)
+        {
+            int count = o.DashCount;
+            double cut = o.DashLength;
+            if (count < 1 || cut <= 0 || length <= 0)
+                return BendLineLayout.Whole(length, "не заданы количество или длина — оставлена целиком");
+
+            bool cutEnds = o.Ends == DashEnds.Cut && count > 1;
+            int gaps = cutEnds ? count - 1 : count + 1;
+            double bridge = (length - count * cut) / gaps;
+            if (bridge <= 0.01)
+            {
+                return BendLineLayout.Whole(length,
+                    $"{count} × {BendLineStrategies.Mm(cut)} мм не помещаются в {BendLineStrategies.Mm(length)} мм — оставлена целиком");
+            }
+            return Build(length, count, cut, bridge, cutEnds);
+        }
+
+        private static BendLineLayout ByStep(double length, BendLineOptions o)
         {
             double cut = o.DashLength, bridge = o.BridgeLength;
             if (cut <= 0 || bridge <= 0 || length <= 0)
@@ -197,7 +221,7 @@ namespace InvAuto.Core.Bends
 
     /// <summary>
     /// Прямоугольные вырезы: участки по всей длине или с перемычками (раскладка прерывистой линии),
-    /// каждый участок вырезается прямоугольником шириной 2 × смещение, по центру линии гиба.
+    /// каждый участок вырезается прямоугольником заданной ширины, линия гиба — по его середине.
     /// </summary>
     internal sealed class RectSlotsStrategy : IBendLineStrategy
     {
@@ -210,11 +234,11 @@ namespace InvAuto.Core.Bends
                 ? BendLineLayout.Whole(length, "один вырез во всю длину")
                 : new DashedStrategy().Layout(length, o);
 
-            if (o.SlotOffset <= 0)
-                return new BendLineLayout(length, layout.Segments, layout.Description + " (смещение 0 — отрезками)");
+            if (o.SlotWidth <= 0)
+                return new BendLineLayout(length, layout.Segments, layout.Description + " (ширина 0 — отрезками)");
 
-            string width = BendLineStrategies.Mm(2 * o.SlotOffset);
-            return new BendLineLayout(length, layout.Segments, $"{layout.Description}; вырезы шириной {width} мм", o.SlotOffset);
+            string width = BendLineStrategies.Mm(o.SlotWidth);
+            return new BendLineLayout(length, layout.Segments, $"{layout.Description}; ширина {width} мм", o.SlotWidth / 2);
         }
     }
 }

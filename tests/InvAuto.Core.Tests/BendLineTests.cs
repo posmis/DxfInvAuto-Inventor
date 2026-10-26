@@ -89,6 +89,42 @@ namespace InvAuto.Core.Tests
         }
 
         [Fact]
+        public void ByCount_CutEnds_BridgesShareTheRest()
+        {
+            var o = new BendLineOptions { Mode = BendLineMode.Dashed, Spec = DashSpec.Count, DashCount = 5, DashLength = 20 };
+            var layout = BendLineStrategies.Layout(200, o);
+
+            Assert.Equal(5, layout.Segments.Count);
+            Assert.All(layout.Segments, s => Assert.Equal(20, s.Length, 9));
+            Assert.Equal(25, layout.Segments[1].Start - layout.Segments[0].End, 9); // (200 − 100) / 4
+            AssertSymmetricAndExact(layout);
+        }
+
+        [Fact]
+        public void ByCount_BridgeEnds_AndSingleCutIsCentered()
+        {
+            var o = new BendLineOptions { Mode = BendLineMode.Dashed, Spec = DashSpec.Count, DashCount = 3, DashLength = 20, Ends = DashEnds.Bridge };
+            var layout = BendLineStrategies.Layout(200, o);
+            Assert.Equal(35, layout.Segments[0].Start, 9); // (200 − 60) / 4
+            AssertSymmetricAndExact(layout);
+
+            o.DashCount = 1;
+            o.Ends = DashEnds.Cut;
+            var single = BendLineStrategies.Layout(200, o).Segments.Single();
+            Assert.Equal(90, single.Start, 9);
+            Assert.Equal(110, single.End, 9);
+        }
+
+        [Fact]
+        public void ByCount_DoesNotFit_KeepsWholeLine()
+        {
+            var o = new BendLineOptions { Mode = BendLineMode.Dashed, Spec = DashSpec.Count, DashCount = 6, DashLength = 40 };
+            var layout = BendLineStrategies.Layout(200, o);
+            Assert.Single(layout.Segments);
+            Assert.Contains("не помещаются", layout.Description);
+        }
+
+        [Fact]
         public void EdgeCuts_TwoCutsAtEnds()
         {
             var options = new BendLineOptions { Mode = BendLineMode.EdgeCuts, EdgeCutLength = 5 };
@@ -201,7 +237,7 @@ namespace InvAuto.Core.Tests
 
         private static BendLineOptions Slots(SlotPattern pattern) => new BendLineOptions
         {
-            Mode = BendLineMode.RectSlots, SlotOffset = 1, SlotPattern = pattern, DashLength = 20, BridgeLength = 10
+            Mode = BendLineMode.RectSlots, SlotWidth = 2, SlotPattern = pattern, DashLength = 20, BridgeLength = 10
         };
 
         [Fact]
@@ -250,7 +286,7 @@ namespace InvAuto.Core.Tests
         {
             var layout = BendLineStrategies.Layout(200, Slots(SlotPattern.Dashed));
             Assert.Equal(1, layout.SlotHalfWidth);
-            Assert.Contains("шириной 2 мм", layout.Description);
+            Assert.Contains("ширина 2 мм", layout.Description);
         }
     }
 

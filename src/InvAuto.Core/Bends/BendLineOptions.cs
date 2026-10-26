@@ -17,7 +17,7 @@ namespace InvAuto.Core.Bends
         /// <summary>Прерывистая линия: прорези и перемычки, симметрично по длине.</summary>
         Dashed,
 
-        /// <summary>Прямоугольные вырезы вдоль линии гиба: ширина — смещение в каждую сторону от линии.</summary>
+        /// <summary>Прямоугольные вырезы вдоль линии гиба заданной ширины; линия гиба — по середине выреза.</summary>
         RectSlots
     }
 
@@ -39,6 +39,16 @@ namespace InvAuto.Core.Bends
 
         /// <summary>У краёв перемычка.</summary>
         Bridge
+    }
+
+    /// <summary>Как задаётся прерывистая раскладка.</summary>
+    public enum DashSpec
+    {
+        /// <summary>Желаемые прорезь и перемычка; количество подбирается, размеры подгоняются (DashFit).</summary>
+        Step,
+
+        /// <summary>Длина прорези и количество; перемычки рассчитываются.</summary>
+        Count
     }
 
     /// <summary>Что подгонять, чтобы шаблон ровно уложился в длину линии.</summary>
@@ -68,14 +78,19 @@ namespace InvAuto.Core.Bends
         /// <summary>Dashed: желаемая длина прорези.</summary>
         public double DashLength { get; set; } = 20;
 
-        /// <summary>Dashed: желаемая длина перемычки.</summary>
+        /// <summary>Dashed: желаемая длина перемычки (при задании по шагу).</summary>
         public double BridgeLength { get; set; } = 10;
+
+        public DashSpec Spec { get; set; } = DashSpec.Step;
+
+        /// <summary>Dashed: количество прорезей на линии (при задании по количеству).</summary>
+        public int DashCount { get; set; } = 5;
 
         public DashEnds Ends { get; set; } = DashEnds.Cut;
         public DashFit Fit { get; set; } = DashFit.Proportional;
 
-        /// <summary>RectSlots: смещение стороны выреза от линии гиба (ширина выреза — вдвое больше).</summary>
-        public double SlotOffset { get; set; } = 1;
+        /// <summary>RectSlots: общая ширина выреза, мм (линия гиба проходит по середине).</summary>
+        public double SlotWidth { get; set; } = 2;
 
         /// <summary>RectSlots: по всей длине или прерывисто (длины выреза и перемычки — DashLength и BridgeLength).</summary>
         public SlotPattern SlotPattern { get; set; } = SlotPattern.Dashed;
@@ -92,15 +107,19 @@ namespace InvAuto.Core.Bends
                 {
                     case BendLineMode.Remove: return "удалить";
                     case BendLineMode.EdgeCuts: return string.Format(c, "прорези по краям {0:0.##}", EdgeCutLength);
-                    case BendLineMode.Dashed: return string.Format(c, "прерывистая {0:0.##}/{1:0.##}", DashLength, BridgeLength);
+                    case BendLineMode.Dashed: return "прерывистая " + DashSummary(c);
                     case BendLineMode.RectSlots:
                         return SlotPattern == SlotPattern.Full
-                            ? string.Format(c, "вырез ±{0:0.##} по всей длине", SlotOffset)
-                            : string.Format(c, "вырезы ±{0:0.##}, {1:0.##}/{2:0.##}", SlotOffset, DashLength, BridgeLength);
+                            ? string.Format(c, "вырез {0:0.##} мм по всей длине", SlotWidth)
+                            : string.Format(c, "вырезы {0:0.##} мм, ", SlotWidth) + DashSummary(c);
                     default: return "как есть";
                 }
             }
         }
+
+        private string DashSummary(CultureInfo c) => Spec == DashSpec.Count
+            ? string.Format(c, "{0} × {1:0.##}", DashCount, DashLength)
+            : string.Format(c, "{0:0.##}/{1:0.##}", DashLength, BridgeLength);
 
         public bool SameAs(BendLineOptions other) =>
             other != null &&
@@ -110,7 +129,9 @@ namespace InvAuto.Core.Bends
             BridgeLength.Equals(other.BridgeLength) &&
             Ends == other.Ends &&
             Fit == other.Fit &&
-            SlotOffset.Equals(other.SlotOffset) &&
+            Spec == other.Spec &&
+            DashCount == other.DashCount &&
+            SlotWidth.Equals(other.SlotWidth) &&
             SlotPattern == other.SlotPattern;
     }
 }
