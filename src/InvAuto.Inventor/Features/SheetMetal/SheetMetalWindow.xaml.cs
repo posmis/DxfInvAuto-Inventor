@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Marking;
 using InvAuto.Core.Materials;
 using InvAuto.Core.Preview;
 using InvAuto.Core.Settings;
@@ -48,6 +49,7 @@ namespace InvAuto.Features.SheetMetal
         private FlatPatternExportSettings _exportSettings;
         private SheetMetalViewSettings _viewSettings;
         private BendSettings _bendSettings;
+        private MarkingSettings _markingSettings;
 
         private readonly FlatTree<TreeRow> _tree = new FlatTree<TreeRow>();
         private readonly ObservableCollection<PartRow> _rows = new ObservableCollection<PartRow>();
@@ -98,6 +100,7 @@ namespace InvAuto.Features.SheetMetal
             _viewSettings = context.Settings.Load<SheetMetalViewSettings>(ViewSettingsKey);
             _viewSettings.Normalize();
             _bendSettings = context.Settings.Load<BendSettings>(BendSettingsKey);
+            _markingSettings = context.Settings.Load<MarkingSettings>(MarkingSettings.Key);
 
             Title = $"Листовые детали — {AssemblyName}";
             ApplyViewSettings();
@@ -225,6 +228,7 @@ namespace InvAuto.Features.SheetMetal
         {
             var row = new PartRow(part, ProductQuantity) { IsChecked = _checked.Contains(part.FullFileName) };
             ApplyBends(row);
+            ApplyMarking(row);
             ApplyMaterial(row);
             if (_results.TryGetValue(part.FullFileName, out var result))
                 row.ApplyResult(result);
@@ -1142,6 +1146,98 @@ namespace InvAuto.Features.SheetMetal
                 : $"Свои линии гиба ({dialog.Result.FullSummary}) для деталей: {rows.Count}");
         }
 
+        #region Маркировка
+
+        private void ApplyMarking(PartRow row)
+        {
+            string key = row.Part.FullFileName;
+            row.ApplyMarking(_markingSettings.For(key), _markingSettings.HasOverride(key));
+        }
+
+        private void SaveMarkingSettings()
+        {
+            _context.Settings.Save(MarkingSettings.Key, _markingSettings);
+            foreach (var row in _rows)
+                ApplyMarking(row);
+            ScheduleChecks();
+            if (PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+        }
+
+        /// <summary>Пример для окна маркировки: первая из строк со сформированной разверткой.</summary>
+        private (string Name, Func<MarkingOptions, (FlatDrawing, MarkingResult)> Render) MarkingSample(IEnumerable<PartRow> rows)
+        {
+            var list = rows.ToList();
+            var ready = list.FirstOrDefault(r => r.FlatPreviewState == FlatPreviewState.Ready);
+            if (ready != null)
+                return (ready.FileName, ready.RenderWithMarking);
+            return (list.FirstOrDefault()?.FileName, null);
+        }
+
+        private void OnMarkingDefaults(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            var (name, render) = MarkingSample(SelectedRows.Count > 0 ? SelectedRows : _rows.ToList());
+            var dialog = new MarkingSettingsWindow(_markingSettings.Default, _markingSettings.Default, personal: false, usesDefaults: false,
+                "Общие настройки — для всех деталей без своих настроек маркировки.", name, render) { Owner = this };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            _markingSettings.Default = dialog.Result;
+            SaveMarkingSettings();
+            SetStatus("Маркировка по умолчанию: " + _markingSettings.Default.Summary);
+        }
+
+        private void OnMarkingSelected(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            var rows = SelectedRows;
+            if (rows.Count == 0)
+            {
+                SetStatus("Выделите детали в списке, чтобы задать им свою маркировку");
+                return;
+            }
+
+            var first = rows[0];
+            bool usesDefaults = rows.All(r => !r.MarkingPersonal);
+            var (name, render) = MarkingSample(rows);
+            string scope = rows.Count == 1 ? $"Деталь «{first.FileName}»." : $"Выделено деталей: {rows.Count}.";
+            var dialog = new MarkingSettingsWindow(first.MarkingOptions, _markingSettings.Default, personal: true, usesDefaults,
+                scope, name, render) { Owner = this };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            foreach (var row in rows)
+            {
+                if (dialog.Result == null)
+                    _markingSettings.ClearOverride(row.Part.FullFileName);
+                else
+                    _markingSettings.SetOverride(row.Part.FullFileName, dialog.Result);
+            }
+            SaveMarkingSettings();
+            SetStatus(dialog.Result == null
+                ? $"Деталей на общих настройках маркировки: {rows.Count}"
+                : $"Своя маркировка ({dialog.Result.Summary}) для деталей: {rows.Count}");
+        }
+
+        private void OnMarkingReset(object sender, RoutedEventArgs e)
+        {
+            var rows = SelectedRows.Where(r => r.MarkingPersonal).ToList();
+            if (rows.Count == 0)
+            {
+                SetStatus("У выделенных деталей нет своей маркировки");
+                return;
+            }
+            foreach (var row in rows)
+                _markingSettings.ClearOverride(row.Part.FullFileName);
+            SaveMarkingSettings();
+            SetStatus($"Возвращена общая маркировка для деталей: {rows.Count}");
+        }
+
+        #endregion
+
         #region Просмотр развертки
 
         private void OnOpenViewer(object sender, RoutedEventArgs e) => OpenViewer(PartsGrid.SelectedItem as PartRow);
@@ -1336,6 +1432,7 @@ namespace InvAuto.Features.SheetMetal
             var exporter = new FlatPatternExporter(_exportSettings, folder, AssemblyName, writer)
             {
                 BendOptions = part => _bendSettings.Resolver(part.FullFileName),
+                Marking = part => _markingSettings.For(part.FullFileName),
                 BendLayers = BendLayers,
                 RawDxfWritten = (collected, raw) => RememberRawFlat(collected.Info.FullFileName, raw)
             };
@@ -1532,6 +1629,12 @@ namespace InvAuto.Features.SheetMetal
             }
             if (reset.Contains(BendSettingsKey))
                 _bendSettings = _context.Settings.Load<BendSettings>(BendSettingsKey);
+            if (reset.Contains(MarkingSettings.Key))
+            {
+                _markingSettings = _context.Settings.Load<MarkingSettings>(MarkingSettings.Key);
+                foreach (var row in _rows)
+                    ApplyMarking(row);
+            }
             if (reset.Contains(ViewSettingsKey))
             {
                 _viewSettings = _context.Settings.Load<SheetMetalViewSettings>(ViewSettingsKey);
@@ -1603,7 +1706,8 @@ namespace InvAuto.Features.SheetMetal
             FlatError = row.FlatPreviewState == FlatPreviewState.Failed ? row.FlatPreviewError : string.Empty,
             BendLines = row.BendLines.Select(b => b.Line).ToList(),
             FlatLength = row.Part.FlatLengthMm,
-            FlatWidth = row.Part.FlatWidthMm
+            FlatWidth = row.Part.FlatWidthMm,
+            Marking = row.FlatPreviewState == FlatPreviewState.Ready && row.Marking != null ? row.Marking.Status : MarkingStatus.Off
         };
 
         /// <summary>Деталь не из списка (выгрузка всего изделия): проверяется без геометрии развертки.</summary>

@@ -512,3 +512,25 @@ write('preflight', 16, check_icon(16))
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')
+
+# ---------- маркировка: пластина с гравировкой «A1» ----------
+def marking_icon(size):
+    if size == 32:
+        plate = [(2.5, 7.5), (29.5, 7.5), (29.5, 26.5), (2.5, 26.5)]
+        a = [(6.5, 22.5), (10.5, 11.5), (14.5, 22.5)]
+        bar = [(8, 18.5), (13, 18.5)]
+        one = [(19, 14), (22.5, 11.5), (22.5, 22.5)]
+        base = [(19, 22.5), (26, 22.5)]
+        w = 2
+    else:
+        plate = [(1.5, 3.5), (14.5, 3.5), (14.5, 12.5), (1.5, 12.5)]
+        a = [(3, 11), (5.25, 5), (7.5, 11)]
+        bar = [(4, 9), (6.5, 9)]
+        one = [(9.5, 6.5), (11.5, 5), (11.5, 11)]
+        base = [(9.5, 11), (13.5, 11)]
+        w = 1.2
+    extra = ' stroke-linecap="round" stroke-linejoin="round"'
+    return [poly(plate, S_TOP, S_INK),
+            line(a, GREEN, w, extra), line(bar, GREEN, w, extra), line(one, GREEN, w, extra), line(base, GREEN, w, extra)]
+write('marking', 32, marking_icon(32))
+write('marking', 16, marking_icon(16))

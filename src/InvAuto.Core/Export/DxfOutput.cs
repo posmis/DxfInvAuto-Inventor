@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using InvAuto.Core.Bends;
+using InvAuto.Core.Marking;
 
 namespace InvAuto.Core.Export
 {
@@ -19,24 +20,36 @@ namespace InvAuto.Core.Export
         /// Возвращает найденные линии гиба.
         /// </summary>
         public static IReadOnlyList<ProcessedBendLine> WriteFinal(string rawPath, string finalPath,
-            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers)
+            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers) =>
+            WriteFinal(rawPath, finalPath, resolve, bendLayers, null, null).Lines;
+
+        /// <summary>
+        /// То же с маркировкой: после обработки линий гиба добавляется текст markingText (обозначение детали),
+        /// если маркировка включена и текст помещается.
+        /// </summary>
+        public static (IReadOnlyList<ProcessedBendLine> Lines, MarkingStatus Marking) WriteFinal(string rawPath, string finalPath,
+            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers, MarkingOptions marking, string markingText)
         {
             if (File.Exists(finalPath))
                 File.Delete(finalPath);
 
-            if (resolve == null)
+            bool mark = marking != null && marking.Enabled;
+            if (resolve == null && !mark)
             {
                 File.Move(rawPath, finalPath);
-                return new ProcessedBendLine[0];
+                return (new ProcessedBendLine[0], MarkingStatus.Off);
             }
 
             string text = File.ReadAllText(rawPath, DxfBendProcessor.FileEncoding);
-            var processed = DxfBendProcessor.Process(text, bendLayers, resolve);
-            if (ReferenceEquals(processed.Text, text))
+            var processed = resolve == null
+                ? new BendProcessResult(text, new ProcessedBendLine[0])
+                : DxfBendProcessor.Process(text, bendLayers, resolve);
+            var marked = DxfMarking.Apply(processed.Text, markingText, marking);
+            if (ReferenceEquals(marked.Dxf, text))
                 File.Move(rawPath, finalPath);
             else
-                File.WriteAllText(finalPath, processed.Text, DxfBendProcessor.FileEncoding);
-            return processed.Items;
+                File.WriteAllText(finalPath, marked.Dxf, DxfBendProcessor.FileEncoding);
+            return (processed.Items, marked.Status);
         }
     }
 }

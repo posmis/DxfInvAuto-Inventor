@@ -323,6 +323,9 @@ namespace InvAuto.Framework.Ui
             // Законцовки линий гиба — красным поверх контура.
             DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.EndFeature), Map, EndFeaturePen);
 
+            foreach (var text in drawing.Texts)
+                DrawMarking(dc, text, Map, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+
             var labels = Labels;
             if (labels != null)
             {
@@ -341,6 +344,35 @@ namespace InvAuto.Framework.Ui
         });
 
         private static readonly Pen EndFeaturePen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xD3, 0x2F, 0x2F)), 1.6) { LineJoin = PenLineJoin.Round });
+
+        private static readonly Brush MarkingBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2E, 0x7D, 0x32)));
+        private static readonly Pen MarkingBoxPen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0x70, 0x2E, 0x7D, 0x32)), 0.8)
+        {
+            DashStyle = new DashStyle(new double[] { 3, 3 }, 0)
+        });
+        private static readonly Typeface MarkingFont = new Typeface("Arial");
+
+        /// <summary>
+        /// Маркировка: текст высотой как в DXF (высота прописных букв) и пунктиром — место, отведённое под него
+        /// (по оценке ширины с запасом: шрифт выбирает программа раскроя).
+        /// </summary>
+        private static void DrawMarking(DrawingContext dc, FlatText text, Func<Point2, Point> map, double dpi)
+        {
+            Point a = map(new Point2(text.MinX, text.MinY)), b = map(new Point2(text.MaxX, text.MaxY));
+            dc.DrawRectangle(null, MarkingBoxPen, new Rect(a, b));
+
+            double capHeight = Math.Abs(map(new Point2(0, text.Height)).Y - map(new Point2(0, 0)).Y);
+            if (capHeight < 2)
+                return; // слишком мелко — только рамка
+            var formatted = new FormattedText(text.Value, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+                MarkingFont, capHeight / 0.716, MarkingBrush, dpi); // 0,716 — высота прописных Arial в долях кегля
+            var origin = map(new Point2(text.X, text.Y));
+            if (text.Vertical)
+                dc.PushTransform(new RotateTransform(-90, origin.X, origin.Y));
+            dc.DrawText(formatted, new Point(origin.X, origin.Y - formatted.Baseline));
+            if (text.Vertical)
+                dc.Pop();
+        }
 
         private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xFF)));
         private static readonly Pen LabelPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x2E, 0x39, 0x43)), 1));

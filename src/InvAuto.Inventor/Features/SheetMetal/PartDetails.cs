@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using InvAuto.Core.Marking;
 using InvAuto.Core.Materials;
 using InvAuto.Core.Preflight;
 using InvAuto.Framework.Ui;
@@ -113,6 +114,16 @@ namespace InvAuto.Features.SheetMetal
                 table.Row(
                     string.Format(CultureInfo.CurrentCulture, "Линия {0} · {1}, {2:0.#} мм", item.Line.Index, item.Line.IsDown ? "вниз" : "вверх", item.Line.Length),
                     item.Layout.Description + (own ? " (своя)" : string.Empty));
+            }
+
+            table.Section("Маркировка");
+            table.Row("Параметры", row.MarkingSummary);
+            if (row.MarkingOptions.Enabled && row.Marking != null)
+            {
+                var status = row.Marking.Status;
+                table.Row("На развертке", row.Marking.Description, null,
+                    status == MarkingStatus.Placed ? PropertyKind.Normal : PropertyKind.Warning,
+                    status == MarkingStatus.NoRoom ? "Не нашлось места с заданным отступом даже для минимальной высоты — уменьшите высоту или отступ" : null);
             }
 
             if (row.Status.Length > 0)

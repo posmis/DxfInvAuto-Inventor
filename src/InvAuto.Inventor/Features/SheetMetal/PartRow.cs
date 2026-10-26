@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Media;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Marking;
 using InvAuto.Core.Materials;
 using InvAuto.Core.Preflight;
 using InvAuto.Core.Preview;
@@ -160,6 +161,37 @@ namespace InvAuto.Features.SheetMetal
 
         public bool BendsPersonal => _bendsPersonal;
 
+        private MarkingOptions _markingOptions = new MarkingOptions();
+        private bool _markingPersonal;
+
+        /// <summary>Параметры маркировки детали (свои или общие).</summary>
+        public MarkingOptions MarkingOptions => _markingOptions;
+
+        public bool MarkingPersonal => _markingPersonal;
+
+        /// <summary>Итог маркировки на развертке; null — развертка не сформирована.</summary>
+        public MarkingResult Marking { get; private set; }
+
+        /// <summary>Для панели свойств: параметры и где получилось.</summary>
+        public string MarkingSummary =>
+            (_markingPersonal ? "своя: " : string.Empty) + _markingOptions.Summary;
+
+        /// <summary>Развертка с другими параметрами маркировки — для примера в окне настроек.</summary>
+        public (FlatDrawing Drawing, MarkingResult Marking) RenderWithMarking(MarkingOptions options)
+        {
+            var (drawing, _, marking) = Preview.Render(_resolve, _bendLayers, options, PartNumber);
+            return (drawing, marking);
+        }
+
+        /// <summary>Маркировка изменилась — перерисовываем развертку (без обращения к Inventor).</summary>
+        public void ApplyMarking(MarkingOptions options, bool personal)
+        {
+            _markingOptions = options ?? new MarkingOptions();
+            _markingPersonal = personal;
+            OnPropertyChanged(nameof(MarkingSummary));
+            Render();
+        }
+
         public int PersonalLineCount => _personalLines;
 
         public void ApplyPreview(FlatPreview preview)
@@ -190,14 +222,16 @@ namespace InvAuto.Features.SheetMetal
         {
             try
             {
-                var (drawing, lines) = Preview.Render(_resolve, _bendLayers);
+                var (drawing, lines, marking) = Preview.Render(_resolve, _bendLayers, _markingOptions, PartNumber);
                 Flat = drawing;
                 BendLines = lines;
+                Marking = marking;
             }
             catch (Exception ex)
             {
                 Flat = null;
                 BendLines = Array.Empty<ProcessedBendLine>();
+                Marking = null;
                 FlatPreviewError = "не удалось показать развертку: " + ex.Message;
                 FlatPreviewState = FlatPreviewState.Failed;
             }

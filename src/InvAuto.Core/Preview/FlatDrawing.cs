@@ -68,15 +68,50 @@ namespace InvAuto.Core.Preview
         }
     }
 
+    /// <summary>
+    /// Текст на развертке (маркировка): точка вставки — левый нижний угол по базовой линии, угол 0° или 90°.
+    /// Width — оценка ширины текста; Box — занимаемый прямоугольник (с ним сверяются отступы до контуров).
+    /// </summary>
+    public sealed class FlatText
+    {
+        public FlatText(string value, double x, double y, double height, double angle, double width)
+        {
+            Value = value ?? string.Empty;
+            X = x;
+            Y = y;
+            Height = height;
+            Angle = angle;
+            Width = width;
+        }
+
+        public string Value { get; }
+        public double X { get; }
+        public double Y { get; }
+        public double Height { get; }
+
+        /// <summary>Угол в градусах (0 — слева направо, 90 — снизу вверх).</summary>
+        public double Angle { get; }
+
+        public double Width { get; }
+
+        public bool Vertical => Math.Abs(Angle - 90) < 1e-9;
+
+        public double MinX => Vertical ? X - Height : X;
+        public double MinY => Y;
+        public double MaxX => Vertical ? X : X + Width;
+        public double MaxY => Vertical ? Y + Width : Y + Height;
+    }
+
     /// <summary>Плоский чертёж развертки: набор полилиний в миллиметрах (единицы DXF).</summary>
     public sealed class FlatDrawing
     {
         private readonly Lazy<FlatGeometry> _geometry;
 
         /// <param name="geometry">Точные отрезки и дуги для измерений; null — построить из полилиний.</param>
-        public FlatDrawing(IReadOnlyList<Polyline2> polylines, FlatGeometry geometry = null)
+        public FlatDrawing(IReadOnlyList<Polyline2> polylines, FlatGeometry geometry = null, IReadOnlyList<FlatText> texts = null)
         {
             Polylines = polylines;
+            Texts = texts ?? Array.Empty<FlatText>();
             _geometry = geometry != null
                 ? new Lazy<FlatGeometry>(() => geometry)
                 : new Lazy<FlatGeometry>(() => FlatGeometry.FromPolylines(polylines));
@@ -95,6 +130,9 @@ namespace InvAuto.Core.Preview
 
         public IReadOnlyList<Polyline2> Polylines { get; }
 
+        /// <summary>Маркировка (в габарит и геометрию для измерений не входит).</summary>
+        public IReadOnlyList<FlatText> Texts { get; }
+
         /// <summary>Отрезки и дуги в том виде, как они записаны в DXF, — для привязок при измерениях.</summary>
         public FlatGeometry Geometry => _geometry.Value;
 
@@ -108,6 +146,10 @@ namespace InvAuto.Core.Preview
 
         /// <summary>Тот же чертёж плюс законцовки для показа (геометрия для измерений не меняется).</summary>
         public FlatDrawing WithEndFeatures(IReadOnlyList<Polyline2> features) =>
-            features == null || features.Count == 0 ? this : new FlatDrawing(Polylines.Concat(features).ToList(), Geometry);
+            features == null || features.Count == 0 ? this : new FlatDrawing(Polylines.Concat(features).ToList(), Geometry, Texts);
+
+        /// <summary>Тот же чертёж с текстом маркировки.</summary>
+        public FlatDrawing WithText(FlatText text) =>
+            text == null ? this : new FlatDrawing(Polylines, Geometry, Texts.Concat(new[] { text }).ToList());
     }
 }

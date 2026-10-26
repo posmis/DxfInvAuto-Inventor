@@ -98,7 +98,7 @@ namespace InvAuto.Core.Bends
     /// Новые объекты получают уникальные handle, $HANDSEED обновляется — файл остаётся корректным
     /// для AutoCAD и программ раскроя.
     /// </summary>
-    public static class DxfBendProcessor
+    public static partial class DxfBendProcessor
     {
         /// <summary>Слои линий гиба в DXF Inventor (сгиб вверх и вниз).</summary>
         public static readonly IReadOnlyList<string> DefaultLayers = new[] { "IV_BEND", "IV_BEND_DOWN" };

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Inventor;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Marking;
 using IO = System.IO;
 
 namespace InvAuto.InventorApi
@@ -29,6 +30,9 @@ namespace InvAuto.InventorApi
         /// null — линии гиба не обрабатываются.
         /// </summary>
         public Func<SheetMetalPart, Func<BendLineInfo, BendLineOptions>> BendOptions { get; set; }
+
+        /// <summary>Маркировка детали (null — без маркировки). Текст — обозначение детали.</summary>
+        public Func<SheetMetalPart, MarkingOptions> Marking { get; set; }
 
         /// <summary>Слои, отрезки на которых считаются линиями гиба.</summary>
         public IReadOnlyCollection<string> BendLayers { get; set; } = DxfBendProcessor.DefaultLayers;
@@ -66,7 +70,12 @@ namespace InvAuto.InventorApi
                 {
                     _writer.Write(definition, raw);
                     RawDxfWritten?.Invoke(part, raw);
-                    DxfOutput.WriteFinal(raw, path, BendOptions?.Invoke(info), BendLayers);
+                    var (_, marking) = DxfOutput.WriteFinal(raw, path, BendOptions?.Invoke(info), BendLayers,
+                        Marking?.Invoke(info), info.PartNumber);
+                    if (marking == MarkingStatus.NoRoom)
+                        note = Join(note, "маркировка не помещается");
+                    else if (marking == MarkingStatus.NoText)
+                        note = Join(note, "нет обозначения для маркировки");
                 }
                 finally
                 {
@@ -81,6 +90,8 @@ namespace InvAuto.InventorApi
                 return new ExportResult(info, ExportStatus.Failed, path, ex.Message);
             }
         }
+
+        private static string Join(string a, string b) => a.Length == 0 ? b : a + "; " + b;
 
         private string BuildPath(SheetMetalPart info)
         {

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using InvAuto.Core.Bends;
+using InvAuto.Core.Marking;
 using InvAuto.Core.Preview;
 
 namespace InvAuto.Core.Preflight
@@ -87,6 +88,9 @@ namespace InvAuto.Core.Preflight
         public double FlatLength { get; set; }
         public double FlatWidth { get; set; }
 
+        /// <summary>Маркировка на сформированной развертке (Off — выключена или развертки нет).</summary>
+        public MarkingStatus Marking { get; set; }
+
         public string Title => PartNumber.Length > 0 ? PartNumber : FileName;
     }
 
@@ -162,6 +166,11 @@ namespace InvAuto.Core.Preflight
             if (settings.RequirePartNumber && part.PartNumber.Trim().Length == 0)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NoPartNumber",
                     "Нет обозначения"));
+
+            if (part.Marking == MarkingStatus.NoRoom)
+                issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingNoRoom", "Маркировка не помещается"));
+            else if (part.Marking == MarkingStatus.NoText && !issues.Any(i => i.Code == "NoPartNumber"))
+                issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingNoText", "Нет обозначения для маркировки"));
 
             if (part.Material == MaterialCheck.Missing)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NoMaterial",
