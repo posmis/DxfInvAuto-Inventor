@@ -18,7 +18,13 @@ namespace InvAuto.Core.Bends
         Dashed,
 
         /// <summary>Прямоугольные вырезы вдоль линии гиба заданной ширины; линия гиба — по середине выреза.</summary>
-        RectSlots
+        RectSlots,
+
+        /// <summary>
+        /// Вырезы со скруглёнными торцами (паз: дуга — отрезок — дуга — отрезок). Радиус дуг — половина ширины,
+        /// длина паза вместе со скруглениями — как у прямоугольного выреза. Параметры — те же, что у RectSlots.
+        /// </summary>
+        RoundSlots
     }
 
     /// <summary>Как расположены прямоугольные вырезы вдоль линии гиба.</summary>
@@ -89,11 +95,14 @@ namespace InvAuto.Core.Bends
         public DashEnds Ends { get; set; } = DashEnds.Cut;
         public DashFit Fit { get; set; } = DashFit.Proportional;
 
-        /// <summary>RectSlots: общая ширина выреза, мм (линия гиба проходит по середине).</summary>
+        /// <summary>RectSlots и RoundSlots: общая ширина выреза, мм (линия гиба проходит по середине).</summary>
         public double SlotWidth { get; set; } = 2;
 
         /// <summary>RectSlots: по всей длине или прерывисто (длины выреза и перемычки — DashLength и BridgeLength).</summary>
         public SlotPattern SlotPattern { get; set; } = SlotPattern.Dashed;
+
+        /// <summary>Режим с вырезами заданной ширины (прямоугольными или со скруглениями).</summary>
+        public bool IsSlots => Mode == BendLineMode.RectSlots || Mode == BendLineMode.RoundSlots;
 
         public BendLineOptions Clone() => (BendLineOptions)MemberwiseClone();
 
@@ -112,6 +121,10 @@ namespace InvAuto.Core.Bends
                         return SlotPattern == SlotPattern.Full
                             ? string.Format(c, "вырез {0:0.##} мм по всей длине", SlotWidth)
                             : string.Format(c, "вырезы {0:0.##} мм, ", SlotWidth) + DashSummary(c);
+                    case BendLineMode.RoundSlots:
+                        return SlotPattern == SlotPattern.Full
+                            ? string.Format(c, "паз R{0:0.##} по всей длине", SlotWidth / 2)
+                            : string.Format(c, "пазы {0:0.##} мм (R{1:0.##}), ", SlotWidth, SlotWidth / 2) + DashSummary(c);
                     default: return "как есть";
                 }
             }

@@ -36,6 +36,8 @@ namespace InvAuto.Core.Tests
             yield return new object[] { "прерывистая, перемычки у краёв", new BendLineOptions { Mode = BendLineMode.Dashed, Ends = DashEnds.Bridge, Fit = DashFit.KeepCut } };
             yield return new object[] { "вырезы прерывисто", new BendLineOptions { Mode = BendLineMode.RectSlots, SlotWidth = 2 } };
             yield return new object[] { "вырез по всей длине", new BendLineOptions { Mode = BendLineMode.RectSlots, SlotPattern = SlotPattern.Full, SlotWidth = 1.5 } };
+            yield return new object[] { "пазы со скруглениями прерывисто", new BendLineOptions { Mode = BendLineMode.RoundSlots, SlotWidth = 3 } };
+            yield return new object[] { "паз со скруглениями по всей длине", new BendLineOptions { Mode = BendLineMode.RoundSlots, SlotPattern = SlotPattern.Full, SlotWidth = 2 } };
         }
 
         private static FlatDrawing Read(string dxf) => DxfReader.Read(new StringReader(dxf));

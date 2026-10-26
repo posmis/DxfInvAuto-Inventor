@@ -152,9 +152,11 @@ namespace InvAuto.Core.Bends
                         changed = true;
                         foreach (var segment in layout.Segments)
                         {
-                            output.AddRange(layout.SlotHalfWidth > 0 && length > 0
-                                ? Slot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles)
-                                : Segment(entity, start, finish, length, segment, handles));
+                            output.AddRange(layout.SlotHalfWidth <= 0 || length <= 0
+                                ? Segment(entity, start, finish, length, segment, handles)
+                                : layout.RoundedEnds
+                                    ? RoundSlot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles)
+                                    : Slot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles));
                         }
                     }
                 }
@@ -263,6 +265,85 @@ namespace InvAuto.Core.Bends
             return Enumerable.Range(0, 4).SelectMany(k => Line(entity, corners[k], corners[(k + 1) % 4], handles));
         }
 
+        /// <summary>
+        /// Участок линии гиба вырезом со скруглёнными торцами (паз): прямые стороны смещены на radius,
+        /// торцы — полуокружности радиуса radius; общая длина паза — длина участка. Участок короче ширины —
+        /// круг диаметром в ширину выреза. В DXF R13+ — замкнутая LWPOLYLINE с выпуклостями (bulge −1 —
+        /// полуокружность), в R12 — отрезки и дуги ARC.
+        /// </summary>
+        private static IEnumerable<Pair> RoundSlot(List<Pair> entity, double[] start, double[] end, double length,
+            BendSegment segment, double radius, HandleAllocator handles)
+        {
+            // Центры скруглений — на линии гиба, на radius внутрь от концов участка (не дальше середины).
+            double from = segment.Start + radius, to = segment.End - radius;
+            if (to < from)
+                from = to = (segment.Start + segment.End) / 2;
+            double[] a = Along(start, end, length, from), b = Along(start, end, length, to);
+            double ux = (end[0] - start[0]) / length, uy = (end[1] - start[1]) / length;
+            double nx = -uy * radius, ny = ux * radius;
+
+            bool hasSubclasses = entity.Any(p => p.Code == 100 && p.Value.Trim() == "AcDbLine");
+            if (hasSubclasses)
+            {
+                // Обход: верхняя сторона → дуга у конца → нижняя сторона → дуга у начала (по часовой — bulge −1).
+                var vertices = new[]
+                {
+                    new[] { a[0] + nx, a[1] + ny, a[2] },
+                    new[] { b[0] + nx, b[1] + ny, b[2] },
+                    new[] { b[0] - nx, b[1] - ny, b[2] },
+                    new[] { a[0] - nx, a[1] - ny, a[2] }
+                };
+                if (from == to)
+                    return Polyline(entity, new[] { vertices[1], vertices[2] }, handles, new[] { -1.0, -1.0 });
+                return Polyline(entity, vertices, handles, new[] { 0, -1.0, 0, -1.0 });
+            }
+
+            double angle = Math.Atan2(uy, ux) * 180 / Math.PI;
+            var parts = new List<IEnumerable<Pair>>();
+            if (to > from)
+            {
+                parts.Add(Line(entity, new[] { a[0] + nx, a[1] + ny, a[2] }, new[] { b[0] + nx, b[1] + ny, b[2] }, handles));
+                parts.Add(Line(entity, new[] { b[0] - nx, b[1] - ny, b[2] }, new[] { a[0] - nx, a[1] - ny, a[2] }, handles));
+            }
+            parts.Add(Arc(entity, b, radius, angle - 90, angle + 90, handles));   // торец у конца участка
+            parts.Add(Arc(entity, a, radius, angle + 90, angle + 270, handles));  // торец у начала участка
+            return parts.SelectMany(p => p);
+        }
+
+        /// <summary>Дуга ARC (R12) на месте исходного LINE: углы в градусах, против часовой стрелки.</summary>
+        private static IEnumerable<Pair> Arc(List<Pair> entity, double[] center, double radius, double startAngle, double endAngle,
+            HandleAllocator handles)
+        {
+            int width = entity[0].CodeText.Length;
+            Pair New(int code, string value) => new Pair(code.ToString(CultureInfo.InvariantCulture).PadLeft(width), value);
+            string handle = null;
+            foreach (var pair in entity)
+            {
+                switch (pair.Code)
+                {
+                    case 0: yield return pair.With("ARC"); break;
+                    case 5: yield return pair.With(handle = handle ?? handles.Next()); break;
+                    case 10: yield return pair.With(Format(center[0])); break;
+                    case 20: yield return pair.With(Format(center[1])); break;
+                    case 30: yield return pair.With(Format(center[2])); break;
+                    case 11:
+                    case 21:
+                    case 31:
+                        break;
+                    default: yield return pair; break;
+                }
+            }
+            yield return New(40, Format(radius));
+            yield return New(50, Format(Normalize(startAngle)));
+            yield return New(51, Format(Normalize(endAngle)));
+        }
+
+        private static double Normalize(double degrees)
+        {
+            degrees %= 360;
+            return degrees < 0 ? degrees + 360 : degrees;
+        }
+
         private static double[] Along(double[] start, double[] end, double length, double distance)
         {
             double t = length > 0 ? distance / length : 0;
@@ -298,7 +379,7 @@ namespace InvAuto.Core.Bends
         /// Замкнутая LWPOLYLINE на месте исходного LINE: общие свойства объекта (слой, цвет, тип линии)
         /// берутся из LINE, геометрия — новая.
         /// </summary>
-        private static IEnumerable<Pair> Polyline(List<Pair> entity, double[][] corners, HandleAllocator handles)
+        private static IEnumerable<Pair> Polyline(List<Pair> entity, double[][] corners, HandleAllocator handles, double[] bulges = null)
         {
             int width = entity[0].CodeText.Length; // сохраняем оформление кодов файла («  0», « 10»)
             Pair New(int code, string value) => new Pair(code.ToString(CultureInfo.InvariantCulture).PadLeft(width), value);
@@ -321,10 +402,12 @@ namespace InvAuto.Core.Bends
             yield return New(43, "0.0");
             if (Math.Abs(corners[0][2]) > 1e-12)
                 yield return New(38, Format(corners[0][2]));
-            foreach (var corner in corners)
+            for (int k = 0; k < corners.Length; k++)
             {
-                yield return New(10, Format(corner[0]));
-                yield return New(20, Format(corner[1]));
+                yield return New(10, Format(corners[k][0]));
+                yield return New(20, Format(corners[k][1]));
+                if (bulges != null && Math.Abs(bulges[k]) > 1e-12)
+                    yield return New(42, Format(bulges[k])); // выпуклость участка до следующей вершины
             }
         }
 

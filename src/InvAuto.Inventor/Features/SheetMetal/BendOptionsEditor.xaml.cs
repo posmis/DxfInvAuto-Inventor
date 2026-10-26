@@ -20,7 +20,8 @@ namespace InvAuto.Features.SheetMetal
             { BendLineMode.Remove, "Линии гиба удаляются — лазер по ним не режет." },
             { BendLineMode.EdgeCuts, "Линия удаляется, у каждого края остаётся короткая прорезь." },
             { BendLineMode.Dashed, "Прорези одинаковой длины с одинаковыми перемычками, симметрично по длине линии." },
-            { BendLineMode.RectSlots, "Вместо прорези-отрезка вырезается прямоугольник; линия гиба проходит по его середине." }
+            { BendLineMode.RectSlots, "Вместо прорези-отрезка вырезается прямоугольник; линия гиба проходит по его середине." },
+            { BendLineMode.RoundSlots, "Паз со скруглёнными торцами: дуга — отрезок — дуга — отрезок. Радиус скругления — половина ширины, длина паза — вместе со скруглениями." }
         };
 
         private bool _loading;
@@ -80,7 +81,7 @@ namespace InvAuto.Features.SheetMetal
             };
 
             // Проверяем только поля, которые видны для выбранного способа.
-            bool slots = o.Mode == BendLineMode.RectSlots;
+            bool slots = o.IsSlots;
             bool dashed = o.Mode == BendLineMode.Dashed || (slots && o.SlotPattern == SlotPattern.Dashed);
             bool byCount = dashed && o.Spec == DashSpec.Count;
 
@@ -114,7 +115,7 @@ namespace InvAuto.Features.SheetMetal
         /// <summary>Показывает только поля выбранного способа.</summary>
         private void ShowFieldsFor(BendLineOptions o)
         {
-            bool slots = o.Mode == BendLineMode.RectSlots;
+            bool slots = o.IsSlots;
             bool dashed = o.Mode == BendLineMode.Dashed || (slots && o.SlotPattern == SlotPattern.Dashed);
             bool byCount = dashed && o.Spec == DashSpec.Count;
 

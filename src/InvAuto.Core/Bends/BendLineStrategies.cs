@@ -22,13 +22,18 @@ namespace InvAuto.Core.Bends
     /// <summary>Результат расчёта для одной линии гиба.</summary>
     public sealed class BendLineLayout
     {
-        public BendLineLayout(double lineLength, IReadOnlyList<BendSegment> segments, string description, double slotHalfWidth = 0)
+        public BendLineLayout(double lineLength, IReadOnlyList<BendSegment> segments, string description, double slotHalfWidth = 0,
+            bool roundedEnds = false)
         {
             LineLength = lineLength;
             Segments = segments;
             Description = description;
             SlotHalfWidth = slotHalfWidth;
+            RoundedEnds = roundedEnds && slotHalfWidth > 0;
         }
+
+        /// <summary>Торцы вырезов — полуокружности радиусом SlotHalfWidth (паз), а не прямые.</summary>
+        public bool RoundedEnds { get; }
 
         /// <summary>
         /// 0 — участки остаются отрезками на линии гиба; больше нуля — каждый участок становится
@@ -68,7 +73,8 @@ namespace InvAuto.Core.Bends
             new RemoveStrategy(),
             new EdgeCutsStrategy(),
             new DashedStrategy(),
-            new RectSlotsStrategy()
+            new RectSlotsStrategy(),
+            new RoundSlotsStrategy()
         };
 
         public static IBendLineStrategy For(BendLineMode mode) =>
@@ -239,6 +245,25 @@ namespace InvAuto.Core.Bends
 
             string width = BendLineStrategies.Mm(o.SlotWidth);
             return new BendLineLayout(length, layout.Segments, $"{layout.Description}; ширина {width} мм", o.SlotWidth / 2);
+        }
+    }
+
+    /// <summary>
+    /// Вырезы со скруглениями: раскладка как у прямоугольных, торцы каждого выреза — полуокружности
+    /// радиусом в половину ширины (дуга — отрезок — дуга — отрезок). Длина выреза — со скруглениями.
+    /// </summary>
+    internal sealed class RoundSlotsStrategy : IBendLineStrategy
+    {
+        public BendLineMode Mode => BendLineMode.RoundSlots;
+        public string Title => "Вырезы со скруглениями";
+
+        public BendLineLayout Layout(double length, BendLineOptions o)
+        {
+            var rect = new RectSlotsStrategy().Layout(length, o);
+            if (rect.SlotHalfWidth <= 0)
+                return rect;
+            string radius = BendLineStrategies.Mm(rect.SlotHalfWidth);
+            return new BendLineLayout(length, rect.Segments, $"{rect.Description}, скругления R{radius}", rect.SlotHalfWidth, roundedEnds: true);
         }
     }
 }

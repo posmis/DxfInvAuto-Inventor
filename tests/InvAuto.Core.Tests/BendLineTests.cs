@@ -290,6 +290,141 @@ namespace InvAuto.Core.Tests
         }
     }
 
+    /// <summary>Вырезы со скруглениями: паз «дуга — отрезок — дуга — отрезок».</summary>
+    public class RoundSlotTests
+    {
+        private static string Dxf(string bend) =>
+            "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$HANDSEED\r\n  5\r\n30\r\n  0\r\nENDSEC\r\n" +
+            "  0\r\nSECTION\r\n  2\r\nENTITIES\r\n" + bend + "  0\r\nENDSEC\r\n  0\r\nEOF\r\n";
+
+        private const string ModernLine =
+            "  0\r\nLINE\r\n  5\r\n2B\r\n330\r\n1F\r\n100\r\nAcDbEntity\r\n  8\r\nIV_BEND\r\n 62\r\n2\r\n100\r\nAcDbLine\r\n" +
+            " 10\r\n0.0\r\n 20\r\n50.0\r\n 30\r\n0.0\r\n 11\r\n200.0\r\n 21\r\n50.0\r\n 31\r\n0.0\r\n";
+
+        private const string R12Line =
+            "  0\r\nLINE\r\n  8\r\nIV_BEND\r\n 10\r\n0.0\r\n 20\r\n50.0\r\n 30\r\n0.0\r\n 11\r\n200.0\r\n 21\r\n50.0\r\n 31\r\n0.0\r\n";
+
+        /// <summary>Наклонная линия — проверка, что пазы идут вдоль линии, а не по осям.</summary>
+        private const string SlantedLine =
+            "  0\r\nLINE\r\n  5\r\n2B\r\n100\r\nAcDbEntity\r\n  8\r\nIV_BEND\r\n100\r\nAcDbLine\r\n" +
+            " 10\r\n0.0\r\n 20\r\n0.0\r\n 30\r\n0.0\r\n 11\r\n60.0\r\n 21\r\n80.0\r\n 31\r\n0.0\r\n";
+
+        private static BendLineOptions Round(SlotPattern pattern, double width = 4) => new BendLineOptions
+        {
+            Mode = BendLineMode.RoundSlots, SlotWidth = width, SlotPattern = pattern, DashLength = 20, BridgeLength = 10
+        };
+
+        [Fact]
+        public void Layout_SameSegmentsAsRect_WithRoundedEnds()
+        {
+            var round = BendLineStrategies.Layout(200, Round(SlotPattern.Dashed));
+            var rect = BendLineStrategies.Layout(200, new BendLineOptions { Mode = BendLineMode.RectSlots, SlotWidth = 4, DashLength = 20, BridgeLength = 10 });
+
+            Assert.True(round.RoundedEnds);
+            Assert.False(rect.RoundedEnds);
+            Assert.Equal(rect.Segments.Select(s => (s.Start, s.End)), round.Segments.Select(s => (s.Start, s.End)));
+            Assert.Equal(2, round.SlotHalfWidth);
+            Assert.Contains("R2", round.Description);
+            Assert.Equal("Вырезы со скруглениями", BendLineStrategies.For(BendLineMode.RoundSlots).Title);
+            Assert.True(new BendLineOptions { Mode = BendLineMode.RoundSlots }.IsSlots);
+        }
+
+        [Fact]
+        public void Slot_IsClosedPolylineWithTwoSemicircles()
+        {
+            var result = DxfBendProcessor.Process(Dxf(ModernLine), DxfBendProcessor.DefaultLayers, Round(SlotPattern.Dashed));
+            DxfValidator.AssertValid(result.Text);
+            var slots = DxfReader.Read(new StringReader(result.Text)).Polylines;
+
+            Assert.Equal(7, slots.Count);
+            Assert.All(slots, p =>
+            {
+                Assert.True(p.Closed);
+                Assert.Equal("IV_BEND", p.Layer);
+                Assert.True(p.Points.Count > 10);                                   // скругления разбиты на участки
+                Assert.Equal(48, p.Points.Min(q => q.Y), 6);                        // ширина 4 мм вокруг y = 50
+                Assert.Equal(52, p.Points.Max(q => q.Y), 6);
+                Assert.Equal(20, p.Points.Max(q => q.X) - p.Points.Min(q => q.X), 6); // длина паза — со скруглениями
+            });
+
+            // В файле — 4 вершины, у двух из них выпуклость −1 (полуокружность).
+            Assert.Equal(7 * 2, CountPairs(result.Text, " 42", "-1.0"));
+            Assert.Equal(7, CountPairs(result.Text, " 90", "4"));
+            Assert.Contains("\r\n 62\r\n2\r\n", result.Text); // цвет исходной линии сохранён
+        }
+
+        [Fact]
+        public void Slot_AreaIsRectanglePlusCircle()
+        {
+            var result = DxfBendProcessor.Process(Dxf(ModernLine), DxfBendProcessor.DefaultLayers, Round(SlotPattern.Full, width: 10));
+            var slot = DxfReader.Read(new StringReader(result.Text));
+            var contour = FlatContours.Build(new FlatDrawing(slot.Polylines.Select(p => new Polyline2("0", p.Points, p.Closed)).ToList())).Single();
+
+            Assert.True(contour.Closed);
+            Assert.Equal((200 - 10) * 10 + Math.PI * 25, contour.Area, 0.5); // 190×10 + π·5²
+        }
+
+        [Fact]
+        public void ShortSegment_BecomesCircle()
+        {
+            // Ширина 30 больше длины выреза 20 — круг диаметром 30 по центру участка.
+            var options = Round(SlotPattern.Dashed, width: 30);
+            var result = DxfBendProcessor.Process(Dxf(ModernLine), DxfBendProcessor.DefaultLayers, options);
+            var first = DxfReader.Read(new StringReader(result.Text)).Polylines.First();
+            var segment = BendLineStrategies.Layout(200, options).Segments[0];
+            double center = (segment.Start + segment.End) / 2;
+
+            Assert.Equal(center - 15, first.Points.Min(q => q.X), 6);
+            Assert.Equal(center + 15, first.Points.Max(q => q.X), 6);
+            Assert.Equal(2 * 7, CountPairs(result.Text, " 42", "-1.0"));
+            Assert.Equal(7, CountPairs(result.Text, " 90", "2"));
+        }
+
+        [Fact]
+        public void SlantedLine_SlotFollowsLineDirection()
+        {
+            var result = DxfBendProcessor.Process(Dxf(SlantedLine), DxfBendProcessor.DefaultLayers, Round(SlotPattern.Full, width: 4));
+            var slot = DxfReader.Read(new StringReader(result.Text)).Polylines.Single();
+
+            // Расстояние каждой точки контура до линии гиба — не больше радиуса; торцы — на продолжении линии.
+            var a = new Point2(0, 0);
+            var b = new Point2(60, 80);
+            var line = new Segment2(a, b, null);
+            Assert.All(slot.Points, p => Assert.True(Geometry2.Distance(p, line.Nearest(p)) <= 2 + 1e-6));
+            Assert.Contains(slot.Points, p => Geometry2.Distance(p, a) < 1e-6);
+            Assert.Contains(slot.Points, p => Geometry2.Distance(p, b) < 1e-6);
+        }
+
+        [Fact]
+        public void R12_Slot_IsTwoLinesAndTwoArcs()
+        {
+            var result = DxfBendProcessor.Process(Dxf(R12Line), DxfBendProcessor.DefaultLayers, Round(SlotPattern.Full));
+            Assert.DoesNotContain("LWPOLYLINE", result.Text);
+            Assert.Equal(2, CountPairs(result.Text, "  0", "ARC"));
+            Assert.Equal(2, CountPairs(result.Text, "  0", "LINE"));
+
+            var drawing = DxfReader.Read(new StringReader(result.Text));
+            Assert.Equal(198, drawing.Polylines.Where(p => p.Points.Count == 2).Select(p => p.Points[1].X).Max(), 6); // прямые до центров дуг
+            Assert.Equal(0, drawing.MinX, 6);
+            Assert.Equal(200, drawing.MaxX, 6);
+            Assert.Equal(48, drawing.MinY, 6);
+            Assert.Equal(52, drawing.MaxY, 6);
+            var contour = FlatContours.Build(new FlatDrawing(drawing.Polylines.Select(p => new Polyline2("0", p.Points, p.Closed)).ToList()));
+            Assert.Single(contour);
+            Assert.True(contour[0].Closed);                                       // отрезки и дуги стыкуются
+        }
+
+        private static int CountPairs(string dxf, string code, string value)
+        {
+            var lines = dxf.Split(new[] { "\r\n" }, StringSplitOptions.None);
+            int count = 0;
+            for (int i = 0; i + 1 < lines.Length; i++)
+                if (lines[i] == code && lines[i + 1] == value)
+                    count++;
+            return count;
+        }
+    }
+
     public class BendSettingsTests
     {
         [Fact]
