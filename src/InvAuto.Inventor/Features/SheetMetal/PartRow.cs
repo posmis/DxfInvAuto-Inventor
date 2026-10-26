@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows.Media;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
 using InvAuto.Core.Materials;
+using InvAuto.Core.Preflight;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
 using InvAuto.InventorApi;
@@ -201,6 +203,54 @@ namespace InvAuto.Features.SheetMetal
             }
             UpdateMetrics();
         }
+
+        #region Проверка перед выгрузкой
+
+        private IReadOnlyList<PreflightIssue> _issues;
+
+        /// <summary>Замечания проверки; null — ещё не проверялась.</summary>
+        public IReadOnlyList<PreflightIssue> Issues => _issues;
+
+        /// <summary>Худшее замечание (без «сведений»); null — замечаний нет или не проверялась.</summary>
+        public IssueSeverity? WorstIssue =>
+            _issues == null ? null : _issues.Where(i => i.Severity != IssueSeverity.Info).Select(i => (IssueSeverity?)i.Severity).Max();
+
+        public bool CheckOk => _issues != null && WorstIssue == null;
+        public bool CheckWarning => WorstIssue == IssueSeverity.Warning;
+        public bool CheckError => WorstIssue == IssueSeverity.Error;
+
+        /// <summary>Текст ячейки «Проверка».</summary>
+        public string CheckText
+        {
+            get
+            {
+                if (_issues == null)
+                    return string.Empty;
+                int count = _issues.Count(i => i.Severity != IssueSeverity.Info);
+                if (count == 0)
+                    return "Нет замечаний";
+                string first = _issues.Where(i => i.Severity != IssueSeverity.Info).OrderByDescending(i => i.Severity).First().Message;
+                int cut = first.IndexOf(" — ", StringComparison.Ordinal);
+                return (cut > 0 ? first.Substring(0, cut) : first) + (count > 1 ? $" (+{count - 1})" : string.Empty);
+            }
+        }
+
+        public string CheckToolTip => _issues == null
+            ? null
+            : _issues.Count == 0 ? "Замечаний нет" : string.Join("\n", _issues.Select(i => "• " + i));
+
+        /// <summary>Для сортировки: ошибки, затем предупреждения, затем без замечаний.</summary>
+        public int CheckRank => _issues == null ? 0 : WorstIssue == IssueSeverity.Error ? 3 : WorstIssue == IssueSeverity.Warning ? 2 : 1;
+
+        public void ApplyIssues(IReadOnlyList<PreflightIssue> issues)
+        {
+            _issues = issues;
+            foreach (string name in new[] { nameof(Issues), nameof(WorstIssue), nameof(CheckOk), nameof(CheckWarning), nameof(CheckError),
+                         nameof(CheckText), nameof(CheckToolTip), nameof(CheckRank) })
+                OnPropertyChanged(name);
+        }
+
+        #endregion
 
         #region Материал из библиотеки и показатели развертки
 

@@ -775,6 +775,36 @@
     </DrawingImage.Drawing>
   </DrawingImage>
 
+  <DrawingImage x:Key="Icon.Preflight">
+    <DrawingImage.Drawing>
+      <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M2.5 2.5 L15.5 2.5 L20.5 7.5 L20.5 26.5 L2.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M15.5 2.5 L15.5 7.5 L20.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 11.5 L16 11.5"><GeometryDrawing.Pen><Pen Brush="#9AA6B2" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 15.5 L16 15.5"><GeometryDrawing.Pen><Pen Brush="#9AA6B2" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 19.5 L16 19.5"><GeometryDrawing.Pen><Pen Brush="#9AA6B2" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E08A00" Geometry="M21 16 L28.5 29 L13.5 29 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M21 20.5 L21 25"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M21 26.6 L21 27.4"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+  <DrawingImage x:Key="Icon.Preflight.Small">
+    <DrawingImage.Drawing>
+      <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 1.5 L7.5 1.5 L10.5 4.5 L10.5 13.5 L1.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M7.5 1.5 L7.5 4.5 L10.5 4.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M3.5 6.5 L8 6.5"><GeometryDrawing.Pen><Pen Brush="#9AA6B2" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M3.5 9 L8 9"><GeometryDrawing.Pen><Pen Brush="#9AA6B2" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E08A00" Geometry="M10.5 7.6 L14.2 14.4 L6.8 14.4 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10.5 9.8 L10.5 12.2"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10.5 13 L10.5 13.5"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
   <DrawingImage x:Key="Icon.Refresh">
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">

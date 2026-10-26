@@ -108,6 +108,31 @@
                        RenderOptions.BitmapScalingMode="HighQuality" />
             </DataTemplate>
 
+            <!-- Ячейка «Проверка»: значок важности и первое замечание; полный список — в подсказке и в свойствах -->
+            <DataTemplate x:Key="PreflightCell">
+                <StackPanel Orientation="Horizontal" ToolTip="{Binding CheckToolTip}" VerticalAlignment="Center">
+                    <TextBlock x:Name="Glyph" Style="{StaticResource IconText}" FontSize="12" Margin="0,0,6,0" Text="" />
+                    <TextBlock x:Name="Text" Text="{Binding CheckText}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding CheckOk}" Value="True">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE73E;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource OkBrush}" />
+                        <Setter TargetName="Text" Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding CheckWarning}" Value="True">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7BA;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                        <Setter TargetName="Text" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding CheckError}" Value="True">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE783;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                        <Setter TargetName="Text" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
             <DataTemplate x:Key="LibraryMaterialCell">
                 <TextBlock x:Name="Text" Text="{Binding LibraryMaterialText}" ToolTip="{Binding LibraryMaterialHint}"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
@@ -215,6 +240,8 @@
 
                         <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
                             <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Preflight}" Click="OnPreflight"
+                                        ToolTip="Проверить детали списка: развертка, контур, отверстия, расстояние до линий гиба,&#x0a;материал, обозначение, размер листа. Перед выгрузкой проверка выполняется сама.">Проверить</Button>
                                 <Button Style="{StaticResource RibbonPrimaryButton}" Tag="{StaticResource Icon.Export}" Click="OnExportChecked"
                                         ToolTip="Выгрузить детали списка, отмеченные галочкой">Выгрузить отмеченные</Button>
                                 <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ExportAll}" Click="OnExportAll"

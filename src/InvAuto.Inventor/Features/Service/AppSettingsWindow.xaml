@@ -88,6 +88,7 @@
             <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0" Margin="0,8,0,0"
                      ItemContainerStyle="{StaticResource NavItem}" SelectionChanged="OnSectionChanged">
                 <ListBoxItem Tag="GeneralPage">Общие</ListBoxItem>
+                <ListBoxItem Tag="PreflightPage">Проверка</ListBoxItem>
                 <ListBoxItem Tag="CachePage">Кэш разверток</ListBoxItem>
                 <ListBoxItem Tag="LogPage">Журнал</ListBoxItem>
                 <ListBoxItem Tag="ResetPage">Сброс настроек</ListBoxItem>
@@ -111,6 +112,49 @@
                         Выключено — окно каждый раз открывается с пустым списком.
                         Сохранённые списки можно удалить в разделе «Сброс настроек».
                     </TextBlock>
+                </StackPanel>
+
+                <!-- ============ Проверка перед выгрузкой ============ -->
+                <StackPanel x:Name="PreflightPage" Visibility="Collapsed">
+                    <TextBlock Text="Проверка перед выгрузкой" Style="{StaticResource PageTitle}" />
+                    <TextBlock Style="{StaticResource Hint}">
+                        Замечания показываются в колонке «Проверка», в свойствах детали и на развертке (кружки).
+                        Ошибки и предупреждения не запрещают выгрузку — перед ней показывается список, решаете вы.
+                    </TextBlock>
+
+                    <CheckBox x:Name="CheckBeforeExportBox" Margin="0,12,0,0">Проверять детали перед выгрузкой DXF</CheckBox>
+
+                    <TextBlock Text="Отверстия" Style="{StaticResource FormSection}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Не меньше толщины ×" VerticalAlignment="Center" />
+                        <TextBox x:Name="HoleFactorBox" Style="{StaticResource DaysBox}" />
+                        <TextBlock Text="и не меньше" VerticalAlignment="Center" />
+                        <TextBox x:Name="HoleMinBox" Style="{StaticResource DaysBox}" />
+                        <TextBlock Text="мм" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Размер отверстия — меньшая сторона габарита: диаметр круглого, ширина паза. 0 — не проверять." />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                        <TextBlock Text="От края отверстия до линии гиба — не меньше толщины ×" VerticalAlignment="Center" />
+                        <TextBox x:Name="BendClearanceBox" Style="{StaticResource DaysBox}" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Ближе к линии гиба отверстие при гибке вытягивается. Обычно 2 толщины (с радиусом гиба — больше). 0 — не проверять." />
+
+                    <TextBlock Text="Лист" Style="{StaticResource FormSection}" />
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox x:Name="SheetSizeBox" VerticalAlignment="Center" Margin="0">Развертка помещается на лист</CheckBox>
+                        <TextBox x:Name="SheetLengthBox" Style="{StaticResource DaysBox}" Width="64" Margin="10,0,6,0" />
+                        <TextBlock Text="×" VerticalAlignment="Center" />
+                        <TextBox x:Name="SheetWidthBox" Style="{StaticResource DaysBox}" Width="64" />
+                        <TextBlock Text="мм" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="Обозначение" Style="{StaticResource FormSection}" />
+                    <CheckBox x:Name="RequirePartNumberBox">Предупреждать о деталях без обозначения</CheckBox>
+                    <TextBlock Style="{StaticResource Hint}"
+                               Text="Всегда проверяются: наличие и замкнутость развертки, актуальность и сохранение модели, материал из библиотеки, повторяющиеся обозначения." />
                 </StackPanel>
 
                 <StackPanel x:Name="CachePage" Visibility="Collapsed">

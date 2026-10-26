@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using InvAuto.Core.Maintenance;
 using InvAuto.Core.Materials;
+using InvAuto.Core.Preflight;
 using InvAuto.Core.Settings;
 using InvAuto.Core.Structure;
 using InvAuto.Features.SheetMetal;
@@ -37,7 +38,8 @@ namespace InvAuto.Features.Service
             (SheetMetalWindow.ViewSettingsKey, "Вид окна «Листовые детали»", "колонки, размеры окна и панелей"),
             (AppSettings.Key, "Настройки приложения", "сроки хранения кэша и журнала, запоминание списков"),
             (SavedPartLists.Key, "Сохранённые списки деталей", "списки окна «Листовые детали» по сборкам"),
-            (MaterialAssignments.Key, "Назначенные материалы", "материалы, назначенные деталям вручную (библиотека материалов не затрагивается)")
+            (MaterialAssignments.Key, "Назначенные материалы", "материалы, назначенные деталям вручную (библиотека материалов не затрагивается)"),
+            (PreflightSettings.Key, "Параметры проверки", "размер отверстий, расстояние до линий гиба, размер листа")
         };
 
         public AppSettingsWindow(FeatureContext context)
@@ -46,6 +48,9 @@ namespace InvAuto.Features.Service
             _context = context;
             _settings = context.Settings.Load<AppSettings>(AppSettings.Key);
             _settings.Normalize();
+            _preflight = context.Settings.Load<PreflightSettings>(PreflightSettings.Key);
+            _preflight.Normalize();
+            ShowPreflight();
 
             CacheFolderText.Text = _cacheFolder;
             LogFolderText.Text = context.LogFolder;
@@ -74,7 +79,7 @@ namespace InvAuto.Features.Service
         private void OnSectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string page = (NavList.SelectedItem as ListBoxItem)?.Tag as string;
-            foreach (var panel in new FrameworkElement[] { GeneralPage, CachePage, LogPage, ResetPage, AboutPage })
+            foreach (var panel in new FrameworkElement[] { GeneralPage, PreflightPage, CachePage, LogPage, ResetPage, AboutPage })
                 panel.Visibility = panel.Name == page ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -204,6 +209,11 @@ namespace InvAuto.Features.Service
                     _settings.RememberPartLists = defaults.RememberPartLists;
                     ShowDays();
                 }
+                if (key == PreflightSettings.Key)
+                {
+                    _preflight = new PreflightSettings();
+                    ShowPreflight();
+                }
                 BuildResetRows();
                 MessageBox.Show(this, $"«{title}» — значения по умолчанию." +
                                       (backup != null ? "\n\nРезервная копия:\n" + backup : string.Empty),
@@ -298,9 +308,77 @@ namespace InvAuto.Features.Service
 
         #endregion
 
+        #region Проверка
+
+        private PreflightSettings _preflight;
+
+        private static string Num(double value) => value.ToString("0.##", CultureInfo.CurrentCulture);
+
+        private void ShowPreflight()
+        {
+            CheckBeforeExportBox.IsChecked = _preflight.CheckBeforeExport;
+            HoleFactorBox.Text = Num(_preflight.MinHoleFactor);
+            HoleMinBox.Text = Num(_preflight.MinHoleMm);
+            BendClearanceBox.Text = Num(_preflight.BendClearanceFactor);
+            SheetSizeBox.IsChecked = _preflight.CheckSheetSize;
+            SheetLengthBox.Text = Num(_preflight.SheetLength);
+            SheetWidthBox.Text = Num(_preflight.SheetWidth);
+            RequirePartNumberBox.IsChecked = _preflight.RequirePartNumber;
+        }
+
+        private bool ReadNumber(TextBox box, double min, double max, string what, out double value)
+        {
+            string text = box.Text.Trim().Replace(" ", string.Empty).Replace(',', '.');
+            if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && value >= min && value <= max)
+                return true;
+            NavList.SelectedIndex = 1;
+            Warn($"{what} — число от {Num(min)} до {Num(max)}.");
+            box.Focus();
+            box.SelectAll();
+            return false;
+        }
+
+        /// <summary>Читает и сохраняет параметры проверки. false — ошибка ввода (окно не закрывается).</summary>
+        private bool SavePreflight()
+        {
+            if (!ReadNumber(HoleFactorBox, 0, 10, "Коэффициент размера отверстия", out double factor) ||
+                !ReadNumber(HoleMinBox, 0, 100, "Минимальный размер отверстия", out double minHole) ||
+                !ReadNumber(BendClearanceBox, 0, 20, "Коэффициент расстояния до линии гиба", out double clearance) ||
+                !ReadNumber(SheetLengthBox, 10, 100000, "Длина листа", out double length) ||
+                !ReadNumber(SheetWidthBox, 10, 100000, "Ширина листа", out double width))
+                return false;
+
+            var updated = new PreflightSettings
+            {
+                CheckBeforeExport = CheckBeforeExportBox.IsChecked == true,
+                MinHoleFactor = factor,
+                MinHoleMm = minHole,
+                BendClearanceFactor = clearance,
+                CheckSheetSize = SheetSizeBox.IsChecked == true,
+                SheetLength = length,
+                SheetWidth = width,
+                RequirePartNumber = RequirePartNumberBox.IsChecked == true
+            };
+            // Сохраняем только изменения: иначе в «Сбросе настроек» параметры числились бы изменёнными.
+            bool changed = updated.CheckBeforeExport != _preflight.CheckBeforeExport || updated.MinHoleFactor != _preflight.MinHoleFactor ||
+                           updated.MinHoleMm != _preflight.MinHoleMm || updated.BendClearanceFactor != _preflight.BendClearanceFactor ||
+                           updated.CheckSheetSize != _preflight.CheckSheetSize || updated.SheetLength != _preflight.SheetLength ||
+                           updated.SheetWidth != _preflight.SheetWidth || updated.RequirePartNumber != _preflight.RequirePartNumber;
+            if (changed)
+            {
+                _preflight = updated;
+                _context.Settings.Save(PreflightSettings.Key, _preflight);
+            }
+            return true;
+        }
+
+        #endregion
+
         private void OnOk(object sender, RoutedEventArgs e)
         {
             if (!ReadDays(CacheDaysBox, "кэша", out int cacheDays) || !ReadDays(LogDaysBox, "журнала", out int logDays))
+                return;
+            if (!SavePreflight())
                 return;
 
             bool remember = RememberListsBox.IsChecked == true;

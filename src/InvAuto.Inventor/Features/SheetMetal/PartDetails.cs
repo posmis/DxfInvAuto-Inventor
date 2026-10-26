@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using InvAuto.Core.Materials;
+using InvAuto.Core.Preflight;
 using InvAuto.Framework.Ui;
 
 namespace InvAuto.Features.SheetMetal
@@ -20,6 +21,17 @@ namespace InvAuto.Features.SheetMetal
             table.Clear();
             if (row == null)
                 return;
+
+            if (row.Issues != null)
+            {
+                table.Section("Проверка");
+                if (row.Issues.Count == 0)
+                    table.Row("Результат", "нет замечаний");
+                foreach (var issue in row.Issues.OrderByDescending(i => i.Severity))
+                    table.Row(issue.SeverityText, issue.Message, null,
+                        issue.Severity == IssueSeverity.Error ? PropertyKind.Error
+                        : issue.Severity == IssueSeverity.Warning ? PropertyKind.Warning : PropertyKind.Muted);
+            }
 
             table.Section("Деталь");
             table.Row("Обозначение", row.PartNumber);

@@ -486,6 +486,29 @@ def report_icon(size):
 write('report', 32, report_icon(32))
 write('report', 16, report_icon(16))
 
+# ---------- проверка: лист с отметкой и предупреждением ----------
+ORANGE = '#E08A00'
+def check_icon(size):
+    if size == 32:
+        body = doc(4.5, 2.5, 18, 24, 5)
+        for y in (11.5, 15.5, 19.5):
+            body.append(line([(8, y), (18, y)], '#9AA6B2', 1))
+        tri = [(23, 16), (30.5, 29), (15.5, 29)]
+        body.append(poly(tri, ORANGE, '#FFFFFF', 1.2))
+        body.append(line([(23, 20.5), (23, 25)], '#FFFFFF', 1.8))
+        body.append(line([(23, 26.6), (23, 27.4)], '#FFFFFF', 1.8))
+    else:
+        body = doc(2.5, 1.5, 9, 12, 3)
+        for y in (6.5, 9):
+            body.append(line([(4.5, y), (9, y)], '#9AA6B2', 0.8))
+        tri = [(11.5, 7.6), (15.2, 14.4), (7.8, 14.4)]
+        body.append(poly(tri, ORANGE, '#FFFFFF', 0.8))
+        body.append(line([(11.5, 9.8), (11.5, 12.2)], '#FFFFFF', 1.1))
+        body.append(line([(11.5, 13), (11.5, 13.5)], '#FFFFFF', 1.1))
+    return body
+write('preflight', 32, check_icon(32))
+write('preflight', 16, check_icon(16))
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')

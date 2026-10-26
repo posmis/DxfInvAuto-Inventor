@@ -112,5 +112,23 @@ namespace InvAuto.Core.Preview
             double dx = b.X - a.X, dy = b.Y - a.Y;
             return Math.Sqrt(dx * dx + dy * dy);
         }
+
+        /// <summary>Расстояние между отрезками AB и CD (0 — пересекаются).</summary>
+        public static double SegmentDistance(Point2 a, Point2 b, Point2 c, Point2 d)
+        {
+            if (Intersect(a, b, c, d))
+                return 0;
+            return Math.Min(
+                Math.Min(Distance(a, new Segment2(c, d, null).Nearest(a)), Distance(b, new Segment2(c, d, null).Nearest(b))),
+                Math.Min(Distance(c, new Segment2(a, b, null).Nearest(c)), Distance(d, new Segment2(a, b, null).Nearest(d))));
+        }
+
+        private static bool Intersect(Point2 a, Point2 b, Point2 c, Point2 d)
+        {
+            double d1 = Cross(c, d, a), d2 = Cross(c, d, b), d3 = Cross(a, b, c), d4 = Cross(a, b, d);
+            return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+        }
+
+        private static double Cross(Point2 o, Point2 a, Point2 b) => (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
     }
 }

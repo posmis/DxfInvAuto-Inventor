@@ -21,8 +21,10 @@ using InvAuto.Core.Settings;
 using InvAuto.Core.SheetMetal;
 using InvAuto.Core.Sorting;
 using InvAuto.Core.Structure;
+using InvAuto.Core.Preflight;
 using InvAuto.Core.Reports;
 using InvAuto.Features.Materials;
+using InvAuto.Features.Preflight;
 using InvAuto.Features.Reports;
 using InvAuto.Features.Service;
 using InvAuto.Framework;
@@ -76,6 +78,10 @@ namespace InvAuto.Features.SheetMetal
         private MaterialLibrary _library = new MaterialLibrary();
         private string _libraryError;
         private MaterialAssignments _assignments;
+
+        // Проверка перед выгрузкой: параметры и отложенный пересчёт (один раз после серии изменений).
+        private PreflightSettings _preflightSettings;
+        private bool _checksScheduled;
         private int _previewGeneration;
         private bool _busy;
         private bool _cancelRequested;
@@ -105,6 +111,7 @@ namespace InvAuto.Features.SheetMetal
             BuildPartColumns();
             _appSettings = LoadAppSettings();
             _materialStore = new MaterialLibraryStore(context.Settings.Folder, context.Log);
+            _preflightSettings = LoadPreflightSettings();
             LoadMaterials();
             CleanupFlatCache();
             LoadStructure(structure);
@@ -314,6 +321,7 @@ namespace InvAuto.Features.SheetMetal
             UpdateCounter();
             if (PartsGrid.SelectedItem == null)
                 ShowDetails(null);
+            ScheduleChecks();
         }
 
         private List<TreeRow> SelectedTreeRows => TreeGrid.SelectedItems.Cast<TreeRow>().ToList();
@@ -400,6 +408,9 @@ namespace InvAuto.Features.SheetMetal
 
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            // Развертка или материал изменились — замечания проверки устарели.
+            if (e.PropertyName == nameof(PartRow.Flat) || e.PropertyName == nameof(PartRow.LibraryMaterial))
+                ScheduleChecks();
             if (e.PropertyName != nameof(PartRow.IsChecked))
                 return;
             var row = (PartRow)sender;
@@ -572,6 +583,7 @@ namespace InvAuto.Features.SheetMetal
                 case PartColumns.TotalMass: return TextColumn(header, nameof(PartRow.TotalMass), 130, "0.##", right: true);
                 case PartColumns.CutLength: return TextColumn(header, nameof(PartRow.CutLengthM), 110, "0.##", right: true);
                 case PartColumns.Pierces: return TextColumn(header, nameof(PartRow.Pierces), 80, right: true);
+                case PartColumns.Check: return TemplateColumn(header, "PreflightCell", Star(1.3), nameof(PartRow.CheckRank));
                 case PartColumns.Thickness: return TextColumn(header, nameof(PartRow.Thickness), 90, "0.##", right: true);
                 case PartColumns.FlatSize: return TextColumn(header, nameof(PartRow.FlatSize), 150);
                 case PartColumns.Quantity: return TextColumn(header, nameof(PartRow.Quantity), 90, right: true);
@@ -640,6 +652,8 @@ namespace InvAuto.Features.SheetMetal
                 case PartColumns.TotalMass: return r => r.TotalMass;
                 case PartColumns.CutLength: return r => r.CutLengthM;
                 case PartColumns.Pierces: return r => r.Pierces;
+                // Сначала нормальные, потом с предупреждениями, потом с ошибками (по убыванию — наоборот).
+                case PartColumns.Check: return r => r.CheckRank;
                 case PartColumns.Status: return r => r.Status;
                 case PartColumns.Thickness: return r => r.Thickness;
                 case PartColumns.Quantity: return r => r.Quantity;
@@ -1291,11 +1305,16 @@ namespace InvAuto.Features.SheetMetal
                 SetStatus("Нет отмеченных деталей — отметьте нужные галочкой или кнопками группы «Отметка»");
                 return;
             }
-            await ExportAsync(parts);
+            if (ConfirmExport(parts))
+                await ExportAsync(parts);
         }
 
-        private async void OnExportAll(object sender, RoutedEventArgs e) =>
-            await ExportAsync(_structure.Root.CollectSheetMetal());
+        private async void OnExportAll(object sender, RoutedEventArgs e)
+        {
+            var parts = _structure.Root.CollectSheetMetal();
+            if (ConfirmExport(parts))
+                await ExportAsync(parts);
+        }
 
         private async Task ExportAsync(IReadOnlyList<SheetMetalPart> parts)
         {
@@ -1487,6 +1506,7 @@ namespace InvAuto.Features.SheetMetal
             foreach (var row in _rows)
                 ApplyBends(row);
             ResetFlatPreviews();
+            ScheduleChecks(); // «Создавать развертку, если её нет» меняет важность замечания
         }
 
         private void OnAppSettings(object sender, RoutedEventArgs e)
@@ -1496,6 +1516,8 @@ namespace InvAuto.Features.SheetMetal
             var dialog = new AppSettingsWindow(_context) { Owner = this };
             dialog.ShowDialog();
             _appSettings = LoadAppSettings();
+            _preflightSettings = LoadPreflightSettings();
+            ScheduleChecks();
 
             var reset = dialog.ResetKeys;
             if (reset.Contains(MaterialAssignments.Key))
@@ -1535,6 +1557,154 @@ namespace InvAuto.Features.SheetMetal
             else if (reset.Count > 0)
                 SetStatus("Настройки сброшены к значениям по умолчанию");
         }
+
+        #region Проверка перед выгрузкой
+
+        private PreflightSettings LoadPreflightSettings()
+        {
+            var settings = _context.Settings.Load<PreflightSettings>(PreflightSettings.Key);
+            settings.Normalize();
+            return settings;
+        }
+
+        /// <summary>Пересчёт замечаний — один раз, когда закончится текущая серия изменений.</summary>
+        private void ScheduleChecks()
+        {
+            if (_checksScheduled)
+                return;
+            _checksScheduled = true;
+            Dispatcher.BeginInvoke(new Action(RunChecks), DispatcherPriority.Background);
+        }
+
+        private void RunChecks()
+        {
+            _checksScheduled = false;
+            var results = PreflightChecker.CheckAll(_rows.Select(ToPreflight), _preflightSettings);
+            foreach (var row in _rows)
+                if (results.TryGetValue(row.FilePath, out var issues))
+                    row.ApplyIssues(issues);
+            if (PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+        }
+
+        private PreflightPart ToPreflight(PartRow row) => new PreflightPart
+        {
+            Key = row.FilePath,
+            FileName = row.FileName,
+            PartNumber = row.PartNumber,
+            Thickness = row.Thickness,
+            HasFlatPattern = row.HasFlatPattern,
+            WillCreateFlat = _exportSettings.CreateMissingFlatPatterns,
+            IsModified = row.Part.IsModified,
+            NeedsUpdate = row.Part.NeedsUpdate,
+            Material = row.MaterialMissing ? MaterialCheck.Missing : row.MaterialMismatch ? MaterialCheck.Mismatch : MaterialCheck.Ok,
+            Drawing = row.FlatPreviewState == FlatPreviewState.Ready ? row.Flat : null,
+            FlatError = row.FlatPreviewState == FlatPreviewState.Failed ? row.FlatPreviewError : string.Empty,
+            BendLines = row.BendLines.Select(b => b.Line).ToList(),
+            FlatLength = row.Part.FlatLengthMm,
+            FlatWidth = row.Part.FlatWidthMm
+        };
+
+        /// <summary>Деталь не из списка (выгрузка всего изделия): проверяется без геометрии развертки.</summary>
+        private PreflightPart ToPreflight(SheetMetalPart part)
+        {
+            var row = _rows.FirstOrDefault(r => string.Equals(r.FilePath, part.FullFileName, StringComparison.OrdinalIgnoreCase));
+            if (row != null)
+                return ToPreflight(row);
+            var material = ResolvedMaterial.Resolve(_library, _assignments, part.FullFileName, part.ThicknessMm);
+            return new PreflightPart
+            {
+                Key = part.FullFileName,
+                FileName = part.Name,
+                PartNumber = part.PartNumber,
+                Thickness = part.ThicknessMm,
+                HasFlatPattern = part.HasFlatPattern,
+                WillCreateFlat = _exportSettings.CreateMissingFlatPatterns,
+                IsModified = part.IsModified,
+                NeedsUpdate = part.NeedsUpdate,
+                Material = material.Source == MaterialSource.None ? MaterialCheck.Missing
+                    : material.ThicknessMismatch ? MaterialCheck.Mismatch : MaterialCheck.Ok,
+                FlatLength = part.FlatLengthMm,
+                FlatWidth = part.FlatWidthMm
+            };
+        }
+
+        /// <summary>
+        /// Перед выгрузкой: если есть ошибки или предупреждения — показать их и спросить. true — выгружать.
+        /// Сведения (например, «развертка не сформирована») выгрузку не останавливают.
+        /// </summary>
+        private bool ConfirmExport(IReadOnlyList<SheetMetalPart> parts)
+        {
+            if (_busy || !_preflightSettings.CheckBeforeExport)
+                return !_busy;
+
+            var results = PreflightChecker.CheckAll(parts.Select(ToPreflight), _preflightSettings);
+            var (errors, warnings) = PreflightChecker.Summary(results);
+            if (errors + warnings == 0)
+                return true;
+
+            var dialog = new PreflightWindow(results, Titles(parts), parts.Count) { Owner = this };
+            dialog.ShowDialog();
+            if (dialog.ExportConfirmed)
+            {
+                _context.Log.Info($"Выгрузка с замечаниями: ошибок {errors}, предупреждений {warnings}");
+                return true;
+            }
+            GoTo(dialog.SelectedKey, dialog.OpenViewer);
+            SetStatus("Выгрузка отменена — исправьте замечания или выгрузите всё равно");
+            return false;
+        }
+
+        private static Dictionary<string, string> Titles(IEnumerable<SheetMetalPart> parts) =>
+            parts.GroupBy(p => p.FullFileName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().PartNumber.Length > 0 ? g.First().PartNumber : g.First().Name, StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>«Проверить»: формирует недостающие развертки (без них геометрия не проверяется) и показывает итог.</summary>
+        private async void OnPreflight(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            if (_rows.Count == 0)
+            {
+                SetStatus("Список пуст — добавьте детали, чтобы проверить их");
+                return;
+            }
+
+            var missing = _rows.Where(r => r.HasFlatPattern && r.FlatPreviewState != FlatPreviewState.Ready && r.FlatPreviewState != FlatPreviewState.Failed).ToList();
+            if (missing.Count > 0)
+                await GenerateFlatsAsync(missing, force: false);
+
+            RunChecks();
+            var results = _rows.ToDictionary(r => r.FilePath, r => r.Issues ?? (IReadOnlyList<PreflightIssue>)Array.Empty<PreflightIssue>(), StringComparer.OrdinalIgnoreCase);
+            var (errors, warnings) = PreflightChecker.Summary(results);
+            SetStatus($"Проверено деталей: {results.Count} · с ошибками: {errors} · с предупреждениями: {warnings}");
+
+            var dialog = new PreflightWindow(results, Titles(_rows.Select(r => r.Part))) { Owner = this };
+            dialog.ShowDialog();
+            GoTo(dialog.SelectedKey, dialog.OpenViewer);
+        }
+
+        /// <summary>Выделить деталь в списке (сняв фильтр поиска, если он её скрывает) и при необходимости открыть развертку.</summary>
+        private void GoTo(string key, bool openViewer)
+        {
+            if (key == null)
+                return;
+            var row = _rows.FirstOrDefault(r => string.Equals(r.FilePath, key, StringComparison.OrdinalIgnoreCase));
+            if (row == null)
+            {
+                SetStatus("Этой детали нет в списке — добавьте её из дерева");
+                return;
+            }
+            if (!VisibleRows.Contains(row))
+                SearchBox.Clear();
+            PartsGrid.SelectedItem = row;
+            PartsGrid.ScrollIntoView(row);
+            PartsGrid.Focus();
+            if (openViewer)
+                OpenViewer(row);
+        }
+
+        #endregion
 
         #region Ведомость (отчёт в Excel и PDF)
 

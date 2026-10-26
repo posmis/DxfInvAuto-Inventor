@@ -29,6 +29,7 @@ namespace InvAuto.Features.SheetMetal
             "Колесо мыши — масштаб · левая или средняя кнопка — перемещение · двойной щелчок — вписать";
 
         private readonly MeasureSession _measure = new MeasureSession();
+        private readonly MeasureOverlay _overlay;
         private readonly IReadOnlyList<PartRow> _rows;
         private readonly Func<PartRow, Task<bool>> _ensureFlat;
         private readonly Func<PartRow, string, bool> _isOwnLine;
@@ -49,7 +50,17 @@ namespace InvAuto.Features.SheetMetal
             _isOwnLine = isOwnLine;
             if (collapsedSections != null)
                 PropertiesTable.CollapsedSections = collapsedSections;
-            View.Overlay = new MeasureOverlay(_measure, View);
+            _overlay = new MeasureOverlay(_measure, View);
+            View.Overlay = _overlay;
+
+            // Замечания пересчитываются в окне деталей после формирования развертки — показываем свежие.
+            foreach (var r in rows)
+                r.PropertyChanged += OnRowChanged;
+            Closed += (s, e) =>
+            {
+                foreach (var r in _rows)
+                    r.PropertyChanged -= OnRowChanged;
+            };
             MeasureList.ItemsSource = _measure.Results;
             _measure.Results.CollectionChanged += (s, e) => UpdateMeasureState();
             UpdateMeasureState();
@@ -58,6 +69,15 @@ namespace InvAuto.Features.SheetMetal
         }
 
         private PartRow Current => _rows.Count > 0 ? _rows[_index] : null;
+
+        private void OnRowChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(PartRow.Issues) || sender != Current)
+                return;
+            _overlay.Issues = Current.Issues;
+            FillProperties(Current);
+            View.InvalidateVisual();
+        }
 
         private async Task ShowPartAsync(int index)
         {
@@ -100,6 +120,7 @@ namespace InvAuto.Features.SheetMetal
             EmptyText.Visibility = Visibility.Collapsed;
             View.Drawing = row.Flat;
             _measure.SetDrawing(row.Flat); // измерения относятся к одной детали
+            _overlay.Issues = row.Issues;   // места замечаний проверки
             ApplyLabels();
             FillProperties(row); // после формирования появились площадь, масса, рез и линии гиба
             View.Fit();

@@ -25,6 +25,7 @@ namespace InvAuto.Core.SheetMetal
         public const string TotalMass = "TotalMass";
         public const string CutLength = "CutLength";
         public const string Pierces = "Pierces";
+        public const string Check = "Check";
 
         /// <summary>Колонка флажка: в список колонок не входит, но по ней можно сортировать.</summary>
         public const string Checked = "Checked";
@@ -35,6 +36,7 @@ namespace InvAuto.Core.SheetMetal
         public static readonly IReadOnlyList<(string Id, string Header)> All = new[]
         {
             (FileName, "Имя файла"),
+            (Check, "Проверка"),
             (Thickness, "Толщина, мм"),
             (FlatSize, "Габариты, мм"),
             (Quantity, "Количество"),

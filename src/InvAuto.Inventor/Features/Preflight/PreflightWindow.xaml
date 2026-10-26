@@ -1,0 +1,84 @@
+<Window x:Class="InvAuto.Features.Preflight.PreflightWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Проверка деталей"
+        Width="900" Height="560" MinWidth="640" MinHeight="380"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBrush}"
+        FontFamily="Segoe UI" FontSize="12"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <DataTemplate x:Key="SeverityCell">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="Glyph" Style="{StaticResource IconText}" FontSize="12" Margin="0,0,6,0" Text="&#xE946;"
+                               Foreground="{StaticResource MutedTextBrush}" />
+                    <TextBlock x:Name="Label" Text="{Binding SeverityText}" />
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Severity}" Value="Warning">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE7BA;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                        <Setter TargetName="Label" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Severity}" Value="Error">
+                        <Setter TargetName="Glyph" Property="Text" Value="&#xE783;" />
+                        <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                        <Setter TargetName="Label" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                        <Setter TargetName="Label" Property="FontWeight" Value="SemiBold" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+            <DataTemplate x:Key="MessageCell">
+                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource StatusBar}" Padding="12,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="ExportButton" Style="{StaticResource DialogButton}" MinWidth="150" Click="OnExport" Visibility="Collapsed" />
+                    <Button x:Name="CloseButton" Style="{StaticResource DialogButton}" IsCancel="True">Закрыть</Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource DialogButton}" Margin="0,0,6,0" Click="OnShowPart"
+                            ToolTip="Выделить деталь в списке (двойной щелчок по строке)">Показать в списке</Button>
+                    <Button Style="{StaticResource DialogButton}" Margin="0" Click="OnOpenViewer"
+                            ToolTip="Открыть развертку: места замечаний отмечены на ней кружками">Открыть развертку</Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}" Padding="16,10">
+            <DockPanel>
+                <CheckBox x:Name="InfoBox" DockPanel.Dock="Right" VerticalAlignment="Center" Checked="OnFilterChanged" Unchecked="OnFilterChanged"
+                          ToolTip="Показывать и сведения, например «развертка не сформирована»">Сведения</CheckBox>
+                <StackPanel>
+                    <TextBlock x:Name="HeadlineText" FontWeight="SemiBold" FontSize="13" />
+                    <TextBlock x:Name="SummaryText" Style="{StaticResource Hint}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid>
+            <DataGrid x:Name="IssuesGrid" Margin="16,10,16,12" IsReadOnly="True" SelectionMode="Single" RowHeight="NaN" MinRowHeight="26"
+                      BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" MouseDoubleClick="OnRowDoubleClick">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Важность" Width="110" CellTemplate="{StaticResource SeverityCell}" SortMemberPath="Rank" />
+                    <DataGridTextColumn Header="Деталь" Binding="{Binding Part}" Width="200" />
+                    <DataGridTemplateColumn Header="Замечание" Width="*" CellTemplate="{StaticResource MessageCell}" SortMemberPath="Message" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock x:Name="EmptyText" Style="{StaticResource MutedText}" FontSize="13" HorizontalAlignment="Center"
+                       VerticalAlignment="Center" Visibility="Collapsed" Text="Замечаний нет" />
+        </Grid>
+    </DockPanel>
+</Window>

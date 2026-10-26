@@ -185,6 +185,16 @@ namespace InvAuto.InventorApi
                     }
                 }
 
+                try
+                {
+                    info.IsModified = doc.Dirty;
+                    info.NeedsUpdate = ((dynamic)doc).RequiresUpdate;
+                }
+                catch
+                {
+                    // Признаки для проверки перед выгрузкой — необязательны.
+                }
+
                 foreach (var pair in DocumentProperties.Custom(doc))
                     info.CustomProperties[pair.Key] = pair.Value;
 

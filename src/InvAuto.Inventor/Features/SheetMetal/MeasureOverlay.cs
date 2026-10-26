@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using InvAuto.Core.Measuring;
+using InvAuto.Core.Preflight;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
 
@@ -48,10 +49,33 @@ namespace InvAuto.Features.SheetMetal
             _host = host;
         }
 
+        /// <summary>Замечания проверки текущей детали: места отмечаются кружками (оранжевый — внимание, красный — ошибка).</summary>
+        public IReadOnlyList<PreflightIssue> Issues { get; set; }
+
+        private static readonly Pen WarningPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xE0, 0x8A, 0x00)), 2));
+        private static readonly Pen ErrorPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xC6, 0x28, 0x28)), 2));
+        private static readonly Brush IssueFill = Freeze(new SolidColorBrush(Color.FromArgb(0x30, 0xE0, 0x8A, 0x00)));
+
+        private void DrawIssues(DrawingContext dc, Func<Point2, Point> map)
+        {
+            if (Issues == null)
+                return;
+            foreach (var issue in Issues)
+            {
+                if (issue.Severity == IssueSeverity.Info)
+                    continue;
+                var pen = issue.Severity == IssueSeverity.Error ? ErrorPen : WarningPen;
+                foreach (var location in issue.Locations)
+                    dc.DrawEllipse(IssueFill, pen, map(location), 11, 11);
+            }
+        }
+
         public void Render(DrawingContext dc, Func<Point2, Point> map, double pixelsPerMm)
         {
             double dpi = VisualTreeHelper.GetDpi(_host).PixelsPerDip;
             var ctx = new RenderContext(dc, map, pixelsPerMm, dpi);
+
+            DrawIssues(dc, map);
 
             foreach (var measurement in _session.Results)
                 Draw(ctx, measurement, preview: false);

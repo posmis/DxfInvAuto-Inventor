@@ -8,11 +8,12 @@ namespace InvAuto.Core.SheetMetal
     public sealed class SheetMetalViewSettings
     {
         /// <summary>Меняется, когда меняется набор колонок по умолчанию: старые сохранённые наборы сбрасываются.</summary>
-        public const int CurrentColumnsVersion = 3;
+        public const int CurrentColumnsVersion = 4;
 
         public static IReadOnlyList<string> DefaultColumns { get; } = new[]
         {
             PartColumns.FileName,
+            PartColumns.Check,
             PartColumns.Thickness,
             PartColumns.FlatSize,
             PartColumns.Quantity,
@@ -57,10 +58,21 @@ namespace InvAuto.Core.SheetMetal
         /// <summary>Убирает повторы и подставляет колонки по умолчанию для новых и устаревших настроек.</summary>
         public void Normalize()
         {
-            if (Columns == null || Columns.Count == 0 || ColumnsVersion < CurrentColumnsVersion)
+            if (Columns == null || Columns.Count == 0 || ColumnsVersion < 3)
                 ResetColumns();
             else
                 Columns = Columns.Distinct(StringComparer.Ordinal).ToList();
+
+            // Версия 4: колонка «Проверка» — добавляется после имени файла, остальной набор пользователя не трогаем.
+            if (ColumnsVersion < 4)
+            {
+                if (!Columns.Contains(PartColumns.Check))
+                {
+                    int at = Columns.IndexOf(PartColumns.FileName);
+                    Columns.Insert(at < 0 ? 0 : at + 1, PartColumns.Check);
+                }
+                ColumnsVersion = CurrentColumnsVersion;
+            }
 
             if (LayoutVersion < CurrentLayoutVersion)
             {

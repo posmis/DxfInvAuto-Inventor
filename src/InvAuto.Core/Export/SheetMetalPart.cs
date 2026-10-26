@@ -18,6 +18,12 @@ namespace InvAuto.Core.Export
 
         public bool HasFlatPattern { get; set; }
 
+        /// <summary>В детали есть несохранённые изменения.</summary>
+        public bool IsModified { get; set; }
+
+        /// <summary>Модель требует перестроения (Inventor показывает значок «обновить»).</summary>
+        public bool NeedsUpdate { get; set; }
+
         /// <summary>Габариты развертки, мм. 0 — развертки нет или размер неизвестен.</summary>
         public double FlatLengthMm { get; set; }
         public double FlatWidthMm { get; set; }
