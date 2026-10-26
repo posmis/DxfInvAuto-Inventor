@@ -466,6 +466,26 @@ def assign_icon(size):
 write('material-assign', 32, assign_icon(32), snap=False)
 write('material-assign', 16, assign_icon(16), snap=False)
 
+# ---------- ведомость: лист с таблицей ----------
+def report_icon(size):
+    if size == 32:
+        x, y, wd, ht, fold, k = 6.5, 2.5, 19, 27, 5, 1
+    else:
+        x, y, wd, ht, fold, k = 2.5, 1.5, 11, 13, 3, 0.55
+    body = doc(x, y, wd, ht, fold)
+    top = y + fold + 2.5 * k
+    left, right = x + 3 * k, x + wd - 3 * k
+    rows = 4 if size == 32 else 3
+    step = (y + ht - 3 * k - top) / rows
+    body.append(poly([(left, top), (right, top), (right, top + step), (left, top + step)], BLUE_L, None))
+    for i in range(rows + 1):
+        body.append(line([(left, top + step * i), (right, top + step * i)], INK2, 0.8 if size == 32 else 0.6))
+    mid = left + (right - left) * 0.55
+    body.append(line([(mid, top), (mid, top + step * rows)], INK2, 0.8 if size == 32 else 0.6))
+    return body
+write('report', 32, report_icon(32))
+write('report', 16, report_icon(16))
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')

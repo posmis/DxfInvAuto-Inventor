@@ -282,6 +282,11 @@
                                 </StackPanel>
                             </StackPanel>
                         </HeaderedContentControl>
+
+                        <HeaderedContentControl Header="Отчёт" Style="{StaticResource RibbonGroup}">
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Report}" Click="OnReport"
+                                    ToolTip="Ведомость для заявки на резку: сводка по материалам и толщинам (площадь, масса, длина реза, врезки)&#x0a;и таблица деталей с развертками. Excel и/или PDF на листах A4 с шапкой и нумерацией.">Ведомость</Button>
+                        </HeaderedContentControl>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

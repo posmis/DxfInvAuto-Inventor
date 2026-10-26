@@ -21,7 +21,9 @@ using InvAuto.Core.Settings;
 using InvAuto.Core.SheetMetal;
 using InvAuto.Core.Sorting;
 using InvAuto.Core.Structure;
+using InvAuto.Core.Reports;
 using InvAuto.Features.Materials;
+using InvAuto.Features.Reports;
 using InvAuto.Features.Service;
 using InvAuto.Framework;
 using InvAuto.InventorApi;
@@ -1533,6 +1535,139 @@ namespace InvAuto.Features.SheetMetal
             else if (reset.Count > 0)
                 SetStatus("Настройки сброшены к значениям по умолчанию");
         }
+
+        #region Ведомость (отчёт в Excel и PDF)
+
+        private async void OnReport(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            if (_rows.Count == 0)
+            {
+                SetStatus("Список пуст — добавьте детали, чтобы сформировать ведомость");
+                return;
+            }
+
+            var settings = _context.Settings.Load<ReportSettings>(ReportSettings.Key);
+            var dialog = new ReportWindow(settings, AssemblyName, _rows.Count(r => r.IsChecked), _rows.Count) { Owner = this };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            var rows = (settings.OnlyChecked ? _rows.Where(r => r.IsChecked) : _rows).ToList();
+            var report = new ProductionReport
+            {
+                Title = dialog.ReportTitle,
+                Product = dialog.Product,
+                Date = dialog.Date,
+                ProductQuantity = ProductQuantity,
+                IncludeFlats = settings.IncludeFlats
+            };
+
+            var save = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Сохранить ведомость",
+                Filter = settings.Excel ? "Книга Excel (*.xlsx)|*.xlsx" : "Документ PDF (*.pdf)|*.pdf",
+                FileName = report.SuggestedFileName(),
+                InitialDirectory = Directory.Exists(settings.LastFolder) ? settings.LastFolder : OutputFolder,
+                AddExtension = true
+            };
+            if (!Directory.Exists(save.InitialDirectory))
+                save.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (save.ShowDialog(this) != true)
+                return;
+
+            string excelPath = settings.Excel ? Path.ChangeExtension(save.FileName, ".xlsx") : null;
+            string pdfPath = settings.Pdf ? Path.ChangeExtension(save.FileName, ".pdf") : null;
+            settings.LastFolder = Path.GetDirectoryName(save.FileName) ?? string.Empty;
+            _context.Settings.Save(ReportSettings.Key, settings);
+
+            // Без развертки нет площади, массы и реза: недостающие формируем тем же способом, что и для просмотра.
+            var missing = rows.Where(r => r.HasFlatPattern && r.FlatPreviewState != FlatPreviewState.Ready).ToList();
+            if (missing.Count > 0)
+                await GenerateFlatsAsync(missing, force: false);
+
+            report.Items = rows.Select(ToReportItem).ToList();
+            try
+            {
+                Mouse.OverrideCursor = Cursors.Wait;
+                SetStatus("Формирую ведомость…");
+                if (excelPath != null)
+                    ExcelReport.Write(report, excelPath, item => ReportResources.FlatPng(item.Flat, 120, 52));
+                if (pdfPath != null)
+                {
+                    var (regular, bold) = ReportResources.Fonts();
+                    PdfReport.Write(report, pdfPath, regular, bold);
+                }
+            }
+            catch (Exception ex)
+            {
+                _context.Log.Error("Не удалось сформировать ведомость", ex);
+                ShowError("Не удалось сформировать ведомость: " + ex.Message);
+                return;
+            }
+            finally
+            {
+                Mouse.OverrideCursor = null;
+            }
+
+            var totals = report.Totals();
+            string saved = string.Join(" и ", new[] { excelPath, pdfPath }.Where(p => p != null).Select(Path.GetFileName));
+            SetStatus($"Ведомость сохранена: {saved} · позиций {totals.Positions}, деталей {totals.Quantity}" +
+                      (totals.Mass is double mass ? $", масса {mass:0.##} кг" : string.Empty) +
+                      (totals.Incomplete > 0 ? $" · без данных: {totals.Incomplete} поз. (см. замечания)" : string.Empty));
+            _context.Log.Info($"Ведомость: {excelPath} {pdfPath}, позиций {totals.Positions}");
+
+            if (settings.OpenAfterSave)
+            {
+                // Открываем один файл — PDF, если он есть (его и печатают), иначе Excel.
+                try
+                {
+                    Process.Start(new ProcessStartInfo(pdfPath ?? excelPath) { UseShellExecute = true });
+                }
+                catch (Exception ex)
+                {
+                    _context.Log.Warn("Не удалось открыть ведомость: " + ex.Message);
+                }
+            }
+        }
+
+        private static ReportItem ToReportItem(PartRow row)
+        {
+            var notes = new List<string>();
+            if (!row.HasFlatPattern)
+                notes.Add("в детали нет развертки");
+            else if (row.FlatPreviewState == FlatPreviewState.Failed)
+                notes.Add("ошибка развертки: " + row.FlatPreviewError);
+            else if (row.FlatPreviewState != FlatPreviewState.Ready)
+                notes.Add("развертка не сформирована");
+            if (row.MaterialMissing)
+                notes.Add($"нет материала толщиной {row.Thickness:0.##} мм в библиотеке — масса не посчитана");
+            if (row.MaterialMismatch)
+                notes.Add("толщина назначенного материала не совпадает с деталью");
+            if (row.Metrics != null && row.Metrics.OpenChains > 0)
+                notes.Add("незамкнутый контур в DXF — площадь и масса могут быть неточны");
+
+            return new ReportItem
+            {
+                Key = row.FilePath,
+                PartNumber = row.PartNumber,
+                Description = row.Description,
+                FileName = row.FileName,
+                Material = row.LibraryMaterial.Material?.Name ?? string.Empty,
+                Thickness = row.Thickness,
+                Quantity = row.Total,
+                FlatLength = row.Part.FlatLengthMm,
+                FlatWidth = row.Part.FlatWidthMm,
+                Area = row.AreaM2,
+                Mass = row.Mass,
+                CutLength = row.CutLengthM,
+                Pierces = row.Pierces,
+                Flat = row.Flat,
+                Note = string.Join("; ", notes)
+            };
+        }
+
+        #endregion
 
         #region Материалы
 
