@@ -38,6 +38,7 @@ namespace InvAuto.Features.SheetMetal
         private readonly Func<PartRow, Task<bool>> _ensureFlat;
         private readonly Func<PartRow, string, bool> _isOwnLine;
         private readonly Action<PartRow, MarkingPosition> _setMarkingPosition;
+        private readonly Action<PartRow, InvAuto.Core.Preflight.PreflightIssue, bool> _dismiss;
         private bool _markingMode;
         private object _markingToolTip;
         private MarkingArea _markingArea;
@@ -54,8 +55,10 @@ namespace InvAuto.Features.SheetMetal
         /// <param name="setMarkingPosition">Сохранить место маркировки детали (null — автоматически); null — без ручной маркировки.</param>
         public FlatViewerWindow(IReadOnlyList<PartRow> rows, int index, Func<PartRow, Task<bool>> ensureFlat,
             ISet<string> collapsedSections = null, Func<PartRow, string, bool> isOwnLine = null,
-            Action<PartRow, MarkingPosition> setMarkingPosition = null)
+            Action<PartRow, MarkingPosition> setMarkingPosition = null,
+            Action<PartRow, InvAuto.Core.Preflight.PreflightIssue, bool> dismiss = null)
         {
+            _dismiss = dismiss;
             InitializeComponent();
             _rows = rows;
             _ensureFlat = ensureFlat;
@@ -187,7 +190,7 @@ namespace InvAuto.Features.SheetMetal
 
         /// <summary>Таблица свойств — та же, что в панели «Свойства» окна деталей.</summary>
         private void FillProperties(PartRow row) =>
-            PartDetails.Fill(PropertiesTable, row, _isOwnLine == null ? null : (Func<string, bool>)(key => _isOwnLine(row, key)));
+            PartDetails.Fill(PropertiesTable, row, _isOwnLine == null ? null : (Func<string, bool>)(key => _isOwnLine(row, key)), _dismiss);
 
         #region Масштаб и курсор
 

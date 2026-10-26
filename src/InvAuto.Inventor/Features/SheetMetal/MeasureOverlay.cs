@@ -62,8 +62,8 @@ namespace InvAuto.Features.SheetMetal
                 return;
             foreach (var issue in Issues)
             {
-                if (issue.Severity == IssueSeverity.Info)
-                    continue;
+                if (!issue.Counts)
+                    continue; // сведения и пропущенные замечания не отмечаются
                 var pen = issue.Severity == IssueSeverity.Error ? ErrorPen : WarningPen;
                 foreach (var location in issue.Locations)
                     dc.DrawEllipse(IssueFill, pen, map(location), 11, 11);

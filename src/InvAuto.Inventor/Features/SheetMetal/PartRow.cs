@@ -251,9 +251,12 @@ namespace InvAuto.Features.SheetMetal
         /// <summary>Замечания проверки; null — ещё не проверялась.</summary>
         public IReadOnlyList<PreflightIssue> Issues => _issues;
 
-        /// <summary>Худшее замечание (без «сведений»); null — замечаний нет или не проверялась.</summary>
+        /// <summary>Худшее замечание (без «сведений» и пропущенных); null — замечаний нет или не проверялась.</summary>
         public IssueSeverity? WorstIssue =>
-            _issues == null ? null : _issues.Where(i => i.Severity != IssueSeverity.Info).Select(i => (IssueSeverity?)i.Severity).Max();
+            _issues == null ? null : _issues.Where(i => i.Counts).Select(i => (IssueSeverity?)i.Severity).Max();
+
+        /// <summary>Сколько замечаний пропущено пользователем.</summary>
+        public int DismissedCount => _issues?.Count(i => i.Dismissed) ?? 0;
 
         public bool CheckOk => _issues != null && WorstIssue == null;
         public bool CheckWarning => WorstIssue == IssueSeverity.Warning;
@@ -266,10 +269,10 @@ namespace InvAuto.Features.SheetMetal
             {
                 if (_issues == null)
                     return string.Empty;
-                int count = _issues.Count(i => i.Severity != IssueSeverity.Info);
+                int count = _issues.Count(i => i.Counts);
                 if (count == 0)
-                    return "Нет замечаний";
-                string first = _issues.Where(i => i.Severity != IssueSeverity.Info).OrderByDescending(i => i.Severity).First().Message;
+                    return DismissedCount > 0 ? $"Нет замечаний (пропущено: {DismissedCount})" : "Нет замечаний";
+                string first = _issues.Where(i => i.Counts).OrderByDescending(i => i.Severity).First().Message;
                 int cut = first.IndexOf(" — ", StringComparison.Ordinal);
                 return (cut > 0 ? first.Substring(0, cut) : first) + (count > 1 ? $" (+{count - 1})" : string.Empty);
             }
@@ -286,7 +289,7 @@ namespace InvAuto.Features.SheetMetal
         {
             _issues = issues;
             foreach (string name in new[] { nameof(Issues), nameof(WorstIssue), nameof(CheckOk), nameof(CheckWarning), nameof(CheckError),
-                         nameof(CheckText), nameof(CheckToolTip), nameof(CheckRank) })
+                         nameof(CheckText), nameof(CheckToolTip), nameof(CheckRank), nameof(DismissedCount) })
                 OnPropertyChanged(name);
         }
 

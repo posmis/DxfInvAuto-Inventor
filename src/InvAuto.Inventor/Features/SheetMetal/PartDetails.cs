@@ -17,7 +17,9 @@ namespace InvAuto.Features.SheetMetal
         private static string N(double value, string format) => value.ToString(format, CultureInfo.CurrentCulture);
 
         /// <param name="isOwnLine">Есть ли у линии гиба свои параметры (по ключу линии); null — не показывать.</param>
-        public static void Fill(PropertyTable table, PartRow row, Func<string, bool> isOwnLine = null)
+        /// <param name="dismiss">Пропустить (true) или вернуть (false) замечание детали; null — без этих действий.</param>
+        public static void Fill(PropertyTable table, PartRow row, Func<string, bool> isOwnLine = null,
+            Action<PartRow, PreflightIssue, bool> dismiss = null)
         {
             table.Clear();
             if (row == null)
@@ -28,10 +30,20 @@ namespace InvAuto.Features.SheetMetal
                 table.Section("Проверка");
                 if (row.Issues.Count == 0)
                     table.Row("Результат", "нет замечаний");
-                foreach (var issue in row.Issues.OrderByDescending(i => i.Severity))
-                    table.Row(issue.SeverityText, issue.Message, null,
-                        issue.Severity == IssueSeverity.Error ? PropertyKind.Error
-                        : issue.Severity == IssueSeverity.Warning ? PropertyKind.Warning : PropertyKind.Muted);
+                foreach (var issue in row.Issues.OrderBy(i => i.Dismissed).ThenByDescending(i => i.Severity))
+                {
+                    var kind = issue.Dismissed || issue.Severity == IssueSeverity.Info ? PropertyKind.Muted
+                        : issue.Severity == IssueSeverity.Error ? PropertyKind.Error : PropertyKind.Warning;
+                    string name = issue.Dismissed ? "Пропущено" : issue.SeverityText;
+                    if (dismiss == null || !issue.CanDismiss)
+                        table.Row(name, issue.Message, null, kind);
+                    else if (issue.Dismissed)
+                        table.ActionRow(name, issue.Message, kind, "вернуть", () => dismiss(row, issue, false),
+                            "Снова учитывать замечание в проверке");
+                    else
+                        table.ActionRow(name, issue.Message, kind, "пропустить", () => dismiss(row, issue, true),
+                            "Проверено, всё в порядке: не учитывать для этой детали.\nПри изменении детали замечание вернётся.");
+                }
             }
 
             table.Section("Деталь");

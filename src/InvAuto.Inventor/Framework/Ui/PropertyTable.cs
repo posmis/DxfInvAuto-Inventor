@@ -183,6 +183,24 @@ namespace InvAuto.Framework.Ui
             Place(unitCell, row, 2, 1);
         }
 
+        /// <summary>Строка с действием-ссылкой в последней колонке (например, «пропустить» у замечания).</summary>
+        public void ActionRow(string name, string value, PropertyKind kind, string action, Action onClick, string toolTip = null)
+        {
+            Row(name, value, null, kind, toolTip);
+            if (string.IsNullOrEmpty(value) || onClick == null)
+                return;
+            var button = new Button
+            {
+                Content = action,
+                Style = TryFindResource("LinkButton") as Style,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = toolTip
+            };
+            button.Click += (s, e) => onClick();
+            var cell = (Border)_grid.Children[_grid.Children.Count - 1]; // ячейка единиц только что добавленной строки
+            cell.Child = button;
+        }
+
         private void Add(UIElement element, int column, int span, bool isHeader)
         {
             int row = _grid.RowDefinitions.Count;

@@ -83,6 +83,7 @@ namespace InvAuto.Features.SheetMetal
 
         // Проверка перед выгрузкой: параметры и отложенный пересчёт (один раз после серии изменений).
         private PreflightSettings _preflightSettings;
+        private PreflightDismissals _dismissals;
         private bool _checksScheduled;
         private int _previewGeneration;
         private bool _busy;
@@ -115,6 +116,7 @@ namespace InvAuto.Features.SheetMetal
             _appSettings = LoadAppSettings();
             _materialStore = new MaterialLibraryStore(context.Settings.Folder, context.Log);
             _preflightSettings = LoadPreflightSettings();
+            _dismissals = context.Settings.Load<PreflightDismissals>(PreflightDismissals.Key);
             LoadMaterials();
             CleanupFlatCache();
             LoadStructure(structure);
@@ -1301,7 +1303,7 @@ namespace InvAuto.Features.SheetMetal
                     return true;
                 await GenerateFlatsAsync(new List<PartRow> { row }, force: false);
                 return row.FlatPreviewState == FlatPreviewState.Ready;
-            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key), SetMarkingPosition) { Owner = this };
+            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key), SetMarkingPosition, SetDismissed) { Owner = this };
             viewer.ShowDialog();
         }
 
@@ -1386,7 +1388,7 @@ namespace InvAuto.Features.SheetMetal
             if (_viewSettings.ShowDetails && !_busy)
                 LoadCachedPreview(row);
 
-            PartDetails.Fill(PropertiesTable, row, key => _bendSettings.HasLineOverride(row.Part.FullFileName, key));
+            PartDetails.Fill(PropertiesTable, row, key => _bendSettings.HasLineOverride(row.Part.FullFileName, key), SetDismissed);
         }
 
 
@@ -1633,6 +1635,7 @@ namespace InvAuto.Features.SheetMetal
             dialog.ShowDialog();
             _appSettings = LoadAppSettings();
             _preflightSettings = LoadPreflightSettings();
+            _dismissals = _context.Settings.Load<PreflightDismissals>(PreflightDismissals.Key); // могли сбросить
             ScheduleChecks();
 
             var reset = dialog.ResetKeys;
@@ -1701,13 +1704,96 @@ namespace InvAuto.Features.SheetMetal
         private void RunChecks()
         {
             _checksScheduled = false;
-            var results = PreflightChecker.CheckAll(_rows.Select(ToPreflight), _preflightSettings);
+            var results = WithDismissals(PreflightChecker.CheckAll(_rows.Select(ToPreflight), _preflightSettings), _rows.Select(r => r.Part));
             foreach (var row in _rows)
                 if (results.TryGetValue(row.FilePath, out var issues))
                     row.ApplyIssues(issues);
             if (PartsGrid.SelectedItem is PartRow selected)
                 ShowDetails(selected);
         }
+
+        #region Пропущенные замечания
+
+        /// <summary>
+        /// Отпечаток детали для пропусков: дата сохранения файла и признак несохранённых изменений.
+        /// Деталь сохранили или начали править — отпечаток другой, пропуски сбрасываются.
+        /// </summary>
+        private string Stamp(SheetMetalPart part)
+        {
+            // Несохранённые изменения — из открытого документа (на момент проверки), а не со времени сканирования.
+            bool dirty = part.IsModified;
+            try
+            {
+                if (_structure != null && _structure.SheetMetalDocuments.TryGetValue(part.FullFileName, out var document))
+                    dirty = ((Inventor.Document)document).Dirty;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+            }
+
+            long ticks = 0;
+            try
+            {
+                if (File.Exists(part.FullFileName))
+                    ticks = File.GetLastWriteTimeUtc(part.FullFileName).Ticks;
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+            return ticks.ToString(CultureInfo.InvariantCulture) + (dirty ? "*" : string.Empty);
+        }
+
+        /// <summary>Отмечает пропущенные замечания; пропуски изменившихся деталей сбрасываются (и сохраняются).</summary>
+        private Dictionary<string, IReadOnlyList<PreflightIssue>> WithDismissals(
+            IReadOnlyDictionary<string, IReadOnlyList<PreflightIssue>> results, IEnumerable<SheetMetalPart> parts)
+        {
+            var stamps = parts.GroupBy(p => p.FullFileName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => Stamp(g.First()), StringComparer.OrdinalIgnoreCase);
+            bool changed = false;
+            var marked = new Dictionary<string, IReadOnlyList<PreflightIssue>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in results)
+            {
+                if (!stamps.TryGetValue(pair.Key, out string stamp))
+                {
+                    marked[pair.Key] = pair.Value;
+                    continue;
+                }
+                changed |= _dismissals.Refresh(pair.Key, stamp);
+                marked[pair.Key] = _dismissals.Apply(pair.Key, stamp, pair.Value);
+            }
+            if (changed)
+                SaveDismissals();
+            return marked;
+        }
+
+        private void SaveDismissals() => _context.Settings.Save(PreflightDismissals.Key, _dismissals);
+
+        /// <summary>Пропустить (dismiss) или вернуть замечание детали — сразу пересчитать проверку.</summary>
+        private void SetDismissed(string partPath, PreflightIssue issue, bool dismiss)
+        {
+            if (issue == null || !issue.CanDismiss)
+                return;
+            var part = _rows.FirstOrDefault(r => string.Equals(r.FilePath, partPath, StringComparison.OrdinalIgnoreCase))?.Part
+                       ?? (_productParts.TryGetValue(partPath, out var p) ? p : null);
+            if (part == null)
+                return;
+            if (dismiss)
+                _dismissals.Dismiss(partPath, Stamp(part), issue.Code);
+            else
+                _dismissals.Restore(partPath, issue.Code);
+            SaveDismissals();
+            RunChecks();
+            SetStatus(dismiss
+                ? $"Замечание пропущено для «{Path.GetFileNameWithoutExtension(partPath)}»: {issue.Message}. Вернётся при изменении детали."
+                : $"Замечание снова учитывается: {issue.Message}");
+        }
+
+        private void SetDismissed(PartRow row, PreflightIssue issue, bool dismiss) => SetDismissed(row.FilePath, issue, dismiss);
+
+        #endregion
 
         private PreflightPart ToPreflight(PartRow row) => new PreflightPart
         {
@@ -1763,12 +1849,12 @@ namespace InvAuto.Features.SheetMetal
             if (_busy || !_preflightSettings.CheckBeforeExport)
                 return !_busy;
 
-            var results = PreflightChecker.CheckAll(parts.Select(ToPreflight), _preflightSettings);
+            var results = WithDismissals(PreflightChecker.CheckAll(parts.Select(ToPreflight), _preflightSettings), parts);
             var (errors, warnings) = PreflightChecker.Summary(results);
             if (errors + warnings == 0)
                 return true;
 
-            var dialog = new PreflightWindow(results, Titles(parts), parts.Count) { Owner = this };
+            var dialog = new PreflightWindow(results, Titles(parts), parts.Count, SetDismissed) { Owner = this };
             dialog.ShowDialog();
             if (dialog.ExportConfirmed)
             {
@@ -1804,7 +1890,7 @@ namespace InvAuto.Features.SheetMetal
             var (errors, warnings) = PreflightChecker.Summary(results);
             SetStatus($"Проверка: {results.Count} дет. · ошибки: {errors} · предупреждения: {warnings}");
 
-            var dialog = new PreflightWindow(results, Titles(_rows.Select(r => r.Part))) { Owner = this };
+            var dialog = new PreflightWindow(results, Titles(_rows.Select(r => r.Part)), null, SetDismissed) { Owner = this };
             dialog.ShowDialog();
             GoTo(dialog.SelectedKey, dialog.OpenViewer);
         }

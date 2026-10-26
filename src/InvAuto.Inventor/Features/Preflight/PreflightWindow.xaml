@@ -19,12 +19,16 @@
                     <TextBlock x:Name="Glyph" Style="{StaticResource IconText}" FontSize="12" Margin="0,0,6,0" Text="&#xE946;"
                                Foreground="{StaticResource MutedTextBrush}" />
                     <TextBlock x:Name="Label" Text="{Binding SeverityText}" />
+                    <TextBlock x:Name="Skipped" Text=" · пропущено" Foreground="{StaticResource MutedTextBrush}" Visibility="Collapsed" />
                 </StackPanel>
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding Severity}" Value="Warning">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE7BA;" />
                         <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource WarningBrush}" />
                         <Setter TargetName="Label" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Dismissed}" Value="True">
+                        <Setter TargetName="Skipped" Property="Visibility" Value="Visible" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding Severity}" Value="Error">
                         <Setter TargetName="Glyph" Property="Text" Value="&#xE783;" />
@@ -51,8 +55,10 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Style="{StaticResource DialogButton}" Margin="0,0,6,0" Click="OnShowPart"
                             ToolTip="Выделить деталь в списке (двойной щелчок по строке)">Показать в списке</Button>
-                    <Button Style="{StaticResource DialogButton}" Margin="0" Click="OnOpenViewer"
+                    <Button Style="{StaticResource DialogButton}" Margin="0,0,6,0" Click="OnOpenViewer"
                             ToolTip="Открыть развертку: места замечаний отмечены на ней кружками">Открыть развертку</Button>
+                    <Button x:Name="DismissButton" Style="{StaticResource DialogButton}" Margin="0" MinWidth="110" Click="OnDismiss"
+                            ToolTip="Проверено, всё в порядке: не учитывать замечание для этой детали (Delete).&#x0a;При изменении детали замечание вернётся. Ошибки пропустить нельзя.">Пропустить</Button>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -61,6 +67,9 @@
             <DockPanel>
                 <CheckBox x:Name="InfoBox" DockPanel.Dock="Right" VerticalAlignment="Center" Checked="OnFilterChanged" Unchecked="OnFilterChanged"
                           ToolTip="Показывать и сведения, например «развертка не сформирована»">Сведения</CheckBox>
+                <CheckBox x:Name="DismissedBox" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="0,0,16,0"
+                          Checked="OnFilterChanged" Unchecked="OnFilterChanged"
+                          ToolTip="Показывать замечания, пропущенные для деталей (их можно вернуть)">Пропущенные</CheckBox>
                 <StackPanel>
                     <TextBlock x:Name="HeadlineText" FontWeight="SemiBold" FontSize="13" />
                     <TextBlock x:Name="SummaryText" Style="{StaticResource Hint}" />
@@ -70,7 +79,18 @@
 
         <Grid>
             <DataGrid x:Name="IssuesGrid" Margin="16,10,16,12" IsReadOnly="True" SelectionMode="Single" RowHeight="NaN" MinRowHeight="26"
-                      BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" MouseDoubleClick="OnRowDoubleClick">
+                      BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" MouseDoubleClick="OnRowDoubleClick"
+                      SelectionChanged="OnSelectionChanged" PreviewKeyDown="OnGridKeyDown">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Dismissed}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                                <Setter Property="ToolTip" Value="Пропущено для этой детали — вернётся при её изменении" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="Важность" Width="110" CellTemplate="{StaticResource SeverityCell}" SortMemberPath="Rank" />
                     <DataGridTextColumn Header="Деталь" Binding="{Binding Part}" Width="200" />

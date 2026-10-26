@@ -24,13 +24,29 @@ namespace InvAuto.Core.Preflight
     /// <summary>Замечание проверки по детали.</summary>
     public sealed class PreflightIssue
     {
-        public PreflightIssue(IssueSeverity severity, string code, string message, IReadOnlyList<Point2> locations = null)
+        public PreflightIssue(IssueSeverity severity, string code, string message, IReadOnlyList<Point2> locations = null,
+            bool dismissed = false)
         {
             Severity = severity;
             Code = code;
             Message = message;
             Locations = locations ?? Array.Empty<Point2>();
+            Dismissed = dismissed && severity != IssueSeverity.Error;
         }
+
+        /// <summary>
+        /// Пользователь проверил и пропустил замечание для этой детали: оно не влияет на итог проверки и
+        /// не останавливает выгрузку. Ошибки пропустить нельзя.
+        /// </summary>
+        public bool Dismissed { get; }
+
+        public bool CanDismiss => Severity != IssueSeverity.Error;
+
+        /// <summary>Учитывается в итоге: не сведения и не пропущено.</summary>
+        public bool Counts => Severity != IssueSeverity.Info && !Dismissed;
+
+        public PreflightIssue WithDismissed(bool dismissed) =>
+            dismissed == Dismissed ? this : new PreflightIssue(Severity, Code, Message, Locations, dismissed);
 
         public IssueSeverity Severity { get; }
 
@@ -44,7 +60,7 @@ namespace InvAuto.Core.Preflight
 
         public string SeverityText => Severity == IssueSeverity.Error ? "Ошибка" : Severity == IssueSeverity.Warning ? "Внимание" : "Сведения";
 
-        public override string ToString() => SeverityText + ": " + Message;
+        public override string ToString() => SeverityText + ": " + Message + (Dismissed ? " (пропущено)" : string.Empty);
     }
 
     /// <summary>Состояние материала детали для проверки.</summary>
@@ -316,9 +332,9 @@ namespace InvAuto.Core.Preflight
             return result;
         }
 
-        /// <summary>Итог по набору: (ошибок, предупреждений) — по числу деталей с такими замечаниями.</summary>
+        /// <summary>Итог по набору: (ошибок, предупреждений) — по числу деталей с такими замечаниями (пропущенные не считаются).</summary>
         public static (int Errors, int Warnings) Summary(IReadOnlyDictionary<string, IReadOnlyList<PreflightIssue>> results) =>
             (results.Values.Count(v => v.Any(i => i.Severity == IssueSeverity.Error)),
-             results.Values.Count(v => v.Any(i => i.Severity == IssueSeverity.Warning) && v.All(i => i.Severity != IssueSeverity.Error)));
+             results.Values.Count(v => v.Any(i => i.Severity == IssueSeverity.Warning && !i.Dismissed) && v.All(i => i.Severity != IssueSeverity.Error)));
     }
 }
