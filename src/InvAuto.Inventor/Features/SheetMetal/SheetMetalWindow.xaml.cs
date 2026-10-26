@@ -16,8 +16,10 @@ using System.Windows.Threading;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
 using InvAuto.Core.Preview;
+using InvAuto.Core.Settings;
 using InvAuto.Core.SheetMetal;
 using InvAuto.Core.Structure;
+using InvAuto.Features.Service;
 using InvAuto.Framework;
 using InvAuto.InventorApi;
 
@@ -35,9 +37,10 @@ namespace InvAuto.Features.SheetMetal
 
         private readonly FeatureContext _context;
         private readonly Inventor.Document _document;
-        private readonly FlatPatternExportSettings _exportSettings;
-        private readonly SheetMetalViewSettings _viewSettings;
-        private readonly BendSettings _bendSettings;
+        // Не readonly: после сброса в «Настройках InvAuto» перечитываются из файла.
+        private FlatPatternExportSettings _exportSettings;
+        private SheetMetalViewSettings _viewSettings;
+        private BendSettings _bendSettings;
 
         private readonly FlatTree<TreeRow> _tree = new FlatTree<TreeRow>();
         private readonly ObservableCollection<PartRow> _rows = new ObservableCollection<PartRow>();
@@ -510,7 +513,9 @@ namespace InvAuto.Features.SheetMetal
         {
             try
             {
-                int removed = new FlatPreviewCache(FlatPreviewService.DefaultCacheFolder).Cleanup(TimeSpan.FromDays(30));
+                var app = _context.Settings.Load<AppSettings>(AppSettings.Key);
+                app.Normalize();
+                int removed = new FlatPreviewCache(FlatPreviewService.DefaultCacheFolder).Cleanup(TimeSpan.FromDays(app.CacheMaxAgeDays));
                 if (removed > 0)
                     _context.Log.Info($"Удалено старых разверток из кэша: {removed}");
             }
@@ -1163,6 +1168,47 @@ namespace InvAuto.Features.SheetMetal
             foreach (var row in _rows)
                 ApplyBends(row);
             ResetFlatPreviews();
+        }
+
+        private void OnAppSettings(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            var dialog = new AppSettingsWindow(_context) { Owner = this };
+            dialog.ShowDialog();
+
+            var reset = dialog.ResetKeys;
+            if (reset.Contains(ExportSettingsKey))
+            {
+                _exportSettings = _context.Settings.Load<FlatPatternExportSettings>(ExportSettingsKey);
+                ProductQuantityBox.Text = ProductQuantity.ToString(CultureInfo.InvariantCulture);
+            }
+            if (reset.Contains(BendSettingsKey))
+                _bendSettings = _context.Settings.Load<BendSettings>(BendSettingsKey);
+            if (reset.Contains(ViewSettingsKey))
+            {
+                _viewSettings = _context.Settings.Load<SheetMetalViewSettings>(ViewSettingsKey);
+                _viewSettings.Normalize();
+                WindowState = WindowState.Normal;
+                ApplyViewSettings();
+                BuildPartColumns();
+            }
+            if (reset.Contains(ExportSettingsKey) || reset.Contains(BendSettingsKey))
+            {
+                foreach (var row in _rows)
+                    ApplyBends(row);
+            }
+
+            // Развертки зависят от параметров выгрузки и лежат в кэше: после сброса или очистки перечитываем.
+            if (dialog.CacheCleared || reset.Contains(ExportSettingsKey))
+                ResetFlatPreviews();
+            else if (reset.Contains(BendSettingsKey) && PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+
+            if (dialog.CacheCleared)
+                SetStatus("Кэш разверток очищен — сформируйте развертки заново");
+            else if (reset.Count > 0)
+                SetStatus("Настройки сброшены к значениям по умолчанию");
         }
 
         private void SetBusy(bool busy, int steps)

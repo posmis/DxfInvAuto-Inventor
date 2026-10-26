@@ -55,6 +55,29 @@ namespace InvAuto.Core.Settings
             File.Move(temp, path);
         }
 
+        public bool Exists(string key) => File.Exists(PathFor(key));
+
+        /// <summary>
+        /// Сбрасывает настройки к значениям по умолчанию: файл переносится в папку backup с отметкой времени.
+        /// Возвращает путь к резервной копии (null — настроек не было).
+        /// </summary>
+        public string Reset(string key)
+        {
+            string path = PathFor(key);
+            if (!File.Exists(path))
+                return null;
+
+            string backupFolder = Path.Combine(_folder, "backup");
+            Directory.CreateDirectory(backupFolder);
+            string backup = Path.Combine(backupFolder, $"{key}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.xml");
+            for (int i = 2; File.Exists(backup); i++)
+                backup = Path.Combine(backupFolder, $"{key}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{i}.xml");
+
+            File.Move(path, backup);
+            _log.Info($"Настройки '{key}' сброшены, резервная копия: {backup}");
+            return backup;
+        }
+
         private string PathFor(string key) => Path.Combine(_folder, key + ".xml");
     }
 }

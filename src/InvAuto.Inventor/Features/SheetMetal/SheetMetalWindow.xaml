@@ -246,8 +246,12 @@
                     </HeaderedContentControl>
 
                     <HeaderedContentControl Header="Настройки" Style="{StaticResource RibbonGroup}">
-                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Settings}" Click="OnSettings"
-                                ToolTip="Папка, имена файлов, способ выгрузки DXF">Параметры выгрузки</Button>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Settings}" Click="OnSettings"
+                                    ToolTip="Папка, имена файлов, способ выгрузки DXF">Параметры выгрузки</Button>
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.DataFolder}" Click="OnAppSettings"
+                                    ToolTip="Кэш разверток, журнал, сброс настроек">Настройки приложения</Button>
+                        </StackPanel>
                     </HeaderedContentControl>
                 </StackPanel>
             </DockPanel>

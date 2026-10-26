@@ -47,6 +47,8 @@ namespace InvAuto.Core.Logging
             return removed;
         }
 
+        public string Folder => _folder;
+
         public string CurrentLogFile => Path.Combine(_folder, DateTime.Now.ToString("yyyy-MM-dd") + ".log");
 
         public void Info(string message) => Write("INFO", message, null);

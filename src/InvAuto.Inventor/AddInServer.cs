@@ -27,13 +27,17 @@ namespace InvAuto
             string dataFolder = System.IO.Path.Combine(
                 System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "InvAuto");
             var logger = new FileLogger(System.IO.Path.Combine(dataFolder, "logs"));
-            logger.Cleanup(TimeSpan.FromDays(60));
             _log = logger;
 
             try
             {
+                var settings = new XmlSettingsStore(dataFolder, _log);
+                var appSettings = settings.Load<AppSettings>(AppSettings.Key);
+                appSettings.Normalize();
+                logger.Cleanup(TimeSpan.FromDays(appSettings.LogMaxAgeDays));
+
                 var app = addInSiteObject.Application;
-                var context = new FeatureContext(app, _log, new XmlSettingsStore(dataFolder, _log));
+                var context = new FeatureContext(app, _log, settings, logger.Folder);
 
                 var features = new FeatureRegistry(_log).Discover(PluginFolder());
                 _ribbon = new RibbonBuilder(context, "{" + ClientId + "}");

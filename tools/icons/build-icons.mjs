@@ -33,7 +33,7 @@ const pngDir = join(root, 'src', 'InvAuto.Inventor', 'Resources', 'Icons');
 // Иконки кнопок на ленте Inventor: имя SVG → Id функции (IconLoader ищет {Id}.16.png и {Id}.32.png).
 const RIBBON = {
   'sheet-metal': 'SheetMetal',
-  'data-folder': 'OpenDataFolder',
+  'settings': 'AppSettings',
 };
 
 const files = readdirSync(srcDir).filter(f => f.endsWith('.svg')).sort();
