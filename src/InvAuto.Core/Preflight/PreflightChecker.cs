@@ -62,6 +62,9 @@ namespace InvAuto.Core.Preflight
         public string PartNumber { get; set; } = string.Empty;
         public double Thickness { get; set; }
 
+        /// <summary>Толщина назначенного материала (для замечания о несовпадении), 0 — неизвестна.</summary>
+        public double MaterialThickness { get; set; }
+
         public bool HasFlatPattern { get; set; }
 
         /// <summary>При выгрузке развертка будет создана автоматически (настройка выгрузки).</summary>
@@ -141,34 +144,33 @@ namespace InvAuto.Core.Preflight
             if (!part.HasFlatPattern)
             {
                 issues.Add(part.WillCreateFlat
-                    ? new PreflightIssue(IssueSeverity.Warning, "NoFlat",
-                        "В детали нет развертки — она будет создана при выгрузке, и деталь потребует сохранения")
-                    : new PreflightIssue(IssueSeverity.Error, "NoFlat",
-                        "В детали нет развертки — деталь не выгрузится. Создайте развертку в Inventor " +
-                        "или включите «Создавать развертку, если её нет» в параметрах выгрузки"));
+                    ? new PreflightIssue(IssueSeverity.Warning, "NoFlat", "Нет развертки — будет создана при выгрузке")
+                    : new PreflightIssue(IssueSeverity.Error, "NoFlat", "Нет развертки"));
             }
             else if (part.FlatError.Length > 0)
             {
-                issues.Add(new PreflightIssue(IssueSeverity.Error, "FlatFailed", "Развертку не удалось сформировать: " + part.FlatError));
+                issues.Add(new PreflightIssue(IssueSeverity.Error, "FlatFailed", "Ошибка развертки: " + part.FlatError));
             }
 
             if (part.NeedsUpdate)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NeedsUpdate",
-                    "Модель требует перестроения — развертка может не соответствовать модели. Обновите деталь в Inventor"));
+                    "Модель не перестроена"));
             if (part.IsModified)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "Modified",
-                    "Деталь не сохранена — выгрузится текущее состояние, которого нет в файле детали"));
+                    "Деталь не сохранена"));
 
             if (settings.RequirePartNumber && part.PartNumber.Trim().Length == 0)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NoPartNumber",
-                    "Нет обозначения — в имени DXF и в ведомости будет имя файла"));
+                    "Нет обозначения"));
 
             if (part.Material == MaterialCheck.Missing)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NoMaterial",
-                    $"Нет материала толщиной {N(part.Thickness)} мм в библиотеке — масса не посчитается"));
+                    $"Нет материала {N(part.Thickness)} мм в библиотеке"));
             else if (part.Material == MaterialCheck.Mismatch)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "MaterialMismatch",
-                    "Толщина назначенного материала не совпадает с толщиной детали"));
+                    part.MaterialThickness > 0
+                        ? $"Материал {N(part.MaterialThickness)} мм, деталь {N(part.Thickness)} мм"
+                        : "Толщина материала ≠ толщине детали"));
 
             if (settings.CheckSheetSize && part.FlatLength > 0)
             {
@@ -176,14 +178,14 @@ namespace InvAuto.Core.Preflight
                 double sheetBig = Math.Max(settings.SheetLength, settings.SheetWidth), sheetSmall = Math.Min(settings.SheetLength, settings.SheetWidth);
                 if (big > sheetBig || small > sheetSmall)
                     issues.Add(new PreflightIssue(IssueSeverity.Warning, "SheetSize",
-                        $"Развертка {N(big)} × {N(small)} мм не помещается на лист {N(sheetBig)} × {N(sheetSmall)} мм"));
+                        $"Больше листа: {N(big)} × {N(small)} > {N(sheetBig)} × {N(sheetSmall)} мм"));
             }
 
             if (part.HasFlatPattern && part.FlatError.Length == 0)
             {
                 if (part.Drawing == null || part.Drawing.IsEmpty)
                     issues.Add(new PreflightIssue(IssueSeverity.Info, "NotFormed",
-                        "Развертка не сформирована — отверстия и контур не проверялись (вкладка «Развертки» → «Сформировать развертки»)"));
+                        "Развертка не сформирована — геометрия не проверена"));
                 else
                     CheckGeometry(part, settings, issues);
             }
@@ -198,7 +200,7 @@ namespace InvAuto.Core.Preflight
             var open = contours.Where(c => !c.Closed).ToList();
             if (open.Count > 0)
                 issues.Add(new PreflightIssue(IssueSeverity.Error, "OpenContour",
-                    $"Контур развертки не замкнут ({open.Count}) — станок может не вырезать деталь, площадь и масса неточны",
+                    $"Разрыв контура: {open.Count} шт.",
                     open.SelectMany(c => new[] { c.Points[0], c.Points[c.Points.Count - 1] }).ToList()));
             if (!contours.Any(c => c.IsOuter))
                 return;
@@ -211,8 +213,7 @@ namespace InvAuto.Core.Preflight
                 var small = holes.Where(h => h.Size < minHole - 1e-6).ToList();
                 if (small.Count > 0)
                     issues.Add(new PreflightIssue(IssueSeverity.Warning, "SmallHole",
-                        $"Отверстий меньше {N(minHole)} мм: {small.Count} (наименьшее {N(small.Min(h => h.Size))} мм) — " +
-                        "могут не прорезаться или оплавиться",
+                        $"Отверстия < {N(minHole)} мм: {small.Count} шт., мин. {N(small.Min(h => h.Size))} мм",
                         small.Select(h => h.Center).ToList()));
             }
 
@@ -230,9 +231,8 @@ namespace InvAuto.Core.Preflight
                 {
                     double nearest = near.Min(n => n.Distance);
                     issues.Add(new PreflightIssue(IssueSeverity.Warning, "HoleNearBend",
-                        $"Отверстий ближе {N(clearance)} мм к линии гиба: {near.Count} " +
-                        (nearest <= 0 ? "(есть на самой линии гиба)" : $"(ближайшее {N(nearest)} мм)") +
-                        " — при гибке их поведёт",
+                        $"Отверстия у линии гиба (< {N(clearance)} мм): {near.Count} шт., " +
+                        (nearest <= 0 ? "есть на линии" : $"мин. {N(nearest)} мм"),
                         near.Select(n => n.Hole.Center).ToList()));
                 }
             }
@@ -256,7 +256,7 @@ namespace InvAuto.Core.Preflight
                         .Select(p => Path.GetFileName(p.Key)));
                     var issues = (List<PreflightIssue>)result[part.Key];
                     issues.Add(new PreflightIssue(IssueSeverity.Warning, "DuplicatePartNumber",
-                        $"Обозначение «{group.Key}» есть и у других деталей: {others} — файлы DXF получат одинаковые имена"));
+                        $"Обозначение «{group.Key}» повторяется: {others}"));
                 }
             }
             return result;

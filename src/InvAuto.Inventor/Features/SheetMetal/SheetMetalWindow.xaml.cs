@@ -1598,6 +1598,7 @@ namespace InvAuto.Features.SheetMetal
             IsModified = row.Part.IsModified,
             NeedsUpdate = row.Part.NeedsUpdate,
             Material = row.MaterialMissing ? MaterialCheck.Missing : row.MaterialMismatch ? MaterialCheck.Mismatch : MaterialCheck.Ok,
+            MaterialThickness = row.LibraryMaterial.Material?.Thickness ?? 0,
             Drawing = row.FlatPreviewState == FlatPreviewState.Ready ? row.Flat : null,
             FlatError = row.FlatPreviewState == FlatPreviewState.Failed ? row.FlatPreviewError : string.Empty,
             BendLines = row.BendLines.Select(b => b.Line).ToList(),
@@ -1624,6 +1625,7 @@ namespace InvAuto.Features.SheetMetal
                 NeedsUpdate = part.NeedsUpdate,
                 Material = material.Source == MaterialSource.None ? MaterialCheck.Missing
                     : material.ThicknessMismatch ? MaterialCheck.Mismatch : MaterialCheck.Ok,
+                MaterialThickness = material.Material?.Thickness ?? 0,
                 FlatLength = part.FlatLengthMm,
                 FlatWidth = part.FlatWidthMm
             };
@@ -1651,7 +1653,7 @@ namespace InvAuto.Features.SheetMetal
                 return true;
             }
             GoTo(dialog.SelectedKey, dialog.OpenViewer);
-            SetStatus("Выгрузка отменена — исправьте замечания или выгрузите всё равно");
+            SetStatus("Выгрузка отменена");
             return false;
         }
 
@@ -1677,7 +1679,7 @@ namespace InvAuto.Features.SheetMetal
             RunChecks();
             var results = _rows.ToDictionary(r => r.FilePath, r => r.Issues ?? (IReadOnlyList<PreflightIssue>)Array.Empty<PreflightIssue>(), StringComparer.OrdinalIgnoreCase);
             var (errors, warnings) = PreflightChecker.Summary(results);
-            SetStatus($"Проверено деталей: {results.Count} · с ошибками: {errors} · с предупреждениями: {warnings}");
+            SetStatus($"Проверка: {results.Count} дет. · ошибки: {errors} · предупреждения: {warnings}");
 
             var dialog = new PreflightWindow(results, Titles(_rows.Select(r => r.Part))) { Owner = this };
             dialog.ShowDialog();
@@ -1805,17 +1807,17 @@ namespace InvAuto.Features.SheetMetal
         {
             var notes = new List<string>();
             if (!row.HasFlatPattern)
-                notes.Add("в детали нет развертки");
+                notes.Add("нет развертки");
             else if (row.FlatPreviewState == FlatPreviewState.Failed)
                 notes.Add("ошибка развертки: " + row.FlatPreviewError);
             else if (row.FlatPreviewState != FlatPreviewState.Ready)
                 notes.Add("развертка не сформирована");
             if (row.MaterialMissing)
-                notes.Add($"нет материала толщиной {row.Thickness:0.##} мм в библиотеке — масса не посчитана");
+                notes.Add($"нет материала {row.Thickness:0.##} мм в библиотеке");
             if (row.MaterialMismatch)
-                notes.Add("толщина назначенного материала не совпадает с деталью");
+                notes.Add($"материал {row.LibraryMaterial.Material?.Thickness:0.##} мм, деталь {row.Thickness:0.##} мм");
             if (row.Metrics != null && row.Metrics.OpenChains > 0)
-                notes.Add("незамкнутый контур в DXF — площадь и масса могут быть неточны");
+                notes.Add($"разрыв контура: {row.Metrics.OpenChains} шт.");
 
             return new ReportItem
             {

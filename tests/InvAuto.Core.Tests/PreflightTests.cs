@@ -95,7 +95,9 @@ namespace InvAuto.Core.Tests
             Assert.Equal(new[] { "NeedsUpdate", "Modified", "NoPartNumber", "NoMaterial" }, Codes(part));
 
             part.Material = MaterialCheck.Mismatch;
+            part.MaterialThickness = 2;
             Assert.Contains("MaterialMismatch", Codes(part));
+            Assert.Contains(PreflightChecker.Check(part, Defaults), i => i.Message == "Материал 2 мм, деталь 3 мм");
             Assert.DoesNotContain("NoPartNumber", Codes(part, new PreflightSettings { RequirePartNumber = false }));
         }
 
@@ -116,8 +118,7 @@ namespace InvAuto.Core.Tests
             var part = Plate(Circle(30, 30, 1), Circle(30, 70, 1.25), Circle(60, 50, 2));
             var issue = PreflightChecker.Check(part, Defaults).Single(i => i.Code == "SmallHole");
             Assert.Equal(2, issue.Locations.Count);
-            Assert.Contains("меньше 3 мм: 2", issue.Message);
-            Assert.Contains("наименьшее 2 мм", issue.Message);
+            Assert.Equal("Отверстия < 3 мм: 2 шт., мин. 2 мм", issue.Message);
 
             Assert.DoesNotContain("SmallHole", Codes(part, new PreflightSettings { MinHoleFactor = 0.5, MinHoleMm = 1 }));
             Assert.Contains("SmallHole", Codes(part, new PreflightSettings { MinHoleFactor = 0, MinHoleMm = 5 }));
@@ -133,7 +134,7 @@ namespace InvAuto.Core.Tests
 
             var issue = PreflightChecker.Check(part, Defaults).Single(i => i.Code == "HoleNearBend");
             Assert.Equal(2, issue.Locations.Count);
-            Assert.Contains("на самой линии гиба", issue.Message);
+            Assert.Equal("Отверстия у линии гиба (< 6 мм): 2 шт., есть на линии", issue.Message);
 
             Assert.DoesNotContain("HoleNearBend", Codes(part, new PreflightSettings { BendClearanceFactor = 0 }));
             part.BendLines = Array.Empty<BendLineInfo>();

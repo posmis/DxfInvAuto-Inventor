@@ -29,21 +29,19 @@ namespace InvAuto.Features.Preflight
 
             var (errors, warnings) = PreflightChecker.Summary(results);
             int clean = results.Count - errors - warnings;
-            SummaryText.Text = $"Проверено деталей: {results.Count} · с ошибками: {errors} · с предупреждениями: {warnings} · без замечаний: {clean}";
+            SummaryText.Text = $"Деталей: {results.Count} · с ошибками: {errors} · с предупреждениями: {warnings} · без замечаний: {clean}";
 
             if (exportCount is int count)
             {
                 Title = "Проверка перед выгрузкой";
-                HeadlineText.Text = errors > 0
-                    ? "Есть ошибки: часть деталей не выгрузится или выгрузится неверно"
-                    : "Есть замечания — проверьте перед выгрузкой";
+                HeadlineText.Text = errors > 0 ? "Есть ошибки" : "Есть предупреждения";
                 ExportButton.Content = $"Выгрузить всё равно ({count})";
                 ExportButton.Visibility = Visibility.Visible;
                 CloseButton.Content = "Отмена";
             }
             else
             {
-                HeadlineText.Text = errors + warnings == 0 ? "Замечаний нет — детали готовы к выгрузке" : "Замечания по деталям";
+                HeadlineText.Text = errors > 0 ? "Есть ошибки" : warnings > 0 ? "Есть предупреждения" : "Замечаний нет";
             }
 
             Fill();
