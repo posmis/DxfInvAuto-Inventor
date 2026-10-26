@@ -306,7 +306,7 @@ namespace InvAuto.Core.Bends
                 double[] p = points[i - 1], q = points[i];
                 if (outline.IsCircle)
                 {
-                    var d = Geometry2Distance(p, q, outline.CenterX, outline.CenterY);
+                    var d = PointToSegment(p, q, outline.CenterX, outline.CenterY);
                     if (d < outline.Radius - eps)
                         return true;
                     continue;
@@ -318,7 +318,7 @@ namespace InvAuto.Core.Bends
             return false;
         }
 
-        private static double Geometry2Distance(double[] a, double[] b, double x, double y)
+        private static double PointToSegment(double[] a, double[] b, double x, double y)
         {
             double dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy;
             double t = len2 < 1e-18 ? 0 : Math.Max(0, Math.Min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2));

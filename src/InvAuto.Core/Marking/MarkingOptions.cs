@@ -98,10 +98,10 @@ namespace InvAuto.Core.Marking
         public MarkingPosition PositionFor(string partPath) =>
             Positions.LastOrDefault(p => string.Equals(p.PartPath, partPath, StringComparison.OrdinalIgnoreCase));
 
-        public void SetPosition(string partPath, double x, double y, bool vertical)
+        public void SetPosition(string partPath, double x, double y, bool vertical, double height = 0)
         {
             ClearPosition(partPath);
-            Positions.Add(new MarkingPosition { PartPath = partPath, X = x, Y = y, Vertical = vertical });
+            Positions.Add(new MarkingPosition { PartPath = partPath, X = x, Y = y, Vertical = vertical, Height = height });
         }
 
         public void ClearPosition(string partPath) =>

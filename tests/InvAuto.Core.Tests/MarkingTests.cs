@@ -185,6 +185,17 @@ namespace InvAuto.Core.Tests
         }
 
         [Fact]
+        public void ManualPosition_KeepsHeight_WithinLimits()
+        {
+            var shrunk = DxfMarking.Apply(Frame(), "A-1", On(5, 2.5), position: new MarkingPosition { X = 100, Y = 10, Height = 3 });
+            Assert.Equal(3, shrunk.Text.Height, 9);
+            var tooBig = DxfMarking.Apply(Frame(), "A-1", On(5, 2.5), position: new MarkingPosition { X = 100, Y = 10, Height = 9 });
+            Assert.Equal(5, tooBig.Text.Height, 9);
+            var tooSmall = DxfMarking.Apply(Frame(), "A-1", On(5, 2.5), position: new MarkingPosition { X = 100, Y = 10, Height = 1 });
+            Assert.Equal(2.5, tooSmall.Text.Height, 9);
+        }
+
+        [Fact]
         public void Shrunk_IsInfo()
         {
             var shrunk = DxfMarking.Apply(Rect(40, 30), "1234567890", On(5, 2.5));
@@ -192,6 +203,39 @@ namespace InvAuto.Core.Tests
             var issues = PreflightChecker.Check(new PreflightPart { Key = "P", PartNumber = "P", HasFlatPattern = true, Marking = shrunk },
                 new PreflightSettings());
             Assert.Equal(IssueSeverity.Info, Assert.Single(issues, i => i.Code == "MarkingShrunk").Severity);
+        }
+
+        [Fact]
+        public void Settings_RoundTripThroughXml_TwiceWithoutDuplicates()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "invauto-marking-xml-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var store = new InvAuto.Core.Settings.XmlSettingsStore(dir, new InvAuto.Core.Logging.FileLogger(Path.Combine(dir, "logs")));
+                var s = new MarkingSettings { Default = On(4) };
+                s.SetOverride(@"C:\Детали\Рамка.ipt", new MarkingOptions { Enabled = false });
+                s.SetPosition(@"C:\Детали\Опора.ipt", 12.5, 30, true, 3);
+
+                store.Save(MarkingSettings.Key, s);
+                var loaded = store.Load<MarkingSettings>(MarkingSettings.Key);
+                store.Save(MarkingSettings.Key, loaded);
+                loaded = store.Load<MarkingSettings>(MarkingSettings.Key);
+
+                Assert.True(loaded.For(@"C:\Детали\Опора.ipt").Enabled);
+                Assert.Equal(4, loaded.Default.Height);
+                Assert.False(loaded.For(@"C:\Детали\Рамка.ipt").Enabled);
+                Assert.Single(loaded.Parts);
+                var p = Assert.Single(loaded.Positions);
+                Assert.Equal(12.5, p.X);
+                Assert.True(p.Vertical);
+                Assert.Equal(3, p.Height);
+                Assert.False(new MarkingSettings().Default.Enabled); // по умолчанию выключена
+            }
+            finally
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
         }
 
         [Fact]

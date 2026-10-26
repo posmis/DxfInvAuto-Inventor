@@ -1171,7 +1171,7 @@ namespace InvAuto.Features.SheetMetal
             if (position == null)
                 _markingSettings.ClearPosition(key);
             else
-                _markingSettings.SetPosition(key, position.X, position.Y, position.Vertical);
+                _markingSettings.SetPosition(key, position.X, position.Y, position.Vertical, position.Height);
             _context.Settings.Save(MarkingSettings.Key, _markingSettings);
             ApplyMarking(row);
             ScheduleChecks();

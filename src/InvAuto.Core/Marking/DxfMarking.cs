@@ -35,6 +35,9 @@ namespace InvAuto.Core.Marking
         /// <summary>Текст снизу вверх (90°).</summary>
         public bool Vertical { get; set; }
 
+        /// <summary>Высота текста, мм (как было при переносе; 0 — высота из параметров). Не выходит за MinHeight…Height.</summary>
+        public double Height { get; set; }
+
         public MarkingPosition Clone() => (MarkingPosition)MemberwiseClone();
     }
 
@@ -335,7 +338,8 @@ namespace InvAuto.Core.Marking
             var area = new MarkingArea(drawing ?? DxfReader.Read(new StringReader(dxf)));
             if (position != null)
             {
-                var manual = At(text, position.X, position.Y, o.Height, position.Vertical);
+                double height = position.Height > 0 ? Math.Max(o.MinHeight, Math.Min(o.Height, position.Height)) : o.Height;
+                var manual = At(text, position.X, position.Y, height, position.Vertical);
                 return new MarkingResult(MarkingStatus.Placed, DxfBendProcessor.AddText(dxf, manual, o.Layer, LayerColor), manual,
                     manual: true, conflict: !area.Fits(manual, o.Margin), requestedHeight: o.Height);
             }
@@ -346,9 +350,5 @@ namespace InvAuto.Core.Marking
                 : new MarkingResult(MarkingStatus.Placed, DxfBendProcessor.AddText(dxf, placed, o.Layer, LayerColor), placed,
                     centerCut: area.CenterCut, requestedHeight: o.Height);
         }
-
-        /// <summary>Место для текста на развертке; null — не помещается.</summary>
-        public static FlatText Place(FlatDrawing drawing, string text, MarkingOptions options) =>
-            new MarkingArea(drawing).Place(text, options);
     }
 }

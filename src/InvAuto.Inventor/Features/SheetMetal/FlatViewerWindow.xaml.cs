@@ -265,7 +265,7 @@ namespace InvAuto.Features.SheetMetal
                 // Щелчок — поставить текст центром в эту точку.
                 var text = CurrentMarkingText();
                 if (text != null)
-                    CommitMarking(text.Vertical, position.X, position.Y);
+                    CommitMarking(text, position.X, position.Y);
                 return;
             }
             if (_measure.Mode == MeasureMode.None)
@@ -406,7 +406,7 @@ namespace InvAuto.Features.SheetMetal
         {
             var text = CurrentMarkingText();
             if (text != null)
-                CommitMarking(text.Vertical, at.X + _dragDx, at.Y + _dragDy);
+                CommitMarking(text, at.X + _dragDx, at.Y + _dragDy);
         }
 
         /// <summary>Черновик при перетаскивании: развертка без текста + текст на новом месте, красный — если не годится.</summary>
@@ -423,12 +423,16 @@ namespace InvAuto.Features.SheetMetal
         }
 
         /// <summary>Сохранить место (центр текста) — деталь перерисуется с текстом там же, где и при выгрузке.</summary>
-        private void CommitMarking(bool vertical, double cx, double cy)
+        private void CommitMarking(FlatText text, double cx, double cy, bool? vertical = null)
         {
             var row = Current;
             if (row == null || _setMarkingPosition == null)
                 return;
-            _setMarkingPosition(row, new MarkingPosition { PartPath = row.FilePath, X = cx, Y = cy, Vertical = vertical });
+            // Высота — как у текста сейчас (автоматически мог быть уменьшен): после переноса размер не меняется.
+            _setMarkingPosition(row, new MarkingPosition
+            {
+                PartPath = row.FilePath, X = cx, Y = cy, Vertical = vertical ?? text.Vertical, Height = text.Height
+            });
             _draft = null;
             UpdateMarkingTool();
         }
@@ -438,7 +442,7 @@ namespace InvAuto.Features.SheetMetal
             var text = CurrentMarkingText();
             if (!_markingMode || text == null)
                 return;
-            CommitMarking(!text.Vertical, (text.MinX + text.MaxX) / 2, (text.MinY + text.MaxY) / 2);
+            CommitMarking(text, (text.MinX + text.MaxX) / 2, (text.MinY + text.MaxY) / 2, !text.Vertical);
         }
 
         private void OnMarkingAuto(object sender, RoutedEventArgs e)
