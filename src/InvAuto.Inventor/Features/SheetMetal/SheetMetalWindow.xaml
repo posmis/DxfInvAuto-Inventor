@@ -7,7 +7,8 @@
         Background="{DynamicResource WindowBrush}"
         FontFamily="Segoe UI" FontSize="12"
         TextOptions.TextFormattingMode="Display"
-        UseLayoutRounding="True" SnapsToDevicePixels="True">
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        PreviewKeyDown="OnWindowKeyDown">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -186,6 +187,21 @@
                         </StackPanel>
                     </HeaderedContentControl>
 
+                    <HeaderedContentControl Header="Список" Style="{StaticResource RibbonGroup}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ListAdd}" Click="OnAddSelected"
+                                    ToolTip="Добавить в список листовые детали выделенных узлов дерева (Enter или Insert в дереве, двойной щелчок)">Добавить</Button>
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ListAddAll}" Click="OnAddAll"
+                                    ToolTip="Добавить в список все листовые детали изделия (Ctrl+Shift+A)">Добавить все</Button>
+                            <StackPanel Margin="2,0,0,0">
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ListRemove.Small}" Click="OnRemoveSelected"
+                                        ToolTip="Убрать выделенные строки из списка (Delete)">Удалить</Button>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ListClear.Small}" Click="OnClearList"
+                                        ToolTip="Убрать из списка все детали">Очистить</Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
                     <HeaderedContentControl Header="Развертки" Style="{StaticResource RibbonGroup}">
                         <StackPanel Orientation="Horizontal">
                         <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.FlatView}" Click="OnOpenViewer"
@@ -213,7 +229,7 @@
                     <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
                         <StackPanel Orientation="Horizontal">
                             <Button Style="{StaticResource RibbonPrimaryButton}" Tag="{StaticResource Icon.Export}" Click="OnExportChecked"
-                                    ToolTip="Выгрузить отмеченные детали выбранного узла дерева">Выгрузить отмеченные</Button>
+                                    ToolTip="Выгрузить детали списка, отмеченные галочкой">Выгрузить отмеченные</Button>
                             <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ExportAll}" Click="OnExportAll"
                                     ToolTip="Выгрузить все листовые детали изделия, независимо от выбора">Выгрузить всё</Button>
                             <StackPanel Margin="2,0,0,0">
@@ -240,6 +256,8 @@
                         <StackPanel Orientation="Horizontal">
                             <Button x:Name="ColumnsButton" Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Columns}" Click="OnColumns"
                                     ToolTip="Выбор колонок списка деталей">Колонки</Button>
+                            <Button x:Name="SortButton" Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Sort}" Click="OnSortMenu"
+                                    ToolTip="Порядок деталей в списке: по колонке, по возрастанию или убыванию.&#x0a;Также — щелчок по заголовку колонки, повторный щелчок меняет направление.">Сортировка</Button>
                             <ToggleButton x:Name="DetailsToggle" Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Details}"
                                           Click="OnToggleDetails" ToolTip="Панель свойств выбранной детали">Свойства</ToggleButton>
                         </StackPanel>
@@ -280,10 +298,24 @@
             <!-- Дерево состава -->
             <DockPanel Grid.Column="0">
                 <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
-                    <TextBlock Text="Состав изделия" Style="{StaticResource PanelTitle}" />
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Style="{StaticResource MutedText}" VerticalAlignment="Center"
+                                   Text="двойной щелчок — в список" />
+                        <TextBlock Text="Состав изделия" Style="{StaticResource PanelTitle}" />
+                    </DockPanel>
                 </Border>
-                <DataGrid x:Name="TreeGrid" IsReadOnly="True" SelectionMode="Single" CanUserSortColumns="False"
-                          CanUserReorderColumns="False" RowHeight="24" SelectionChanged="OnTreeSelectionChanged">
+                <DataGrid x:Name="TreeGrid" IsReadOnly="True" SelectionMode="Extended" CanUserSortColumns="False"
+                          CanUserReorderColumns="False" RowHeight="24"
+                          MouseDoubleClick="OnTreeDoubleClick" PreviewKeyDown="OnTreeKeyDown">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Добавить в список" InputGestureText="Enter" Click="OnAddSelected" FontWeight="SemiBold" />
+                            <MenuItem Header="Добавить все детали изделия" InputGestureText="Ctrl+Shift+A" Click="OnAddAll" />
+                            <Separator />
+                            <MenuItem Header="Развернуть всё" Click="OnExpandAll" />
+                            <MenuItem Header="Свернуть всё" Click="OnCollapseAll" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Header="Обозначение" Width="2*" CellTemplate="{StaticResource TreeTitleCell}" />
                         <DataGridTextColumn Header="Наименование" Width="1.4*" Binding="{Binding Description}" />
@@ -297,22 +329,24 @@
 
             <GridSplitter Grid.Column="1" Style="{StaticResource Splitter}" />
 
-            <!-- Листовые детали выбранного узла -->
+            <!-- Список деталей, собранный пользователем -->
             <DockPanel Grid.Column="2">
                 <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}">
                     <DockPanel>
                         <TextBlock x:Name="CounterText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" VerticalAlignment="Center" />
-                        <TextBlock x:Name="PartsTitle" Style="{StaticResource PanelTitle}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock x:Name="PartsTitle" Text="Список деталей" Style="{StaticResource PanelTitle}" TextTrimming="CharacterEllipsis" />
                     </DockPanel>
                 </Border>
                 <Grid>
                     <DataGrid x:Name="PartsGrid" IsReadOnly="True" SelectionMode="Extended" RowHeight="56"
                               SelectionChanged="OnPartSelectionChanged" PreviewKeyDown="OnPartsKeyDown"
-                              ColumnReordered="OnColumnReordered" MouseDoubleClick="OnPartsDoubleClick">
+                              ColumnReordered="OnColumnReordered" MouseDoubleClick="OnPartsDoubleClick" Sorting="OnPartsSorting">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Отметить выделенные" Click="OnCheckSelectedRows" />
                                 <MenuItem Header="Снять отметку с выделенных" Click="OnUncheckSelectedRows" />
+                                <Separator />
+                                <MenuItem Header="Удалить из списка" InputGestureText="Delete" Click="OnRemoveSelected" />
                                 <Separator />
                                 <MenuItem Header="Показать файл детали в проводнике" Click="OnRevealPart" />
                                 <MenuItem Header="Просмотр развертки" Click="OnOpenViewer" FontWeight="SemiBold" />
@@ -324,7 +358,12 @@
                         </DataGrid.ContextMenu>
                     </DataGrid>
                     <TextBlock x:Name="EmptyText" Style="{StaticResource MutedText}" HorizontalAlignment="Center"
-                               VerticalAlignment="Center" Text="В выбранном узле нет листовых деталей" Visibility="Collapsed" />
+                               VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="24" Visibility="Collapsed"
+                               IsHitTestVisible="False">
+                        Список пуст.<LineBreak />
+                        Дважды щёлкните по сборке или детали в дереве слева, чтобы добавить её листовые детали,<LineBreak />
+                        или нажмите «Добавить все» (Ctrl+Shift+A).
+                    </TextBlock>
                 </Grid>
             </DockPanel>
 

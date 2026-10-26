@@ -1,0 +1,107 @@
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using InvAuto.Core.Logging;
+using InvAuto.Core.Settings;
+using InvAuto.Core.SheetMetal;
+using InvAuto.Core.Sorting;
+using InvAuto.Core.Structure;
+using Xunit;
+
+namespace InvAuto.Core.Tests
+{
+    /// <summary>Список деталей, собранный пользователем, и сортировка как в проводнике.</summary>
+    public class WorkListAndSortingTests
+    {
+        private static readonly NaturalComparer Natural = new NaturalComparer(new CultureInfo("ru-RU"));
+
+        [Fact]
+        public void WorkList_AddsInOrder_WithoutDuplicates()
+        {
+            var list = new WorkList();
+            var first = list.Add(new[] { @"C:\A.ipt", @"C:\B.ipt" });
+            var second = list.Add(new[] { @"c:\a.IPT", @"C:\C.ipt", @"C:\C.ipt", "", null });
+
+            Assert.Equal(new[] { @"C:\A.ipt", @"C:\B.ipt" }, first.Added);
+            Assert.Equal(new[] { @"C:\C.ipt" }, second.Added);
+            Assert.Equal(1, second.AlreadyListed); // повтор внутри одного добавления не считается «уже в списке»
+            Assert.Equal(new[] { @"C:\A.ipt", @"C:\B.ipt", @"C:\C.ipt" }, list.Items);
+            Assert.True(list.Contains(@"C:\b.ipt"));
+        }
+
+        [Fact]
+        public void WorkList_RemoveClearAndRetain()
+        {
+            var list = new WorkList();
+            list.Add(new[] { "A", "B", "C", "D" });
+
+            Assert.Equal(2, list.Remove(new[] { "b", "X", "D" }));
+            Assert.Equal(new[] { "A", "C" }, list.Items);
+
+            Assert.Equal(1, list.Retain(p => p == "C")); // после обновления состава детали A больше нет
+            Assert.Equal(new[] { "C" }, list.Items);
+
+            list.Clear();
+            Assert.Equal(0, list.Count);
+            Assert.Single(list.Add(new[] { "C" }).Added); // после очистки можно добавить снова
+        }
+
+        [Fact]
+        public void Natural_OrdersNumbersByValue()
+        {
+            var names = new[] { "Деталь 10", "деталь 2", "Деталь 1", "Деталь 02a", "Ребро", "Деталь", "Лист 100", "Лист 9" };
+            var sorted = names.OrderBy(n => n, Natural).ToArray();
+
+            Assert.Equal(new[] { "Деталь", "Деталь 1", "деталь 2", "Деталь 02a", "Деталь 10", "Лист 9", "Лист 100", "Ребро" }, sorted);
+        }
+
+        [Fact]
+        public void Natural_HandlesLongNumbersAndDesignations()
+        {
+            Assert.True(Natural.Compare("АБВГ.301318.012", "АБВГ.301318.0101") < 0);
+            Assert.True(Natural.Compare("x99999999999999999999", "x100000000000000000000") < 0); // больше long
+            Assert.True(Natural.Compare("A1", "a1") != 0);  // устойчивый порядок для равных по-проводниковски
+            Assert.Equal(0, Natural.Compare("A1", "A1"));
+            Assert.True(Natural.Compare(null, "a") < 0);
+        }
+
+        [Fact]
+        public void SortValues_NumbersBoolsAndEmptyAtEnd()
+        {
+            Assert.True(SortValues.Compare(2.5, 10, false) < 0);
+            Assert.True(SortValues.Compare(2.5, 10, true) > 0);
+            Assert.True(SortValues.Compare(false, true, false) < 0);
+            Assert.True(SortValues.Compare("Лист 9", "Лист 10", false) < 0);
+
+            // Пустые — в конце при любом направлении, как в проводнике.
+            Assert.True(SortValues.Compare("", "А", false) > 0);
+            Assert.True(SortValues.Compare("", "А", true) > 0);
+            Assert.True(SortValues.Compare(null, 1, true) > 0);
+            Assert.Equal(0, SortValues.Compare(null, " ", false));
+        }
+
+        [Fact]
+        public void ViewSettings_SortSurvivesSave()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "InvAutoSort_" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var store = new XmlSettingsStore(dir, new FileLogger(dir));
+                Assert.Equal(PartColumns.FileName, store.Load<SheetMetalViewSettings>("v").SortColumn);
+
+                store.Save("v", new SheetMetalViewSettings { SortColumn = PartColumns.Thickness, SortDescending = true });
+                var loaded = store.Load<SheetMetalViewSettings>("v");
+                Assert.Equal(PartColumns.Thickness, loaded.SortColumn);
+                Assert.True(loaded.SortDescending);
+
+                store.Save("v", new SheetMetalViewSettings { SortColumn = "" });
+                Assert.Equal("", store.Load<SheetMetalViewSettings>("v").SortColumn); // «порядок добавления» сохраняется
+            }
+            finally
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+        }
+    }
+}

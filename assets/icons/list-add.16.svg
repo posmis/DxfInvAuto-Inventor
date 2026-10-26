@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <path d="M1.5 1.5 L11 1.5 L11 12 L1.5 12 Z" fill="#FFFFFF" stroke="#5C6977" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M3 3.07 L4.7 3.07 L4.7 4.77 L3 4.77 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="0.6" stroke-linejoin="miter"/>
+  <path d="M5.7 3.92 L9.5 3.92" fill="none" stroke="#9AA6B2" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M3 5.9 L4.7 5.9 L4.7 7.6 L3 7.6 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="0.6" stroke-linejoin="miter"/>
+  <path d="M5.7 6.75 L9.5 6.75" fill="none" stroke="#9AA6B2" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M3 8.73 L4.7 8.73 L4.7 10.43 L3 10.43 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="0.6" stroke-linejoin="miter"/>
+  <path d="M5.7 9.58 L9.5 9.58" fill="none" stroke="#9AA6B2" stroke-width="1" stroke-linejoin="miter"/>
+  <circle cx="11" cy="11" r="3.8" fill="#FFFFFF" stroke="none"/>
+  <path d="M8.64 11 L13.36 11" fill="none" stroke="#2E8540" stroke-width="1.6" stroke-linejoin="miter"/>
+  <path d="M11 8.64 L11 13.36" fill="none" stroke="#2E8540" stroke-width="1.6" stroke-linejoin="miter"/>
+</svg>

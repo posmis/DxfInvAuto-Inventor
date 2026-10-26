@@ -30,6 +30,11 @@ namespace InvAuto.Core.SheetMetal
 
         public int ColumnsVersion { get; set; }
 
+        /// <summary>Колонка сортировки списка деталей (Id из PartColumns, "prop:Имя" или "Checked"); пусто — порядок добавления.</summary>
+        public string SortColumn { get; set; } = PartColumns.FileName;
+
+        public bool SortDescending { get; set; }
+
         public bool ShowDetails { get; set; } = true;
         public double TreeWidth { get; set; } = 420;
         public double DetailsWidth { get; set; } = 300;

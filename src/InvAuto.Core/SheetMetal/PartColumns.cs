@@ -20,6 +20,9 @@ namespace InvAuto.Core.SheetMetal
         public const string FilePath = "FilePath";
         public const string Bends = "Bends";
 
+        /// <summary>Колонка флажка: в список колонок не входит, но по ней можно сортировать.</summary>
+        public const string Checked = "Checked";
+
         /// <summary>Префикс колонок с пользовательскими iProperties: "prop:Заказ".</summary>
         public const string PropertyPrefix = "prop:";
 

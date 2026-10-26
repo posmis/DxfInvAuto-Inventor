@@ -18,6 +18,7 @@ using InvAuto.Core.Export;
 using InvAuto.Core.Preview;
 using InvAuto.Core.Settings;
 using InvAuto.Core.SheetMetal;
+using InvAuto.Core.Sorting;
 using InvAuto.Core.Structure;
 using InvAuto.Features.Service;
 using InvAuto.Framework;
@@ -56,7 +57,14 @@ namespace InvAuto.Features.SheetMetal
 
         private AssemblyStructure _structure;
         private Dictionary<string, SheetMetalPart> _originals;
-        private TreeRow _currentNode;
+
+        /// <summary>Листовые детали изделия с количеством на всё изделие — из них собирается список.</summary>
+        private Dictionary<string, SheetMetalPart> _productParts = new Dictionary<string, SheetMetalPart>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Детали, которые пользователь добавил в список (средняя панель).</summary>
+        private readonly WorkList _list = new WorkList();
+
+        private DataGridColumn _checkColumn;
         private int _previewGeneration;
         private bool _busy;
         private bool _cancelRequested;
@@ -124,12 +132,17 @@ namespace InvAuto.Features.SheetMetal
                 .GroupBy(n => n.FullFileName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First().SheetMetal, StringComparer.OrdinalIgnoreCase);
 
+            _productParts = structure.Root.CollectSheetMetal()
+                .ToDictionary(p => p.FullFileName, StringComparer.OrdinalIgnoreCase);
+
             _tree.Load(new TreeRow(structure.Root, 0), expandLevels: 1);
             TreeGrid.SelectedItem = _tree.Root;
-            if (_currentNode != _tree.Root)
-                ShowNode(_tree.Root);
 
-            SetStatus(DefaultStatus());
+            // После обновления состава в списке остаются только детали, которые ещё есть в изделии.
+            int gone = _list.Retain(_productParts.ContainsKey);
+            RebuildRows();
+
+            SetStatus(DefaultStatus() + (gone > 0 ? $" · убрано из списка (больше нет в изделии): {gone}" : string.Empty));
         }
 
         private string DefaultStatus()
@@ -139,6 +152,8 @@ namespace InvAuto.Features.SheetMetal
             string text = $"Листовых деталей в изделии: {total}";
             if (withoutFlat > 0)
                 text += $", без развертки: {withoutFlat}";
+            if (_list.Count == 0)
+                text += " · двойной щелчок по узлу дерева добавляет его детали в список";
             return text;
         }
 
@@ -149,18 +164,12 @@ namespace InvAuto.Features.SheetMetal
             e.Handled = true;
         }
 
-        private void OnTreeSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (TreeGrid.SelectedItem is TreeRow row && row != _currentNode)
-                ShowNode(row);
-        }
-
         private void OnExpandAll(object sender, RoutedEventArgs e) => _tree.ExpandAll();
 
         private void OnCollapseAll(object sender, RoutedEventArgs e)
         {
             _tree.CollapseAll();
-            if (!_tree.Rows.Contains(_currentNode))
+            if (!(TreeGrid.SelectedItem is TreeRow row) || !_tree.Rows.Contains(row))
                 TreeGrid.SelectedItem = _tree.Root;
         }
 
@@ -173,7 +182,6 @@ namespace InvAuto.Features.SheetMetal
                 Mouse.OverrideCursor = Cursors.Wait;
                 _thumbnails.Clear();
                 _flatPreviews.Clear();
-                _currentNode = null;
                 LoadStructure(AssemblyScanner.Scan(_document));
             }
             catch (Exception ex)
@@ -191,36 +199,168 @@ namespace InvAuto.Features.SheetMetal
 
         #region Список листовых деталей
 
-        private void ShowNode(TreeRow node)
+        private PartRow CreateRow(SheetMetalPart part)
         {
-            _currentNode = node;
+            var row = new PartRow(part, ProductQuantity) { IsChecked = _checked.Contains(part.FullFileName) };
+            ApplyBends(row);
+            if (_results.TryGetValue(part.FullFileName, out var result))
+                row.ApplyResult(result);
+            if (_thumbnails.TryGetValue(part.FullFileName, out var thumbnail))
+            {
+                row.Thumbnail = thumbnail;
+                row.ThumbnailLoaded = true;
+            }
+            if (_flatPreviews.TryGetValue(part.FullFileName, out var preview))
+                row.ApplyPreview(preview);
+            row.PropertyChanged += OnRowPropertyChanged;
+            return row;
+        }
 
+        /// <summary>Строки заново по списку (после обновления состава или выгрузки); выделение сохраняется.</summary>
+        private void RebuildRows()
+        {
+            var selected = new HashSet<string>(SelectedRows.Select(r => r.Part.FullFileName), StringComparer.OrdinalIgnoreCase);
             foreach (var row in _rows)
                 row.PropertyChanged -= OnRowPropertyChanged;
             _rows.Clear();
 
-            foreach (var part in node.Node.CollectSheetMetal())
-            {
-                var row = new PartRow(part, ProductQuantity) { IsChecked = _checked.Contains(part.FullFileName) };
-                ApplyBends(row);
-                if (_results.TryGetValue(part.FullFileName, out var result))
-                    row.ApplyResult(result);
-                if (_thumbnails.TryGetValue(part.FullFileName, out var thumbnail))
-                {
-                    row.Thumbnail = thumbnail;
-                    row.ThumbnailLoaded = true;
-                }
-                if (_flatPreviews.TryGetValue(part.FullFileName, out var preview))
-                    row.ApplyPreview(preview);
-                row.PropertyChanged += OnRowPropertyChanged;
+            foreach (string path in _list.Items)
+                if (_productParts.TryGetValue(path, out var part))
+                    _rows.Add(CreateRow(part));
+
+            foreach (var row in _rows.Where(r => selected.Contains(r.Part.FullFileName)))
+                PartsGrid.SelectedItems.Add(row);
+            ListChanged();
+            StartPreviewLoading();
+        }
+
+        /// <summary>Добавляет детали в конец списка; уже добавленные пропускаются. source — что добавляли, для сообщения.</summary>
+        private void AddToList(IEnumerable<SheetMetalPart> parts, string source)
+        {
+            var known = parts.Where(p => _productParts.ContainsKey(p.FullFileName)).ToList();
+            var (added, already) = _list.Add(known.Select(p => p.FullFileName));
+
+            var newRows = added.Select(path => CreateRow(_productParts[path])).ToList();
+            foreach (var row in newRows)
                 _rows.Add(row);
+
+            if (newRows.Count > 0)
+            {
+                PartsGrid.SelectedItems.Clear();
+                foreach (var row in newRows)
+                    PartsGrid.SelectedItems.Add(row);
+                PartsGrid.ScrollIntoView(newRows[0]);
+                StartPreviewLoading();
+            }
+            ListChanged();
+
+            if (known.Count == 0)
+                SetStatus($"В «{source}» нет листовых деталей");
+            else if (newRows.Count == 0)
+                SetStatus($"Детали из «{source}» уже в списке ({already})");
+            else
+                SetStatus($"Добавлено в список из «{source}»: {newRows.Count}" + (already > 0 ? $", уже были в списке: {already}" : string.Empty));
+        }
+
+        private void RemoveFromList(IReadOnlyList<PartRow> rows)
+        {
+            if (_busy || rows.Count == 0)
+                return;
+
+            // После удаления выделяется строка, стоявшая на месте первой удалённой, — как в проводнике.
+            var before = VisibleRows.ToList();
+            int index = rows.Select(r => before.IndexOf(r)).Where(i => i >= 0).DefaultIfEmpty(-1).Min();
+            _list.Remove(rows.Select(r => r.Part.FullFileName));
+            foreach (var row in rows)
+            {
+                row.PropertyChanged -= OnRowPropertyChanged;
+                _checked.Remove(row.Part.FullFileName);
+                _rows.Remove(row);
             }
 
-            PartsTitle.Text = node.Description.Length > 0 ? $"{node.Title} — {node.Description}" : node.Title;
+            var visible = VisibleRows.ToList();
+            if (visible.Count > 0 && index >= 0)
+            {
+                var next = visible[Math.Min(index, visible.Count - 1)];
+                PartsGrid.SelectedItem = next;
+                PartsGrid.ScrollIntoView(next);
+            }
+            ListChanged();
+            SetStatus($"Удалено из списка: {rows.Count}");
+        }
+
+        private void ListChanged()
+        {
+            PartsTitle.Text = "Список деталей";
             EmptyText.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             UpdateCounter();
-            ShowDetails(null);
-            StartPreviewLoading();
+            if (PartsGrid.SelectedItem == null)
+                ShowDetails(null);
+        }
+
+        private List<TreeRow> SelectedTreeRows => TreeGrid.SelectedItems.Cast<TreeRow>().ToList();
+
+        private void AddTreeNodes(IReadOnlyList<TreeRow> nodes)
+        {
+            if (_busy || nodes.Count == 0)
+                return;
+            var parts = nodes.SelectMany(n => n.Node.CollectSheetMetal()).ToList();
+            AddToList(parts, nodes.Count == 1 ? nodes[0].Title : $"выделенные узлы ({nodes.Count})");
+        }
+
+        private void OnAddSelected(object sender, RoutedEventArgs e) => AddTreeNodes(SelectedTreeRows);
+
+        private void OnAddAll(object sender, RoutedEventArgs e)
+        {
+            if (_busy || _structure == null)
+                return;
+            AddToList(_structure.Root.CollectSheetMetal(), "всё изделие");
+        }
+
+        private void OnRemoveSelected(object sender, RoutedEventArgs e) => RemoveFromList(SelectedRows);
+
+        private void OnClearList(object sender, RoutedEventArgs e)
+        {
+            if (_busy || _rows.Count == 0)
+                return;
+            if (MessageBox.Show(this, $"Убрать из списка все детали ({_rows.Count})?\n\nФайлы деталей и выгруженные DXF не затрагиваются.",
+                    "InvAuto", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+                return;
+            RemoveFromList(_rows.ToList());
+            SetStatus("Список очищен");
+        }
+
+        private void OnTreeDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Двойной щелчок по строке дерева (но не по стрелке раскрытия и не по заголовку) — добавить узел.
+            var element = e.OriginalSource as DependencyObject;
+            while (element != null && !(element is DataGridRow) && !(element is System.Windows.Controls.Primitives.ToggleButton) &&
+                   !(element is System.Windows.Controls.Primitives.DataGridColumnHeader))
+                element = VisualTreeHelper.GetParent(element);
+            if (element is DataGridRow row && row.Item is TreeRow node)
+            {
+                AddTreeNodes(new[] { node });
+                e.Handled = true;
+            }
+        }
+
+        private void OnTreeKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter || e.Key == Key.Insert)
+            {
+                AddTreeNodes(SelectedTreeRows);
+                e.Handled = true;
+            }
+        }
+
+        private void OnWindowKeyDown(object sender, KeyEventArgs e)
+        {
+            // Ctrl+Shift+A — добавить все листовые детали изделия.
+            if (e.Key == Key.A && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                OnAddAll(sender, e);
+                e.Handled = true;
+            }
         }
 
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -257,7 +397,7 @@ namespace InvAuto.Features.SheetMetal
         private void UpdateCounter()
         {
             int visible = VisibleRows.Count();
-            string text = $"Отмечено {_rows.Count(r => r.IsChecked)} из {_rows.Count}";
+            string text = $"В списке {_rows.Count} · отмечено {_rows.Count(r => r.IsChecked)}";
             if (visible != _rows.Count)
                 text += $" · показано {visible}";
             CounterText.Text = text;
@@ -288,6 +428,13 @@ namespace InvAuto.Features.SheetMetal
 
         private void OnPartsKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.Delete)
+            {
+                RemoveFromList(SelectedRows);
+                e.Handled = true;
+                return;
+            }
+
             // Пробел переключает отметку выделенных строк, как в проводнике.
             if (e.Key != Key.Space)
                 return;
@@ -323,7 +470,7 @@ namespace InvAuto.Features.SheetMetal
             PartsGrid.Columns.Clear();
             _columnIds.Clear();
 
-            PartsGrid.Columns.Add(new DataGridTemplateColumn
+            _checkColumn = new DataGridTemplateColumn
             {
                 Header = "",
                 CellTemplate = (DataTemplate)FindResource("CheckCell"),
@@ -331,7 +478,8 @@ namespace InvAuto.Features.SheetMetal
                 CanUserReorder = false,
                 CanUserResize = false,
                 SortMemberPath = nameof(PartRow.IsChecked)
-            });
+            };
+            PartsGrid.Columns.Add(_checkColumn);
 
             foreach (string id in _viewSettings.Columns)
             {
@@ -343,6 +491,7 @@ namespace InvAuto.Features.SheetMetal
             }
 
             PartsGrid.RowHeight = _viewSettings.Columns.Any(PartColumns.IsImage) ? 56 : 26;
+            ApplySort();
         }
 
         private DataGridColumn CreateColumn(string id)
@@ -356,7 +505,7 @@ namespace InvAuto.Features.SheetMetal
                     Binding = new Binding(".") { Converter = CustomPropertyConverter.Instance, ConverterParameter = name },
                     Width = new DataGridLength(1, DataGridLengthUnitType.Star),
                     MinWidth = 60,
-                    CanUserSort = false,
+                    SortMemberPath = id,
                     ElementStyle = TextStyle(false)
                 };
             }
@@ -414,6 +563,148 @@ namespace InvAuto.Features.SheetMetal
                 style.Setters.Add(new Setter(HorizontalAlignmentProperty, HorizontalAlignment.Right));
             return style;
         }
+
+        #region Сортировка
+
+        /// <summary>Значение, по которому сортируется колонка; null — колонка не сортируется.</summary>
+        private static Func<PartRow, object> SortKey(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return null;
+            if (id.StartsWith(PartColumns.PropertyPrefix, StringComparison.Ordinal))
+            {
+                string name = id.Substring(PartColumns.PropertyPrefix.Length);
+                return r => r.Property(name);
+            }
+            switch (id)
+            {
+                case PartColumns.Checked: return r => r.IsChecked;
+                case PartColumns.FileName: return r => r.FileName;
+                case PartColumns.PartNumber: return r => r.PartNumber;
+                case PartColumns.Description: return r => r.Description;
+                case PartColumns.Material: return r => r.Material;
+                case PartColumns.FilePath: return r => r.FilePath;
+                case PartColumns.Bends: return r => r.BendSummary;
+                case PartColumns.Status: return r => r.Status;
+                case PartColumns.Thickness: return r => r.Thickness;
+                case PartColumns.Quantity: return r => r.Quantity;
+                case PartColumns.Total: return r => r.Total;
+                case PartColumns.Flat:
+                case PartColumns.FlatState: return r => r.HasFlatPattern;
+                // Габариты — по большей стороне, при равенстве — по меньшей.
+                case PartColumns.FlatSize:
+                    return r => r.Part.FlatLengthMm > 0
+                        ? Math.Round(Math.Max(r.Part.FlatLengthMm, r.Part.FlatWidthMm), 3) * 1e6 + Math.Min(r.Part.FlatLengthMm, r.Part.FlatWidthMm)
+                        : (object)null;
+                default: return null;
+            }
+        }
+
+        private static string SortTitle(string id)
+        {
+            if (id == PartColumns.Checked)
+                return "Отметка";
+            if (id.StartsWith(PartColumns.PropertyPrefix, StringComparison.Ordinal))
+                return id.Substring(PartColumns.PropertyPrefix.Length);
+            return PartColumns.All.FirstOrDefault(c => c.Id == id).Header ?? id;
+        }
+
+        private string ColumnId(DataGridColumn column) =>
+            column == _checkColumn ? PartColumns.Checked : _columnIds.TryGetValue(column, out string id) ? id : null;
+
+        /// <summary>Щелчок по заголовку: та же колонка — смена направления, другая — по возрастанию. Как в проводнике.</summary>
+        private void OnPartsSorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true; // стандартная сортировка WPF не умеет «Деталь 2 раньше Деталь 10»
+            string id = ColumnId(e.Column);
+            if (SortKey(id) == null)
+                return;
+            SetSort(id, id == _viewSettings.SortColumn ? !_viewSettings.SortDescending : false);
+        }
+
+        private void SetSort(string id, bool descending)
+        {
+            _viewSettings.SortColumn = id ?? string.Empty;
+            _viewSettings.SortDescending = descending;
+            ApplySort();
+            SaveViewSettings();
+            if (PartsGrid.SelectedItem != null)
+                PartsGrid.ScrollIntoView(PartsGrid.SelectedItem);
+        }
+
+        private void ApplySort()
+        {
+            string id = _viewSettings.SortColumn;
+            var key = SortKey(id);
+            if (_rowsView is ListCollectionView view)
+                view.CustomSort = key == null ? null : new RowComparer(key, _viewSettings.SortDescending);
+
+            foreach (var column in PartsGrid.Columns)
+                column.SortDirection = key != null && ColumnId(column) == id
+                    ? _viewSettings.SortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending
+                    : (ListSortDirection?)null;
+        }
+
+        /// <summary>Меню «Сортировка»: по какой колонке и в каком порядке — как «Сортировать» в проводнике.</summary>
+        private void OnSortMenu(object sender, RoutedEventArgs e)
+        {
+            var menu = new ContextMenu { PlacementTarget = SortButton, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+            string current = _viewSettings.SortColumn;
+
+            var ids = PartColumns.All.Select(c => c.Id)
+                .Where(id => SortKey(id) != null && id != PartColumns.Flat)
+                .Concat(_viewSettings.Columns.Where(id => id.StartsWith(PartColumns.PropertyPrefix, StringComparison.Ordinal)))
+                .Concat(new[] { PartColumns.Checked });
+            foreach (string id in ids)
+            {
+                var item = new MenuItem { Header = SortTitle(id), IsCheckable = true, IsChecked = id == current };
+                item.Click += (s, a) => SetSort(id, id == current && _viewSettings.SortDescending);
+                menu.Items.Add(item);
+            }
+
+            menu.Items.Add(new Separator());
+            bool sorted = SortKey(current) != null;
+            var ascending = new MenuItem { Header = "По возрастанию", IsCheckable = true, IsEnabled = sorted, IsChecked = sorted && !_viewSettings.SortDescending };
+            ascending.Click += (s, a) => SetSort(current, false);
+            var descending = new MenuItem { Header = "По убыванию", IsCheckable = true, IsEnabled = sorted, IsChecked = sorted && _viewSettings.SortDescending };
+            descending.Click += (s, a) => SetSort(current, true);
+            menu.Items.Add(ascending);
+            menu.Items.Add(descending);
+
+            menu.Items.Add(new Separator());
+            var none = new MenuItem { Header = "Без сортировки (порядок добавления)", IsCheckable = true, IsChecked = !sorted };
+            none.Click += (s, a) => SetSort(string.Empty, false);
+            menu.Items.Add(none);
+
+            menu.IsOpen = true;
+        }
+
+        /// <summary>Сравнение строк по ключу колонки; при равенстве — по имени файла и пути, чтобы порядок был устойчивым.</summary>
+        private sealed class RowComparer : System.Collections.IComparer
+        {
+            private readonly Func<PartRow, object> _key;
+            private readonly bool _descending;
+
+            public RowComparer(Func<PartRow, object> key, bool descending)
+            {
+                _key = key;
+                _descending = descending;
+            }
+
+            public int Compare(object x, object y)
+            {
+                var a = (PartRow)x;
+                var b = (PartRow)y;
+                int result = SortValues.Compare(_key(a), _key(b), _descending);
+                if (result == 0)
+                    result = NaturalComparer.Instance.Compare(a.FileName, b.FileName);
+                if (result == 0)
+                    result = StringComparer.OrdinalIgnoreCase.Compare(a.FilePath, b.FilePath);
+                return result;
+            }
+        }
+
+        #endregion
 
         private void OnColumnReordered(object sender, DataGridColumnEventArgs e)
         {
@@ -1046,7 +1337,7 @@ namespace InvAuto.Features.SheetMetal
             Summarize(results, folder, report);
 
             if (flatsCreated)
-                ShowNode(_currentNode);
+                RebuildRows();
             else
                 StartPreviewLoading();
 

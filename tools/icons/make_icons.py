@@ -346,6 +346,57 @@ def flat_view(size):
 write('flat-view', 32, flat_view(32), snap=False)
 write('flat-view', 16, flat_view(16), snap=False)
 
+# ---------- список деталей: добавить / добавить все / удалить / очистить ----------
+RED = '#C62828'
+
+def sheet_list(x, y, wd, ht, rows, k=1, fill='#FFFFFF'):
+    """Лист списка: рамка, строки с маленькой листовой деталью слева."""
+    body = [poly([(x, y), (x + wd, y), (x + wd, y + ht), (x, y + ht)], fill, INK2, 1)]
+    step = (ht - 2 * k) / rows
+    for i in range(rows):
+        ry = y + k + step * i + step / 2
+        m = min(1.6 * k, step * 0.3)
+        body.append(poly([(x + 1.5 * k, ry - m), (x + 1.5 * k + 2 * m, ry - m), (x + 1.5 * k + 2 * m, ry + m),
+                          (x + 1.5 * k, ry + m)], S_LEFT, S_INK, 0.8 if k > 1 else 0.6))
+        body.append(line([(x + 2.5 * k + 2 * m, ry), (x + wd - 1.5 * k, ry)], '#9AA6B2', 1))
+    return body
+
+def badge(cx, cy, r, sign, w):
+    body = [f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}" fill="#FFFFFF" stroke="none"/>']
+    a = r * 0.62
+    color = GREEN if sign == '+' else RED
+    if sign in '+-':
+        body.append(line([(cx - a, cy), (cx + a, cy)], color, w))
+    if sign == '+':
+        body.append(line([(cx, cy - a), (cx, cy + a)], color, w))
+    if sign == 'x':
+        d = a * 0.8
+        body.append(line([(cx - d, cy - d), (cx + d, cy + d)], color, w))
+        body.append(line([(cx - d, cy + d), (cx + d, cy - d)], color, w))
+    return body
+
+write('list-add', 32, sheet_list(3.5, 3.5, 19, 22, 4, 2) + badge(23, 23, 7.5, '+', 2.6))
+write('list-add', 16, sheet_list(1.5, 1.5, 9.5, 10.5, 3) + badge(11, 11, 3.8, '+', 1.6))
+write('list-add-all', 32, sheet_list(8.5, 2.5, 16, 17, 3, 2, '#F3F5F7') + sheet_list(3.5, 7.5, 16, 19, 3, 2) +
+      badge(23, 23, 7, '+', 2.6))
+write('list-remove', 32, sheet_list(3.5, 3.5, 19, 22, 4, 2) + badge(23, 23, 7.5, '-', 2.6))
+write('list-remove', 16, sheet_list(1.5, 1.5, 9.5, 10.5, 3) + badge(11, 11, 3.8, '-', 1.6))
+write('list-clear', 16, sheet_list(1.5, 1.5, 9.5, 10.5, 3) + badge(11, 11, 3.8, 'x', 1.5))
+
+# ---------- сортировка: строки убывающей длины и стрелка ----------
+def sort_icon(size):
+    if size == 32:
+        bars = [line([(4, y), (4 + ln, y)], INK2, 2.2) for y, ln in ((7, 15), (13, 11), (19, 7), (25, 3.5))]
+        arrow_ = [line([(25, 4.5), (25, 25)], BLUE, 2.2),
+                  poly([(20, 21), (30, 21), (25, 28)], BLUE, None)]
+    else:
+        bars = [line([(2, y), (2 + ln, y)], INK2, 1.4) for y, ln in ((3.5, 7.5), (6.8, 5.5), (10.1, 3.5), (13.4, 1.6))]
+        arrow_ = [line([(12.5, 2), (12.5, 12)], BLUE, 1.4),
+                  poly([(9.6, 10.4), (15.4, 10.4), (12.5, 14.4)], BLUE, None)]
+    return bars + arrow_
+write('sort', 32, sort_icon(32))
+write('sort', 16, sort_icon(16))
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')
