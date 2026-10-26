@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <path d="M13.5 4.79 L29.61 14.1 L20.21 19.52 L4.1 10.22 Z" fill="#E1EDF8" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M4.1 10.22 L20.21 19.52 L20.21 21.23 L4.1 11.93 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M29.61 14.1 L20.21 19.52 L20.21 21.23 L29.61 15.8 Z" fill="#8FB0CE" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M13.5 4.79 L29.61 14.1 L29.61 3.4 L13.5 -5.9 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M14.98 -6.75 L31.08 2.55 L29.61 3.4 L13.5 -5.9 Z" fill="#E1EDF8" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M31.08 2.55 L29.61 3.4 L29.61 14.1 L31.08 14.95 L31.08 2.55 Z" fill="#8FB0CE" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M11.76 13.47 L28.45 23.11 L18.71 28.73 L2.02 19.09 Z" fill="#E1EDF8" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M2.02 19.09 L18.71 28.73 L18.71 30.5 L2.02 20.86 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M28.45 23.11 L18.71 28.73 L18.71 30.5 L28.45 24.88 Z" fill="#8FB0CE" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M11.76 13.47 L28.45 23.11 L28.45 12.02 L11.76 2.38 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M13.29 1.5 L29.98 11.14 L28.45 12.02 L11.76 2.38 Z" fill="#E1EDF8" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M29.98 11.14 L28.45 12.02 L28.45 23.11 L29.98 23.99 L29.98 11.14 Z" fill="#8FB0CE" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
 </svg>

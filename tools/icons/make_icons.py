@@ -34,7 +34,25 @@ def poly(points, fill, stroke=INK, w=1, close=True, extra=''):
 def line(points, stroke=INK, w=1, extra=''):
     return poly(points, 'none', stroke, w, close=False, extra=extra)
 
+def check_bounds(name, size, body):
+    """Каждая координата рисунка должна лежать внутри поля — иначе Inventor обрежет иконку."""
+    import re
+    for item in body:
+        for d in re.findall(r' d="([^"]+)"', item):
+            # у дуг A rx ry rot large sweep x y проверяем только конечную точку
+            for cmd, args in re.findall(r'([MLA])([^MLAZ]*)', d):
+                nums = [float(v) for v in args.split()]
+                pts = [nums[-2:]] if cmd == 'A' else [nums[i:i + 2] for i in range(0, len(nums), 2)]
+                for x, y in pts:
+                    if not (-0.01 <= x <= size + 0.01 and -0.01 <= y <= size + 0.01):
+                        raise SystemExit(f'{name} ({size} px): точка ({x}; {y}) за пределами поля 0…{size}')
+        for cx, cy, r in re.findall(r'cx="([^"]+)" cy="([^"]+)" r="([^"]+)"', item):
+            cx, cy, r = float(cx), float(cy), float(r)
+            if cx - r < -0.01 or cy - r < -0.01 or cx + r > size + 0.01 or cy + r > size + 0.01:
+                raise SystemExit(f'{name} ({size} px): окружность за пределами поля')
+
 def write(name, size, body):
+    check_bounds(name, size, body)
     suffix = '.16' if size == 16 else ''
     with open(os.path.join(OUT, f'{name}{suffix}.svg'), 'w', encoding='utf-8') as fh:
         fh.write(svg(size, body))
@@ -60,26 +78,34 @@ write('assembly', 16,
       cube(5.6, 5.8, 4.8, 4.8, (A_TOP, A_LEFT, A_RIGHT), A_INK))
 
 # ---------- листовая деталь: уголок с толщиной ----------
-def bracket(sc, ox, oy, w):
+def bracket(size, margin, w):
+    """Гнутый уголок в изометрии: полка и стенка с видимой толщиной. Вписывается в поле по центру."""
     c, s = math.cos(math.radians(30)), 0.5
     def iso(x, y, z):  # x вправо-вниз, y влево-вниз, z вверх
-        return (ox + (x - y) * c * sc, oy + ((x + y) * s - z) * sc)
+        return ((x - y) * c, (x + y) * s - z)
     L, D, H, T = 12, 7, 8, 1.1   # длина, глубина полки, высота стенки, толщина
-    body = []
-    # горизонтальная полка (верх и торцы)
-    body.append(poly([iso(0, 0, T), iso(L, 0, T), iso(L, D, T), iso(0, D, T)], S_TOP, S_INK, w))
-    body.append(poly([iso(0, D, T), iso(L, D, T), iso(L, D, 0), iso(0, D, 0)], S_LEFT, S_INK, w))
-    body.append(poly([iso(L, 0, T), iso(L, D, T), iso(L, D, 0), iso(L, 0, 0)], S_RIGHT, S_INK, w))
-    # вертикальная стенка по заднему краю (y = 0)
-    body.append(poly([iso(0, 0, T), iso(L, 0, T), iso(L, 0, H), iso(0, 0, H)], S_LEFT, S_INK, w))
-    body.append(poly([iso(0, -T, H), iso(L, -T, H), iso(L, 0, H), iso(0, 0, H)], S_TOP, S_INK, w))
-    body.append(poly([iso(L, -T, H), iso(L, 0, H), iso(L, 0, T), iso(L, -T, 0), iso(L, -T, H)], S_RIGHT, S_INK, w))
-    return body
+    faces = [
+        # горизонтальная полка (верх и торцы)
+        ([iso(0, 0, T), iso(L, 0, T), iso(L, D, T), iso(0, D, T)], S_TOP),
+        ([iso(0, D, T), iso(L, D, T), iso(L, D, 0), iso(0, D, 0)], S_LEFT),
+        ([iso(L, 0, T), iso(L, D, T), iso(L, D, 0), iso(L, 0, 0)], S_RIGHT),
+        # вертикальная стенка по заднему краю (y = 0)
+        ([iso(0, 0, T), iso(L, 0, T), iso(L, 0, H), iso(0, 0, H)], S_LEFT),
+        ([iso(0, -T, H), iso(L, -T, H), iso(L, 0, H), iso(0, 0, H)], S_TOP),
+        ([iso(L, -T, H), iso(L, 0, H), iso(L, 0, T), iso(L, -T, 0), iso(L, -T, H)], S_RIGHT),
+    ]
+    pts = [p for face, _ in faces for p in face]
+    x0, x1 = min(p[0] for p in pts), max(p[0] for p in pts)
+    y0, y1 = min(p[1] for p in pts), max(p[1] for p in pts)
+    k = (size - 2 * margin) / max(x1 - x0, y1 - y0)
+    ox = (size - (x1 - x0) * k) / 2 - x0 * k
+    oy = (size - (y1 - y0) * k) / 2 - y0 * k
+    return [poly([(ox + x * k, oy + y * k) for x, y in face], fill, S_INK, w) for face, fill in faces]
 
-write('sheet-metal-part', 32, bracket(1.55, 13.5, 6.5, 1))
-write('sheet-metal-part', 16, bracket(0.76, 6.8, 3.0, 0.8))
-write('sheet-metal', 32, bracket(1.55, 13.5, 6.5, 1))
-write('sheet-metal', 16, bracket(0.76, 6.8, 3.0, 0.8))
+write('sheet-metal-part', 32, bracket(32, 1.5, 1))
+write('sheet-metal-part', 16, bracket(16, 0.6, 0.8))
+write('sheet-metal', 32, bracket(32, 1.5, 1))
+write('sheet-metal', 16, bracket(16, 0.6, 0.8))
 
 # ---------- развертка (сформировать развертки) ----------
 def net(o, k, w, dash):
