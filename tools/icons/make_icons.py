@@ -3,7 +3,7 @@
 # Запуск из корня репозитория:  python tools/icons/make_icons.py assets/icons
 # затем:                        node tools/icons/build-icons.mjs
 # Иконку можно и нарисовать вручную: положить имя.svg (32×32) и/или имя.16.svg (16×16) в assets/icons.
-import math, os, sys
+import math, os, re, sys
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join('assets', 'icons')
 
 INK = '#2E3943'      # основной контур
@@ -34,25 +34,66 @@ def poly(points, fill, stroke=INK, w=1, close=True, extra=''):
 def line(points, stroke=INK, w=1, extra=''):
     return poly(points, 'none', stroke, w, close=False, extra=extra)
 
-def check_bounds(name, size, body):
-    """Каждая координата рисунка должна лежать внутри поля — иначе Inventor обрежет иконку."""
-    import re
-    for item in body:
-        for d in re.findall(r' d="([^"]+)"', item):
-            # у дуг A rx ry rot large sweep x y проверяем только конечную точку
-            for cmd, args in re.findall(r'([MLA])([^MLAZ]*)', d):
-                nums = [float(v) for v in args.split()]
-                pts = [nums[-2:]] if cmd == 'A' else [nums[i:i + 2] for i in range(0, len(nums), 2)]
-                for x, y in pts:
-                    if not (-0.01 <= x <= size + 0.01 and -0.01 <= y <= size + 0.01):
-                        raise SystemExit(f'{name} ({size} px): точка ({x}; {y}) за пределами поля 0…{size}')
-        for cx, cy, r in re.findall(r'cx="([^"]+)" cy="([^"]+)" r="([^"]+)"', item):
-            cx, cy, r = float(cx), float(cy), float(r)
-            if cx - r < -0.01 or cy - r < -0.01 or cx + r > size + 0.01 or cy + r > size + 0.01:
-                raise SystemExit(f'{name} ({size} px): окружность за пределами поля')
+ERRORS = []
 
-def write(name, size, body):
-    check_bounds(name, size, body)
+# Минимальное пустое поле от края до рисунка (с учётом толщины линий), px.
+MARGIN = {16: 0.9, 32: 1.4}
+
+def _stroke_half(item):
+    if 'stroke="' not in item or 'stroke="none"' in item:
+        return 0.0
+    m = re.search(r'stroke-width="([^"]+)"', item)
+    return float(m.group(1)) / 2 if m else 0.5
+
+def bbox(body):
+    """Точные габариты рисунка с учётом толщины линий: (x0, y0, x1, y1)."""
+    xs, ys = [], []
+    for item in body:
+        hw = _stroke_half(item)
+        for d in re.findall(r' d="([^"]+)"', item):
+            if 'A' in d:
+                raise SystemExit('дуги (A) не поддерживаются генератором — используйте ломаную (arc_points)')
+            for x, y in re.findall(r'[ML](-?[\d.]+) (-?[\d.]+)', d):
+                xs += [float(x) - hw, float(x) + hw]
+                ys += [float(y) - hw, float(y) + hw]
+        for cx, cy, r in re.findall(r'cx="([^"]+)" cy="([^"]+)" r="([^"]+)"', item):
+            cx, cy, r = float(cx), float(cy), float(r) + hw
+            xs += [cx - r, cx + r]
+            ys += [cy - r, cy + r]
+    return min(xs), min(ys), max(xs), max(ys)
+
+def shift(body, dx, dy):
+    def move_path(m):
+        return f'{m.group(1)}{f(float(m.group(2)) + dx)} {f(float(m.group(3)) + dy)}'
+    def move_circle(m):
+        return f'cx="{f(float(m.group(1)) + dx)}" cy="{f(float(m.group(2)) + dy)}"'
+    out = []
+    for item in body:
+        item = re.sub(r' d="([^"]+)"', lambda m: ' d="' + re.sub(r'([ML])(-?[\d.]+) (-?[\d.]+)', move_path, m.group(1)) + '"', item)
+        item = re.sub(r'cx="([^"]+)" cy="([^"]+)"', move_circle, item)
+        out.append(item)
+    return out
+
+def center(name, size, body, snap):
+    """
+    Ставит рисунок по центру поля. snap=True — края рисунка (с учётом толщины линий) попадают точно на
+    границу пикселя, поэтому прямые линии толщиной 1 px резкие; остаток от точного центра не больше 0,5 px
+    (только если ширина рисунка нечётная). snap=False — точный центр (изометрия, круги).
+    """
+    x0, y0, x1, y1 = bbox(body)
+    dx, dy = size / 2 - (x0 + x1) / 2, size / 2 - (y0 + y1) / 2
+    if snap:
+        dx = math.floor(x0 + dx + 0.5) - x0
+        dy = math.floor(y0 + dy + 0.5) - y0
+    body = shift(body, dx, dy)
+    x0, y0, x1, y1 = bbox(body)
+    m = MARGIN[size]
+    if min(x0, y0, size - x1, size - y1) < m - 1e-6:
+        ERRORS.append(f'{name} ({size} px): рисунок {x1 - x0:.2f}×{y1 - y0:.2f} не помещается с полем {m} px — уменьшите его')
+    return body
+
+def write(name, size, body, snap=True):
+    body = center(name, size, body, snap)
     suffix = '.16' if size == 16 else ''
     with open(os.path.join(OUT, f'{name}{suffix}.svg'), 'w', encoding='utf-8') as fh:
         fh.write(svg(size, body))
@@ -66,16 +107,16 @@ def cube(cx, top, s, h, faces, ink, w=1):
     return [poly(left, faces[1], ink, w), poly(right, faces[2], ink, w), poly(t, faces[0], ink, w)]
 
 # ---------- деталь ----------
-write('part', 32, cube(16, 3.5, 13, 13, (P_TOP, P_LEFT, P_RIGHT), INK))
-write('part', 16, cube(8, 1.5, 6.9, 6.5, (P_TOP, P_LEFT, P_RIGHT), INK))
+write('part', 32, cube(16, 3.5, 13, 13, (P_TOP, P_LEFT, P_RIGHT), INK), snap=False)
+write('part', 16, cube(8, 1.5, 6.6, 6.2, (P_TOP, P_LEFT, P_RIGHT), INK), snap=False)
 
 # ---------- сборка: две детали ----------
 write('assembly', 32,
       cube(20, 2.5, 9, 9, (P_TOP, P_LEFT, P_RIGHT), INK) +
-      cube(11.5, 11.5, 9, 9, (A_TOP, A_LEFT, A_RIGHT), A_INK))
+      cube(11.5, 11.5, 9, 9, (A_TOP, A_LEFT, A_RIGHT), A_INK), snap=False)
 write('assembly', 16,
-      cube(10.5, 1, 4.8, 4.8, (P_TOP, P_LEFT, P_RIGHT), INK) +
-      cube(5.6, 5.8, 4.8, 4.8, (A_TOP, A_LEFT, A_RIGHT), A_INK))
+      cube(10.5, 1, 4.4, 4.4, (P_TOP, P_LEFT, P_RIGHT), INK) +
+      cube(5.6, 5.2, 4.4, 4.4, (A_TOP, A_LEFT, A_RIGHT), A_INK), snap=False)
 
 # ---------- листовая деталь: уголок с толщиной ----------
 def bracket(size, margin, w):
@@ -102,10 +143,10 @@ def bracket(size, margin, w):
     oy = (size - (y1 - y0) * k) / 2 - y0 * k
     return [poly([(ox + x * k, oy + y * k) for x, y in face], fill, S_INK, w) for face, fill in faces]
 
-write('sheet-metal-part', 32, bracket(32, 1.5, 1))
-write('sheet-metal-part', 16, bracket(16, 0.6, 0.8))
-write('sheet-metal', 32, bracket(32, 1.5, 1))
-write('sheet-metal', 16, bracket(16, 0.6, 0.8))
+write('sheet-metal-part', 32, bracket(32, 2.6, 1), snap=False)
+write('sheet-metal-part', 16, bracket(16, 1.9, 0.8), snap=False)
+write('sheet-metal', 32, bracket(32, 2.6, 1), snap=False)
+write('sheet-metal', 16, bracket(16, 1.9, 0.8), snap=False)
 
 # ---------- развертка (сформировать развертки) ----------
 def net(o, k, w, dash):
@@ -135,23 +176,22 @@ def mini_flat(x, y, k, w=1):
     return [poly([(x, y), (x + 6 * k, y), (x + 6 * k, y + 3 * k), (x + 9 * k, y + 3 * k), (x + 9 * k, y + 8 * k), (x, y + 8 * k)],
                  BLUE_L, S_INK, w)]
 
-write('export', 32, doc(6.5, 2.5, 17, 24, 5) + mini_flat(10.5, 11.5, 1) + arrow(18.5, 24.5, 12))
-write('export-all', 32, doc(10.5, 1.5, 15, 19, 4, fill='#F3F5F7') + doc(4.5, 6.5, 15, 22, 4) +
-      mini_flat(7.5, 14.5, 0.9) + arrow(18.5, 25, 12))
+write('export', 32, doc(5.5, 3.5, 16, 22, 5) + mini_flat(8.5, 11.5, 1) + arrow(17, 21.5, 11))
+write('export-all', 32, doc(10.5, 2.5, 14, 18, 4, fill='#F3F5F7') + doc(4.5, 6.5, 14, 20, 4) +
+      mini_flat(7.5, 13.5, 0.9) + arrow(17, 22.5, 11))
 
 # ---------- папки ----------
-def folder(k, w, open_=False):
-    o = 0.5
-    back = [(o + 1 * k, o + 4 * k), (o + 11 * k, o + 4 * k), (o + 13.5 * k, o + 7 * k), (o + 29 * k, o + 7 * k),
-            (o + 29 * k, o + 26 * k), (o + 1 * k, o + 26 * k)]
-    body = [poly(back, F_BACK, F_INK, w)]
-    if open_:
-        body.append(poly([(o + 1 * k, o + 26 * k), (o + 5.5 * k, o + 13 * k), (o + 31 * k, o + 13 * k), (o + 27 * k, o + 26 * k)],
-                         F_FRONT, F_INK, w))
+def folder(size, open_=False):
+    """Папка на пиксельной сетке: задняя стенка с вкладкой и передняя (закрытая или открытая)."""
+    if size == 32:
+        back = [(2.5, 5.5), (11.5, 5.5), (14, 8.5), (27.5, 8.5), (27.5, 26.5), (2.5, 26.5)]
+        front = ([(2.5, 26.5), (6.5, 13.5), (29.5, 13.5), (25.5, 26.5)] if open_
+                 else [(2.5, 11.5), (27.5, 11.5), (27.5, 26.5), (2.5, 26.5)])
     else:
-        body.append(poly([(o + 1 * k, o + 10 * k), (o + 29 * k, o + 10 * k), (o + 29 * k, o + 26 * k), (o + 1 * k, o + 26 * k)],
-                         F_FRONT, F_INK, w))
-    return body
+        back = [(1.5, 2.5), (6, 2.5), (7.5, 4), (13.5, 4), (13.5, 13.5), (1.5, 13.5)]
+        front = ([(1.5, 13.5), (3.5, 7.5), (14.5, 7.5), (12.5, 13.5)] if open_
+                 else [(1.5, 6.5), (13.5, 6.5), (13.5, 13.5), (1.5, 13.5)])
+    return [poly(back, F_BACK, F_INK, 1), poly(front, F_FRONT, F_INK, 1)]
 
 def gear(cx, cy, r_out, r_in, r_hole, teeth=8, w=1, fill='#DDE3E9'):
     pts = []
@@ -166,44 +206,49 @@ def gear(cx, cy, r_out, r_in, r_hole, teeth=8, w=1, fill='#DDE3E9'):
     body.append(f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{f(r_hole)}" fill="#FFFFFF" stroke="{INK}" stroke-width="{f(w)}"/>')
     return body
 
-write('open-folder', 32, folder(1, 1, True))
-write('open-folder', 16, folder(0.5, 1, True))
-write('data-folder', 32, folder(1, 1) + gear(23, 23, 7.5, 5.6, 2.2))
-write('data-folder', 16, folder(0.5, 1) + gear(11.5, 11.5, 4.3, 3.1, 1.2))
+write('open-folder', 32, folder(32, True))
+write('open-folder', 16, folder(16, True))
+write('data-folder', 32, folder(32) + gear(21.5, 20.5, 6.5, 4.9, 1.9))
+write('data-folder', 16, folder(16) + gear(10.8, 10.3, 3.6, 2.7, 1.1))
 
 # ---------- шестерня ----------
-write('settings', 32, gear(16, 16, 13, 9.8, 4.2))
-write('settings', 16, gear(8, 8, 7, 5.2, 2.2))
+write('settings', 32, gear(16, 16, 13, 9.8, 4.2), snap=False)
+write('settings', 16, gear(8, 8, 6.5, 4.8, 2), snap=False)
 
 # ---------- обновить ----------
+def arc_points(cx, cy, r, a0, a1, step_deg=6):
+    """Дуга ломаной (по часовой стрелке на экране от a0 до a1) — габариты считаются точно."""
+    n = max(2, int(abs(a1 - a0) / math.radians(step_deg)))
+    return [(cx + r * math.cos(a0 + (a1 - a0) * k / n), cy + r * math.sin(a0 + (a1 - a0) * k / n)) for k in range(n + 1)]
+
 def refresh(c, r, w, head):
     # дуга 300° по часовой стрелке с разрывом сверху, на конце — залитый наконечник по касательной
     a0, a1 = math.radians(-60), math.radians(240)
     x0, y0 = c + r * math.cos(a0), c + r * math.sin(a0)
     x1, y1 = c + r * math.cos(a1), c + r * math.sin(a1)
-    arc = f'<path d="M{f(x0)} {f(y0)} A{f(r)} {f(r)} 0 1 1 {f(x1)} {f(y1)}" fill="none" stroke="{BLUE}" stroke-width="{f(w)}"/>'
+    arc = line(arc_points(c, c, r, a0, a1), BLUE, w)
     tx, ty = -math.sin(a1), math.cos(a1)          # направление движения в конце дуги
     nx, ny = math.cos(a1), math.sin(a1)
     tip = (x1 + tx * head, y1 + ty * head)
     b1 = (x1 + nx * head * 0.7, y1 + ny * head * 0.7)
     b2 = (x1 - nx * head * 0.7, y1 - ny * head * 0.7)
     return [arc, poly([b1, tip, b2], BLUE, None)]
-write('refresh', 32, refresh(16, 10, 2.2, 6))
-write('refresh', 16, refresh(8, 5.2, 1.4, 3.6))
+write('refresh', 32, refresh(16, 10, 2.2, 6), snap=False)
+write('refresh', 16, refresh(8, 5.2, 1.4, 3.6), snap=False)
 
 # ---------- развернуть / свернуть всё (дерево с +/−) ----------
 def tree_icon(sign, k=1):
     q = lambda v: v * k
-    body = [line([(q(4.5), q(6)), (q(4.5), q(12.5)), (q(8), q(12.5))], INK2, 1)]
-    for (x, y) in ((1.5, 1.5), (8.5, 9.5)):
+    body = [line([(q(4.5), q(7.5)), (q(4.5), q(11.5)), (q(8.5), q(11.5))], INK2, 1)]
+    for (x, y) in ((1.5, 1.5), (8.5, 8.5)):
         body.append(poly([(q(x), q(y)), (q(x + 6), q(y)), (q(x + 6), q(y + 6)), (q(x), q(y + 6))], '#FFFFFF', INK2, 1))
         body.append(line([(q(x + 1.5), q(y + 3)), (q(x + 4.5), q(y + 3))], INK, k))
         if sign == '+':
             body.append(line([(q(x + 3), q(y + 1.5)), (q(x + 3), q(y + 4.5))], INK, k))
     return body
-for k, size in ((1, 16), (2, 32)):
-    write('expand-all', size, tree_icon('+', k))
-    write('collapse-all', size, tree_icon('-', k))
+# Только 16 px: эти иконки стоят на маленьких кнопках.
+write('expand-all', 16, tree_icon('+'))
+write('collapse-all', 16, tree_icon('-'))
 
 # ---------- флажки ----------
 def box(x, y, s, w=1):
@@ -211,15 +256,14 @@ def box(x, y, s, w=1):
 def tick(x, y, s, w):
     return line([(x + 0.22 * s, y + 0.52 * s), (x + 0.42 * s, y + 0.72 * s), (x + 0.8 * s, y + 0.3 * s)], GREEN, w)
 
-for k, size in ((1, 16), (2, 32)):
-    q = lambda v: v * k
-    write('check-all', size, [box(q(2.5), q(2.5), q(11)), tick(q(2.5), q(2.5), q(11), 1.8 * k)])
-    write('check-none', size, [box(q(2.5), q(2.5), q(11))])
-    write('check-selected', size, [
-        poly([(q(0.5), q(2.5)), (q(15.5), q(2.5)), (q(15.5), q(7.5)), (q(0.5), q(7.5))], BLUE_L, None),
-        box(q(1.5), q(3.5), q(3)), line([(q(2), q(5)), (q(2.8), q(5.8)), (q(4.1), q(4.2))], GREEN, k),
-        line([(q(7), q(5.5)), (q(14), q(5.5))], INK2, k),
-        box(q(1.5), q(10.5), q(3)), line([(q(7), q(12.5)), (q(12), q(12.5))], INK2, k)])
+# Только 16 px: эти иконки стоят на маленьких кнопках.
+write('check-all', 16, [box(2.5, 2.5, 11), tick(2.5, 2.5, 11, 1.8)])
+write('check-none', 16, [box(2.5, 2.5, 11)])
+write('check-selected', 16, [
+    poly([(1, 2.5), (15, 2.5), (15, 7.5), (1, 7.5)], BLUE_L, None),
+    box(1.5, 3.5, 3), line([(2, 5), (2.8, 5.8), (4.1, 4.2)], GREEN, 1),
+    line([(7, 5.5), (13, 5.5)], INK2, 1),
+    box(1.5, 10.5, 3), line([(7, 12.5), (12, 12.5)], INK2, 1)])
 
 # ---------- колонки ----------
 write('columns', 32, [
@@ -228,7 +272,7 @@ write('columns', 32, [
     poly([(12.5, 10.5), (19.5, 10.5), (19.5, 26.5), (12.5, 26.5)], BLUE_L, None),
     line([(12.5, 5.5), (12.5, 26.5)], INK2), line([(19.5, 5.5), (19.5, 26.5)], INK2),
     line([(3.5, 15.5), (28.5, 15.5)], '#C9D1D9'), line([(3.5, 20.5), (28.5, 20.5)], '#C9D1D9'),
-    poly([(12.5, 5.5), (19.5, 5.5), (19.5, 26.5), (12.5, 26.5)], 'none', BLUE, 1.2)])
+    poly([(12.5, 5.5), (19.5, 5.5), (19.5, 26.5), (12.5, 26.5)], 'none', BLUE, 1)])
 
 # ---------- панель свойств ----------
 write('details', 32, [
@@ -257,8 +301,8 @@ def bolt(k, w):
     down = lambda p: (p[0], p[1] + q(hh))
     body = []
     # шток с резьбой
-    body.append(poly([(q(6), q(cy + 2)), (q(10), q(cy + 2)), (q(10), q(15)), (q(6), q(15))], P_LEFT, INK, w))
-    for y in (8.5, 10.5, 12.5):
+    body.append(poly([(q(6), q(cy + 2)), (q(10), q(cy + 2)), (q(10), q(13.6)), (q(6), q(13.6))], P_LEFT, INK, w))
+    for y in (7.6, 9.4, 11.2):
         body.append(line([(q(6), q(y + 1)), (q(10), q(y))], INK2, w * 0.8))
     # боковые грани головки (три видимые)
     body.append(poly([hexa[0], hexa[5], down(hexa[5]), down(hexa[0])], P_LEFT, INK, w))
@@ -266,7 +310,9 @@ def bolt(k, w):
     body.append(poly([hexa[4], hexa[3], down(hexa[3]), down(hexa[4])], '#93A3B3', INK, w))
     body.append(poly(hexa, P_TOP, INK, w))
     return body
-write('standard-part', 16, bolt(1, 1))
-write('standard-part', 32, bolt(2, 1))
+write('standard-part', 16, bolt(1, 1), snap=False)
+write('standard-part', 32, bolt(2, 1), snap=False)
 
+if ERRORS:
+    raise SystemExit('\n'.join(ERRORS))
 print('ok')

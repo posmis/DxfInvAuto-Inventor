@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <path d="M12.21 7 L20 11.5 L20 20.5 L12.21 16 Z" fill="#D3DCE4" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M20 11.5 L27.79 7 L27.79 16 L20 20.5 Z" fill="#AEBCC9" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M20 2.5 L27.79 7 L20 11.5 L12.21 7 Z" fill="#F2F5F8" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M3.71 16 L11.5 20.5 L11.5 29.5 L3.71 25 Z" fill="#E6C578" stroke="#6B4E14" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M11.5 20.5 L19.29 16 L19.29 25 L11.5 29.5 Z" fill="#C99F45" stroke="#6B4E14" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M11.5 11.5 L19.29 16 L11.5 20.5 L3.71 16 Z" fill="#F7E3B0" stroke="#6B4E14" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M12.46 7 L20.25 11.5 L20.25 20.5 L12.46 16 Z" fill="#D3DCE4" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M20.25 11.5 L28.04 7 L28.04 16 L20.25 20.5 Z" fill="#AEBCC9" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M20.25 2.5 L28.04 7 L20.25 11.5 L12.46 7 Z" fill="#F2F5F8" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M3.96 16 L11.75 20.5 L11.75 29.5 L3.96 25 Z" fill="#E6C578" stroke="#6B4E14" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M11.75 20.5 L19.54 16 L19.54 25 L11.75 29.5 Z" fill="#C99F45" stroke="#6B4E14" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M11.75 11.5 L19.54 16 L11.75 20.5 L3.96 16 Z" fill="#F7E3B0" stroke="#6B4E14" stroke-width="1" stroke-linejoin="miter"/>
 </svg>

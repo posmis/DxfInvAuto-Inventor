@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
-  <path d="M6 5.6 L10 5.6 L10 15 L6 15 Z" fill="#D3DCE4" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M6 9.5 L10 8.5" fill="none" stroke="#5C6977" stroke-width="0.8" stroke-linejoin="miter"/>
-  <path d="M6 11.5 L10 10.5" fill="none" stroke="#5C6977" stroke-width="0.8" stroke-linejoin="miter"/>
-  <path d="M6 13.5 L10 12.5" fill="none" stroke="#5C6977" stroke-width="0.8" stroke-linejoin="miter"/>
-  <path d="M2.4 3.6 L5.2 6 L5.2 8.6 L2.4 6.2 Z" fill="#D3DCE4" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M5.2 6 L10.8 6 L10.8 8.6 L5.2 8.6 Z" fill="#AEBCC9" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M10.8 6 L13.6 3.6 L13.6 6.2 L10.8 8.6 Z" fill="#93A3B3" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
-  <path d="M2.4 3.6 L5.2 1.2 L10.8 1.2 L13.6 3.6 L10.8 6 L5.2 6 Z" fill="#F2F5F8" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M6 6.2 L10 6.2 L10 14.2 L6 14.2 Z" fill="#D3DCE4" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M6 9.2 L10 8.2" fill="none" stroke="#5C6977" stroke-width="0.8" stroke-linejoin="miter"/>
+  <path d="M6 11 L10 10" fill="none" stroke="#5C6977" stroke-width="0.8" stroke-linejoin="miter"/>
+  <path d="M6 12.8 L10 11.8" fill="none" stroke="#5C6977" stroke-width="0.8" stroke-linejoin="miter"/>
+  <path d="M2.4 4.2 L5.2 6.6 L5.2 9.2 L2.4 6.8 Z" fill="#D3DCE4" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M5.2 6.6 L10.8 6.6 L10.8 9.2 L5.2 9.2 Z" fill="#AEBCC9" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M10.8 6.6 L13.6 4.2 L13.6 6.8 L10.8 9.2 Z" fill="#93A3B3" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M2.4 4.2 L5.2 1.8 L10.8 1.8 L13.6 4.2 L10.8 6.6 L5.2 6.6 Z" fill="#F2F5F8" stroke="#2E3943" stroke-width="1" stroke-linejoin="miter"/>
 </svg>

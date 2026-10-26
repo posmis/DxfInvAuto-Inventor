@@ -10,12 +10,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M12.21 7 L20 11.5 L20 20.5 L12.21 16 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#AEBCC9" Geometry="M20 11.5 L27.79 7 L27.79 16 L20 20.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F2F5F8" Geometry="M20 2.5 L27.79 7 L20 11.5 L12.21 7 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E6C578" Geometry="M3.71 16 L11.5 20.5 L11.5 29.5 L3.71 25 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#C99F45" Geometry="M11.5 20.5 L19.29 16 L19.29 25 L11.5 29.5 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F7E3B0" Geometry="M11.5 11.5 L19.29 16 L11.5 20.5 L3.71 16 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M12.46 7 L20.25 11.5 L20.25 20.5 L12.46 16 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#AEBCC9" Geometry="M20.25 11.5 L28.04 7 L28.04 16 L20.25 20.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F2F5F8" Geometry="M20.25 2.5 L28.04 7 L20.25 11.5 L12.46 7 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E6C578" Geometry="M3.96 16 L11.75 20.5 L11.75 29.5 L3.96 25 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#C99F45" Geometry="M11.75 20.5 L19.54 16 L19.54 25 L11.75 29.5 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F7E3B0" Geometry="M11.75 11.5 L19.54 16 L11.75 20.5 L3.96 16 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -23,12 +23,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M6.34 3.4 L10.5 5.8 L10.5 10.6 L6.34 8.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#AEBCC9" Geometry="M10.5 5.8 L14.66 3.4 L14.66 8.2 L10.5 10.6 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F2F5F8" Geometry="M10.5 1 L14.66 3.4 L10.5 5.8 L6.34 3.4 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E6C578" Geometry="M1.44 8.2 L5.6 10.6 L5.6 15.4 L1.44 13 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#C99F45" Geometry="M5.6 10.6 L9.76 8.2 L9.76 13 L5.6 15.4 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F7E3B0" Geometry="M5.6 5.8 L9.76 8.2 L5.6 10.6 L1.44 8.2 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M6.64 3.7 L10.45 5.9 L10.45 10.3 L6.64 8.1 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#AEBCC9" Geometry="M10.45 5.9 L14.26 3.7 L14.26 8.1 L10.45 10.3 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F2F5F8" Geometry="M10.45 1.5 L14.26 3.7 L10.45 5.9 L6.64 3.7 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E6C578" Geometry="M1.74 7.9 L5.55 10.1 L5.55 14.5 L1.74 12.3 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#C99F45" Geometry="M5.55 10.1 L9.36 7.9 L9.36 12.3 L5.55 14.5 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F7E3B0" Geometry="M5.55 5.7 L9.36 7.9 L5.55 10.1 L1.74 7.9 Z"><GeometryDrawing.Pen><Pen Brush="#6B4E14" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -62,10 +62,10 @@
 
   <DrawingImage x:Key="Icon.CheckAll">
     <DrawingImage.Drawing>
-      <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
-        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M5 5 L27 5 L27 27 L5 27 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M9.84 16.44 L14.24 20.84 L22.6 11.6"><GeometryDrawing.Pen><Pen Brush="#2E8540" Thickness="3.6" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M2.5 2.5 L13.5 2.5 L13.5 13.5 L2.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M4.92 8.22 L7.12 10.42 L11.3 5.8"><GeometryDrawing.Pen><Pen Brush="#2E8540" Thickness="1.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -81,9 +81,9 @@
 
   <DrawingImage x:Key="Icon.CheckNone">
     <DrawingImage.Drawing>
-      <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
-        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M5 5 L27 5 L27 27 L5 27 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M2.5 2.5 L13.5 2.5 L13.5 13.5 L2.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -98,14 +98,14 @@
 
   <DrawingImage x:Key="Icon.CheckSelected">
     <DrawingImage.Drawing>
-      <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
-        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#D6E7F7" Geometry="M1 5 L31 5 L31 15 L1 15 Z"></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M3 7 L9 7 L9 13 L3 13 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M4 10 L5.6 11.6 L8.2 8.4"><GeometryDrawing.Pen><Pen Brush="#2E8540" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M14 11 L28 11"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M3 21 L9 21 L9 27 L3 27 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M14 25 L24 25"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
+        <GeometryDrawing Brush="#D6E7F7" Geometry="M1 2 L15 2 L15 7 L1 7 Z"></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 3 L4.5 3 L4.5 6 L1.5 6 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M2 4.5 L2.8 5.3 L4.1 3.7"><GeometryDrawing.Pen><Pen Brush="#2E8540" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M7 5 L13 5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 10 L4.5 10 L4.5 13 L1.5 13 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M7 12 L12 12"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -113,25 +113,25 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#D6E7F7" Geometry="M0.5 2.5 L15.5 2.5 L15.5 7.5 L0.5 7.5 Z"></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 3.5 L4.5 3.5 L4.5 6.5 L1.5 6.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M2 5 L2.8 5.8 L4.1 4.2"><GeometryDrawing.Pen><Pen Brush="#2E8540" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M7 5.5 L14 5.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 10.5 L4.5 10.5 L4.5 13.5 L1.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M7 12.5 L12 12.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D6E7F7" Geometry="M1 2 L15 2 L15 7 L1 7 Z"></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 3 L4.5 3 L4.5 6 L1.5 6 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M2 4.5 L2.8 5.3 L4.1 3.7"><GeometryDrawing.Pen><Pen Brush="#2E8540" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M7 5 L13 5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 10 L4.5 10 L4.5 13 L1.5 13 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M7 12 L12 12"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
 
   <DrawingImage x:Key="Icon.CollapseAll">
     <DrawingImage.Drawing>
-      <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
-        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Geometry="M9 12 L9 25 L16 25"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M3 3 L15 3 L15 15 L3 15 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6 9 L12 9"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M17 19 L29 19 L29 31 L17 31 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M20 25 L26 25"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
+        <GeometryDrawing Geometry="M4.5 7.5 L4.5 11.5 L8.5 11.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 1.5 L7.5 1.5 L7.5 7.5 L1.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M3 4.5 L6 4.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M8.5 8.5 L14.5 8.5 L14.5 14.5 L8.5 14.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10 11.5 L13 11.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -139,11 +139,11 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Geometry="M4.5 6 L4.5 12.5 L8 12.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M4.5 7.5 L4.5 11.5 L8.5 11.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 1.5 L7.5 1.5 L7.5 7.5 L1.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M3 4.5 L6 4.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M8.5 9.5 L14.5 9.5 L14.5 15.5 L8.5 15.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M10 12.5 L13 12.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M8.5 8.5 L14.5 8.5 L14.5 14.5 L8.5 14.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10 11.5 L13 11.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -159,7 +159,7 @@
         <GeometryDrawing Geometry="M19.5 5.5 L19.5 26.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M3.5 15.5 L28.5 15.5"><GeometryDrawing.Pen><Pen Brush="#C9D1D9" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M3.5 20.5 L28.5 20.5"><GeometryDrawing.Pen><Pen Brush="#C9D1D9" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M12.5 5.5 L19.5 5.5 L19.5 26.5 L12.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M12.5 5.5 L19.5 5.5 L19.5 26.5 L12.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -174,7 +174,7 @@
         <GeometryDrawing Geometry="M19.5 5.5 L19.5 26.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M3.5 15.5 L28.5 15.5"><GeometryDrawing.Pen><Pen Brush="#C9D1D9" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M3.5 20.5 L28.5 20.5"><GeometryDrawing.Pen><Pen Brush="#C9D1D9" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M12.5 5.5 L19.5 5.5 L19.5 26.5 L12.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M12.5 5.5 L19.5 5.5 L19.5 26.5 L12.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -183,10 +183,10 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#E2BE6C" Geometry="M1.5 4.5 L11.5 4.5 L14 7.5 L29.5 7.5 L29.5 26.5 L1.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F0D48E" Geometry="M1.5 10.5 L29.5 10.5 L29.5 26.5 L1.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#DDE3E9" Geometry="M23 17.4 L23.71 15.53 L25.21 15.83 L25.14 17.83 L26.96 19.04 L28.78 18.22 L29.63 19.49 L28.17 20.86 L28.6 23 L30.47 23.71 L30.17 25.21 L28.17 25.14 L26.96 26.96 L27.78 28.78 L26.51 29.63 L25.14 28.17 L23 28.6 L22.29 30.47 L20.79 30.17 L20.86 28.17 L19.04 26.96 L17.22 27.78 L16.37 26.51 L17.83 25.14 L17.4 23 L15.53 22.29 L15.83 20.79 L17.83 20.86 L19.04 19.04 L18.22 17.22 L19.49 16.37 L20.86 17.83 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M20.8,23 A2.2,2.2 0 1 1 25.2,23 A2.2,2.2 0 1 1 20.8,23 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E2BE6C" Geometry="M3.5 5.5 L12.5 5.5 L15 8.5 L28.5 8.5 L28.5 26.5 L3.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F0D48E" Geometry="M3.5 11.5 L28.5 11.5 L28.5 26.5 L3.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#DDE3E9" Geometry="M22.5 15.6 L23.11 14.03 L24.41 14.29 L24.38 15.97 L25.96 17.04 L27.51 16.36 L28.24 17.46 L27.03 18.62 L27.4 20.5 L28.97 21.11 L28.71 22.41 L27.03 22.38 L25.96 23.96 L26.64 25.51 L25.54 26.24 L24.38 25.03 L22.5 25.4 L21.89 26.97 L20.59 26.71 L20.62 25.03 L19.04 23.96 L17.49 24.64 L16.76 23.54 L17.97 22.38 L17.6 20.5 L16.03 19.89 L16.29 18.59 L17.97 18.62 L19.04 17.04 L18.36 15.49 L19.46 14.76 L20.62 15.97 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M20.6,20.5 A1.9,1.9 0 1 1 24.4,20.5 A1.9,1.9 0 1 1 20.6,20.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -194,10 +194,10 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#E2BE6C" Geometry="M1 2.5 L6 2.5 L7.25 4 L15 4 L15 13.5 L1 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F0D48E" Geometry="M1 5.5 L15 5.5 L15 13.5 L1 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#DDE3E9" Geometry="M11.5 8.4 L11.9 7.22 L12.76 7.39 L12.69 8.64 L13.69 9.31 L14.81 8.76 L15.3 9.49 L14.36 10.31 L14.6 11.5 L15.78 11.9 L15.61 12.76 L14.36 12.69 L13.69 13.69 L14.24 14.81 L13.51 15.3 L12.69 14.36 L11.5 14.6 L11.1 15.78 L10.24 15.61 L10.31 14.36 L9.31 13.69 L8.19 14.24 L7.7 13.51 L8.64 12.69 L8.4 11.5 L7.22 11.1 L7.39 10.24 L8.64 10.31 L9.31 9.31 L8.76 8.19 L9.49 7.7 L10.31 8.64 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M10.3,11.5 A1.2,1.2 0 1 1 12.7,11.5 A1.2,1.2 0 1 1 10.3,11.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E2BE6C" Geometry="M1.5 2.5 L6 2.5 L7.5 4 L13.5 4 L13.5 13.5 L1.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F0D48E" Geometry="M1.5 6.5 L13.5 6.5 L13.5 13.5 L1.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#DDE3E9" Geometry="M10.8 7.6 L11.14 6.72 L11.86 6.86 L11.83 7.81 L12.71 8.39 L13.57 8.01 L13.98 8.62 L13.29 9.27 L13.5 10.3 L14.38 10.64 L14.24 11.36 L13.29 11.33 L12.71 12.21 L13.09 13.07 L12.48 13.48 L11.83 12.79 L10.8 13 L10.46 13.88 L9.74 13.74 L9.77 12.79 L8.89 12.21 L8.03 12.59 L7.62 11.98 L8.31 11.33 L8.1 10.3 L7.22 9.96 L7.36 9.24 L8.31 9.27 L8.89 8.39 L8.51 7.53 L9.12 7.12 L9.77 7.81 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M9.700000000000001,10.3 A1.1,1.1 0 1 1 11.9,10.3 A1.1,1.1 0 1 1 9.700000000000001,10.3 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -237,15 +237,15 @@
 
   <DrawingImage x:Key="Icon.ExpandAll">
     <DrawingImage.Drawing>
-      <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
-        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Geometry="M9 12 L9 25 L16 25"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M3 3 L15 3 L15 15 L3 15 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6 9 L12 9"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M9 6 L9 12"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M17 19 L29 19 L29 31 L17 31 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M20 25 L26 25"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M23 22 L23 28"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+      <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
+        <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
+        <GeometryDrawing Geometry="M4.5 7.5 L4.5 11.5 L8.5 11.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 1.5 L7.5 1.5 L7.5 7.5 L1.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M3 4.5 L6 4.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M4.5 3 L4.5 6"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M8.5 8.5 L14.5 8.5 L14.5 14.5 L8.5 14.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10 11.5 L13 11.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M11.5 10 L11.5 13"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -253,13 +253,13 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Geometry="M4.5 6 L4.5 12.5 L8 12.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M4.5 7.5 L4.5 11.5 L8.5 11.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Brush="#FFFFFF" Geometry="M1.5 1.5 L7.5 1.5 L7.5 7.5 L1.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M3 4.5 L6 4.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Geometry="M4.5 3 L4.5 6"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M8.5 9.5 L14.5 9.5 L14.5 15.5 L8.5 15.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M10 12.5 L13 12.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M11.5 11 L11.5 14"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M8.5 8.5 L14.5 8.5 L14.5 14.5 L8.5 14.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10 11.5 L13 11.5"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M11.5 10 L11.5 13"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -268,10 +268,10 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M6.5 2.5 L18.5 2.5 L23.5 7.5 L23.5 26.5 L6.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E3E8ED" Geometry="M18.5 2.5 L18.5 7.5 L23.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#D6E7F7" Geometry="M10.5 11.5 L16.5 11.5 L16.5 14.5 L19.5 14.5 L19.5 19.5 L10.5 19.5 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#1F6FBF" Geometry="M18.5 21.86 L24.5 21.86 L24.5 18.5 L30.5 24.5 L24.5 30.5 L24.5 27.14 L18.5 27.14 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M4.5 4.5 L15.5 4.5 L20.5 9.5 L20.5 26.5 L4.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M15.5 4.5 L15.5 9.5 L20.5 9.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D6E7F7" Geometry="M7.5 12.5 L13.5 12.5 L13.5 15.5 L16.5 15.5 L16.5 20.5 L7.5 20.5 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#1F6FBF" Geometry="M16 20.08 L21.5 20.08 L21.5 17 L27 22.5 L21.5 28 L21.5 24.92 L16 24.92 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -279,10 +279,10 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M6.5 2.5 L18.5 2.5 L23.5 7.5 L23.5 26.5 L6.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E3E8ED" Geometry="M18.5 2.5 L18.5 7.5 L23.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#D6E7F7" Geometry="M10.5 11.5 L16.5 11.5 L16.5 14.5 L19.5 14.5 L19.5 19.5 L10.5 19.5 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#1F6FBF" Geometry="M18.5 21.86 L24.5 21.86 L24.5 18.5 L30.5 24.5 L24.5 30.5 L24.5 27.14 L18.5 27.14 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M4.5 4.5 L15.5 4.5 L20.5 9.5 L20.5 26.5 L4.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M15.5 4.5 L15.5 9.5 L20.5 9.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D6E7F7" Geometry="M7.5 12.5 L13.5 12.5 L13.5 15.5 L16.5 15.5 L16.5 20.5 L7.5 20.5 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#1F6FBF" Geometry="M16 20.08 L21.5 20.08 L21.5 17 L27 22.5 L21.5 28 L21.5 24.92 L16 24.92 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -291,12 +291,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#F3F5F7" Geometry="M10.5 1.5 L21.5 1.5 L25.5 5.5 L25.5 20.5 L10.5 20.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E3E8ED" Geometry="M21.5 1.5 L21.5 5.5 L25.5 5.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M4.5 6.5 L15.5 6.5 L19.5 10.5 L19.5 28.5 L4.5 28.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E3E8ED" Geometry="M15.5 6.5 L15.5 10.5 L19.5 10.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F3F5F7" Geometry="M10.5 3.5 L20.5 3.5 L24.5 7.5 L24.5 21.5 L10.5 21.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M20.5 3.5 L20.5 7.5 L24.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M4.5 7.5 L14.5 7.5 L18.5 11.5 L18.5 27.5 L4.5 27.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M14.5 7.5 L14.5 11.5 L18.5 11.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Brush="#D6E7F7" Geometry="M7.5 14.5 L12.9 14.5 L12.9 17.2 L15.6 17.2 L15.6 21.7 L7.5 21.7 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#1F6FBF" Geometry="M18.5 22.36 L24.5 22.36 L24.5 19 L30.5 25 L24.5 31 L24.5 27.64 L18.5 27.64 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#1F6FBF" Geometry="M17 21.08 L22.5 21.08 L22.5 18 L28 23.5 L22.5 29 L22.5 25.92 L17 25.92 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -304,12 +304,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#F3F5F7" Geometry="M10.5 1.5 L21.5 1.5 L25.5 5.5 L25.5 20.5 L10.5 20.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E3E8ED" Geometry="M21.5 1.5 L21.5 5.5 L25.5 5.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M4.5 6.5 L15.5 6.5 L19.5 10.5 L19.5 28.5 L4.5 28.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E3E8ED" Geometry="M15.5 6.5 L15.5 10.5 L19.5 10.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F3F5F7" Geometry="M10.5 3.5 L20.5 3.5 L24.5 7.5 L24.5 21.5 L10.5 21.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M20.5 3.5 L20.5 7.5 L24.5 7.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M4.5 7.5 L14.5 7.5 L18.5 11.5 L18.5 27.5 L4.5 27.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E3E8ED" Geometry="M14.5 7.5 L14.5 11.5 L18.5 11.5 Z"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
         <GeometryDrawing Brush="#D6E7F7" Geometry="M7.5 14.5 L12.9 14.5 L12.9 17.2 L15.6 17.2 L15.6 21.7 L7.5 21.7 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#1F6FBF" Geometry="M18.5 22.36 L24.5 22.36 L24.5 19 L30.5 25 L24.5 31 L24.5 27.64 L18.5 27.64 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#1F6FBF" Geometry="M17 21.08 L22.5 21.08 L22.5 18 L28 23.5 L22.5 29 L22.5 25.92 L17 25.92 Z"><GeometryDrawing.Pen><Pen Brush="#FFFFFF" Thickness="1.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -330,11 +330,11 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#D6E7F7" Geometry="M6.5 2 L10.5 2 L10.5 6.5 L15 6.5 L15 10.5 L10.5 10.5 L10.5 15 L6.5 15 L6.5 10.5 L2 10.5 L2 6.5 L6.5 6.5 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6.5 6.5 L10.5 6.5"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M10.5 6.5 L10.5 10.5"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M10.5 10.5 L6.5 10.5"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6.5 10.5 L6.5 6.5"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D6E7F7" Geometry="M6 1.5 L10 1.5 L10 6 L14.5 6 L14.5 10 L10 10 L10 14.5 L6 14.5 L6 10 L1.5 10 L1.5 6 L6 6 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 6 L10 6"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10 6 L10 10"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M10 10 L6 10"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 10 L6 6"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"><Pen.DashStyle><DashStyle Dashes="1.5 1"/></Pen.DashStyle></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -343,8 +343,8 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#E2BE6C" Geometry="M1.5 4.5 L11.5 4.5 L14 7.5 L29.5 7.5 L29.5 26.5 L1.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F0D48E" Geometry="M1.5 26.5 L6 13.5 L31.5 13.5 L27.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E2BE6C" Geometry="M2.5 5.5 L11.5 5.5 L14 8.5 L27.5 8.5 L27.5 26.5 L2.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F0D48E" Geometry="M2.5 26.5 L6.5 13.5 L29.5 13.5 L25.5 26.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -352,8 +352,8 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#E2BE6C" Geometry="M1 2.5 L6 2.5 L7.25 4 L15 4 L15 13.5 L1 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F0D48E" Geometry="M1 13.5 L3.25 7 L16 7 L14 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E2BE6C" Geometry="M1.5 2.5 L6 2.5 L7.5 4 L13.5 4 L13.5 13.5 L1.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F0D48E" Geometry="M1.5 13.5 L3.5 7.5 L14.5 7.5 L12.5 13.5 Z"><GeometryDrawing.Pen><Pen Brush="#9C7428" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -362,9 +362,9 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M4.74 10 L16 16.5 L16 29.5 L4.74 23 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#AEBCC9" Geometry="M16 16.5 L27.26 10 L27.26 23 L16 29.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F2F5F8" Geometry="M16 3.5 L27.26 10 L16 16.5 L4.74 10 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M4.74 9.5 L16 16 L16 29 L4.74 22.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#AEBCC9" Geometry="M16 16 L27.26 9.5 L27.26 22.5 L16 29 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F2F5F8" Geometry="M16 3 L27.26 9.5 L16 16 L4.74 9.5 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -372,9 +372,9 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M2.02 4.95 L8 8.4 L8 14.9 L2.02 11.45 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#AEBCC9" Geometry="M8 8.4 L13.98 4.95 L13.98 11.45 L8 14.9 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F2F5F8" Geometry="M8 1.5 L13.98 4.95 L8 8.4 L2.02 4.95 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M2.28 4.9 L8 8.2 L8 14.4 L2.28 11.1 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#AEBCC9" Geometry="M8 8.2 L13.72 4.9 L13.72 11.1 L8 14.4 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F2F5F8" Geometry="M8 1.6 L13.72 4.9 L8 8.2 L2.28 4.9 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -383,8 +383,8 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Geometry="M21 7.34 A10 10 0 1 1 11 7.34"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="2.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#1F6FBF" Geometry="M8.9 3.7 L16.2 4.34 L13.1 10.98 Z"></GeometryDrawing>
+        <GeometryDrawing Geometry="M21 7.95 L21.9 8.53 L22.72 9.21 L23.47 9.96 L24.14 10.79 L24.71 11.7 L25.19 12.66 L25.56 13.66 L25.82 14.7 L25.96 15.76 L26 16.82 L25.92 17.89 L25.72 18.93 L25.42 19.96 L25.01 20.95 L24.5 21.89 L23.88 22.75 L23.18 23.57 L22.4 24.29 L21.54 24.93 L20.63 25.48 L19.65 25.91 L18.64 26.25 L17.6 26.48 L16.53 26.59 L15.47 26.59 L14.4 26.48 L13.36 26.25 L12.35 25.91 L11.37 25.48 L10.46 24.93 L9.6 24.29 L8.82 23.57 L8.12 22.75 L7.5 21.89 L6.99 20.95 L6.58 19.96 L6.28 18.93 L6.08 17.89 L6 16.82 L6.04 15.76 L6.18 14.7 L6.44 13.66 L6.81 12.66 L7.29 11.7 L7.86 10.79 L8.53 9.96 L9.28 9.21 L10.1 8.53 L11 7.95"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="2.2" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#1F6FBF" Geometry="M8.9 4.31 L16.2 4.95 L13.1 11.59 Z"></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -392,8 +392,8 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Geometry="M10.6 3.5 A5.2 5.2 0 1 1 5.4 3.5"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1.4" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#1F6FBF" Geometry="M4.14 1.31 L8.52 1.7 L6.66 5.68 Z"></GeometryDrawing>
+        <GeometryDrawing Geometry="M10.6 3.9 L11.07 4.2 L11.5 4.55 L11.89 4.95 L12.23 5.38 L12.53 5.85 L12.78 6.35 L12.97 6.87 L13.1 7.41 L13.18 7.96 L13.2 8.51 L13.16 9.06 L13.06 9.61 L12.9 10.14 L12.69 10.66 L12.42 11.14 L12.1 11.6 L11.74 12.02 L11.33 12.4 L10.88 12.73 L10.41 13.01 L9.9 13.24 L9.37 13.42 L8.83 13.53 L8.28 13.59 L7.72 13.59 L7.17 13.53 L6.63 13.42 L6.1 13.24 L5.59 13.01 L5.12 12.73 L4.67 12.4 L4.26 12.02 L3.9 11.6 L3.58 11.14 L3.31 10.66 L3.1 10.14 L2.94 9.61 L2.84 9.06 L2.8 8.51 L2.82 7.96 L2.9 7.41 L3.03 6.87 L3.22 6.35 L3.47 5.85 L3.77 5.38 L4.11 4.95 L4.5 4.55 L4.93 4.2 L5.4 3.9"><GeometryDrawing.Pen><Pen Brush="#1F6FBF" Thickness="1.4" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#1F6FBF" Geometry="M4.14 1.71 L8.52 2.1 L6.66 6.08 Z"></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -411,8 +411,8 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#DDE3E9" Geometry="M8 2.8 L8.66 1.03 L10.06 1.31 L9.99 3.2 L11.68 4.32 L13.39 3.54 L14.19 4.72 L12.8 6.01 L13.2 8 L14.97 8.66 L14.69 10.06 L12.8 9.99 L11.68 11.68 L12.46 13.39 L11.28 14.19 L9.99 12.8 L8 13.2 L7.34 14.97 L5.94 14.69 L6.01 12.8 L4.32 11.68 L2.61 12.46 L1.81 11.28 L3.2 9.99 L2.8 8 L1.03 7.34 L1.31 5.94 L3.2 6.01 L4.32 4.32 L3.54 2.61 L4.72 1.81 L6.01 3.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#FFFFFF" Geometry="M5.8,8 A2.2,2.2 0 1 1 10.2,8 A2.2,2.2 0 1 1 5.8,8 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#DDE3E9" Geometry="M8 3.2 L8.61 1.53 L9.91 1.79 L9.84 3.57 L11.39 4.61 L13.01 3.86 L13.74 4.96 L12.43 6.16 L12.8 8 L14.47 8.61 L14.21 9.91 L12.43 9.84 L11.39 11.39 L12.14 13.01 L11.04 13.74 L9.84 12.43 L8 12.8 L7.39 14.47 L6.09 14.21 L6.16 12.43 L4.61 11.39 L2.99 12.14 L2.26 11.04 L3.57 9.84 L3.2 8 L1.53 7.39 L1.79 6.09 L3.57 6.16 L4.61 4.61 L3.86 2.99 L4.96 2.26 L6.16 3.57 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#FFFFFF" Geometry="M6,8 A2,2 0 1 1 10,8 A2,2 0 1 1 6,8 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -421,12 +421,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M11.76 13.47 L28.45 23.11 L18.71 28.73 L2.02 19.09 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M2.02 19.09 L18.71 28.73 L18.71 30.5 L2.02 20.86 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M28.45 23.11 L18.71 28.73 L18.71 30.5 L28.45 24.88 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M11.76 13.47 L28.45 23.11 L28.45 12.02 L11.76 2.38 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M13.29 1.5 L29.98 11.14 L28.45 12.02 L11.76 2.38 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M29.98 11.14 L28.45 12.02 L28.45 23.11 L29.98 23.99 L29.98 11.14 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M12.08 13.66 L27.51 22.57 L18.51 27.77 L3.08 18.86 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M3.08 18.86 L18.51 27.77 L18.51 29.4 L3.08 20.49 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M27.51 22.57 L18.51 27.77 L18.51 29.4 L27.51 24.2 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M12.08 13.66 L27.51 22.57 L27.51 12.33 L12.08 3.42 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M13.49 2.6 L28.92 11.51 L27.51 12.33 L12.08 3.42 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M28.92 11.51 L27.51 12.33 L27.51 22.57 L28.92 23.39 L28.92 11.51 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -434,12 +434,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M5.83 6.71 L14.36 11.63 L9.38 14.5 L0.86 9.58 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M0.86 9.58 L9.38 14.5 L9.38 15.4 L0.86 10.48 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M14.36 11.63 L9.38 14.5 L9.38 15.4 L14.36 12.53 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M5.83 6.71 L14.36 11.63 L14.36 5.97 L5.83 1.05 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M6.62 0.6 L15.14 5.52 L14.36 5.97 L5.83 1.05 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M15.14 5.52 L14.36 5.97 L14.36 11.63 L15.14 12.08 L15.14 5.52 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M6.21 6.94 L13.24 10.99 L9.14 13.36 L2.12 9.3 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M2.12 9.3 L9.14 13.36 L9.14 14.1 L2.12 10.04 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M13.24 10.99 L9.14 13.36 L9.14 14.1 L13.24 11.73 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M6.21 6.94 L13.24 10.99 L13.24 6.33 L6.21 2.27 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M6.86 1.9 L13.88 5.96 L13.24 6.33 L6.21 2.27 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M13.88 5.96 L13.24 6.33 L13.24 10.99 L13.88 11.36 L13.88 5.96 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -448,12 +448,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M11.76 13.47 L28.45 23.11 L18.71 28.73 L2.02 19.09 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M2.02 19.09 L18.71 28.73 L18.71 30.5 L2.02 20.86 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M28.45 23.11 L18.71 28.73 L18.71 30.5 L28.45 24.88 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M11.76 13.47 L28.45 23.11 L28.45 12.02 L11.76 2.38 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M13.29 1.5 L29.98 11.14 L28.45 12.02 L11.76 2.38 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M29.98 11.14 L28.45 12.02 L28.45 23.11 L29.98 23.99 L29.98 11.14 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M12.08 13.66 L27.51 22.57 L18.51 27.77 L3.08 18.86 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M3.08 18.86 L18.51 27.77 L18.51 29.4 L3.08 20.49 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M27.51 22.57 L18.51 27.77 L18.51 29.4 L27.51 24.2 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M12.08 13.66 L27.51 22.57 L27.51 12.33 L12.08 3.42 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M13.49 2.6 L28.92 11.51 L27.51 12.33 L12.08 3.42 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M28.92 11.51 L27.51 12.33 L27.51 22.57 L28.92 23.39 L28.92 11.51 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -461,12 +461,12 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M5.83 6.71 L14.36 11.63 L9.38 14.5 L0.86 9.58 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M0.86 9.58 L9.38 14.5 L9.38 15.4 L0.86 10.48 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M14.36 11.63 L9.38 14.5 L9.38 15.4 L14.36 12.53 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#B9D0E5" Geometry="M5.83 6.71 L14.36 11.63 L14.36 5.97 L5.83 1.05 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#E1EDF8" Geometry="M6.62 0.6 L15.14 5.52 L14.36 5.97 L5.83 1.05 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#8FB0CE" Geometry="M15.14 5.52 L14.36 5.97 L14.36 11.63 L15.14 12.08 L15.14 5.52 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M6.21 6.94 L13.24 10.99 L9.14 13.36 L2.12 9.3 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M2.12 9.3 L9.14 13.36 L9.14 14.1 L2.12 10.04 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M13.24 10.99 L9.14 13.36 L9.14 14.1 L13.24 11.73 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#B9D0E5" Geometry="M6.21 6.94 L13.24 10.99 L13.24 6.33 L6.21 2.27 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#E1EDF8" Geometry="M6.86 1.9 L13.88 5.96 L13.24 6.33 L6.21 2.27 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#8FB0CE" Geometry="M13.88 5.96 L13.24 6.33 L13.24 10.99 L13.88 11.36 L13.88 5.96 Z"><GeometryDrawing.Pen><Pen Brush="#2B587F" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -475,14 +475,14 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H32 V32 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H32 V32 H0 Z"/>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M12 11.2 L20 11.2 L20 30 L12 30 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M12 19 L20 17"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M12 23 L20 21"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M12 27 L20 25"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M4.8 7.2 L10.4 12 L10.4 17.2 L4.8 12.4 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#AEBCC9" Geometry="M10.4 12 L21.6 12 L21.6 17.2 L10.4 17.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#93A3B3" Geometry="M21.6 12 L27.2 7.2 L27.2 12.4 L21.6 17.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F2F5F8" Geometry="M4.8 7.2 L10.4 2.4 L21.6 2.4 L27.2 7.2 L21.6 12 L10.4 12 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M12 12.4 L20 12.4 L20 28.4 L12 28.4 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M12 18.4 L20 16.4"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M12 22 L20 20"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M12 25.6 L20 23.6"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M4.8 8.4 L10.4 13.2 L10.4 18.4 L4.8 13.6 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#AEBCC9" Geometry="M10.4 13.2 L21.6 13.2 L21.6 18.4 L10.4 18.4 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#93A3B3" Geometry="M21.6 13.2 L27.2 8.4 L27.2 13.6 L21.6 18.4 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F2F5F8" Geometry="M4.8 8.4 L10.4 3.6 L21.6 3.6 L27.2 8.4 L21.6 13.2 L10.4 13.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
@@ -490,14 +490,14 @@
     <DrawingImage.Drawing>
       <DrawingGroup ClipGeometry="M0,0 H16 V16 H0 Z">
         <GeometryDrawing Brush="Transparent" Geometry="M0,0 H16 V16 H0 Z"/>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M6 5.6 L10 5.6 L10 15 L6 15 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6 9.5 L10 8.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6 11.5 L10 10.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Geometry="M6 13.5 L10 12.5"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#D3DCE4" Geometry="M2.4 3.6 L5.2 6 L5.2 8.6 L2.4 6.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#AEBCC9" Geometry="M5.2 6 L10.8 6 L10.8 8.6 L5.2 8.6 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#93A3B3" Geometry="M10.8 6 L13.6 3.6 L13.6 6.2 L10.8 8.6 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
-        <GeometryDrawing Brush="#F2F5F8" Geometry="M2.4 3.6 L5.2 1.2 L10.8 1.2 L13.6 3.6 L10.8 6 L5.2 6 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M6 6.2 L10 6.2 L10 14.2 L6 14.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 9.2 L10 8.2"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 11 L10 10"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Geometry="M6 12.8 L10 11.8"><GeometryDrawing.Pen><Pen Brush="#5C6977" Thickness="0.8" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#D3DCE4" Geometry="M2.4 4.2 L5.2 6.6 L5.2 9.2 L2.4 6.8 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#AEBCC9" Geometry="M5.2 6.6 L10.8 6.6 L10.8 9.2 L5.2 9.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#93A3B3" Geometry="M10.8 6.6 L13.6 4.2 L13.6 6.8 L10.8 9.2 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
+        <GeometryDrawing Brush="#F2F5F8" Geometry="M2.4 4.2 L5.2 1.8 L10.8 1.8 L13.6 4.2 L10.8 6.6 L5.2 6.6 Z"><GeometryDrawing.Pen><Pen Brush="#2E3943" Thickness="1" StartLineCap="Flat" EndLineCap="Flat" DashCap="Flat" LineJoin="Miter"></Pen></GeometryDrawing.Pen></GeometryDrawing>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
