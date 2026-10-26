@@ -73,11 +73,15 @@ namespace InvAuto.Core.Bends
 
     public sealed class BendProcessResult
     {
-        public BendProcessResult(string text, IReadOnlyList<ProcessedBendLine> items)
+        public BendProcessResult(string text, IReadOnlyList<ProcessedBendLine> items, IReadOnlyList<Preview.Polyline2> endFeatures = null)
         {
             Text = text;
             Items = items;
+            EndFeatures = endFeatures ?? Array.Empty<Preview.Polyline2>();
         }
+
+        /// <summary>Законцовки для показа в окне (отдельным цветом): выемки в контуре и отдельные вырезы.</summary>
+        public IReadOnlyList<Preview.Polyline2> EndFeatures { get; }
 
         /// <summary>DXF после обработки. Тот же экземпляр строки, если ничего не менялось.</summary>
         public string Text { get; }
@@ -113,75 +117,474 @@ namespace InvAuto.Core.Bends
         public static IReadOnlyList<BendLineInfo> FindBendLines(string dxf, IEnumerable<string> bendLayers) =>
             Process(dxf, bendLayers, new BendLineOptions()).Items.Select(i => i.Line).ToList();
 
+        /// <summary>Слои наружного контура: законцовки на его рёбрах становятся выемками в контуре.</summary>
+        public static readonly IReadOnlyList<string> DefaultOuterLayers = new[] { "IV_OUTER_PROFILE" };
+
+        /// <summary>Слой, на котором законцовки отдаются для показа в окне (не пишется в DXF).</summary>
+        public const string EndFeatureLayer = Preview.Polyline2.EndFeatureLayer;
+
         /// <summary>
         /// Свои параметры для каждой линии: resolve получает линию (слой, координаты, ключ) и возвращает параметры;
         /// null — оставить линию как есть.
+        /// Законцовки, пересекающие прямое ребро наружного контура, становятся выемкой в самом контуре
+        /// (контур остаётся одним замкнутым); остальные — отдельными вырезами на своём слое.
         /// </summary>
-        public static BendProcessResult Process(string dxf, IEnumerable<string> bendLayers, Func<BendLineInfo, BendLineOptions> resolve)
+        public static BendProcessResult Process(string dxf, IEnumerable<string> bendLayers, Func<BendLineInfo, BendLineOptions> resolve,
+            IEnumerable<string> outerLayers = null)
         {
             var layers = new HashSet<string>(bendLayers, StringComparer.OrdinalIgnoreCase);
+            var outer = new HashSet<string>(outerLayers ?? DefaultOuterLayers, StringComparer.OrdinalIgnoreCase);
             string newline = dxf.Contains("\r\n") ? "\r\n" : "\n";
             var pairs = Parse(dxf);
-            var items = new List<ProcessedBendLine>();
-            var output = new List<Pair>(pairs.Count);
             var handles = new HandleAllocator(pairs);
-            bool changed = false;
 
-            int i = 0;
-            while (i < pairs.Count)
+            // ===== Проход 1: объекты файла, линии гиба, рёбра наружного контура =====
+            var entities = new List<Entity>();
+            int container = 0, index = 0;
+            while (index < pairs.Count)
             {
-                int end = i + 1;
+                int end = index + 1;
                 while (end < pairs.Count && pairs[end].Code != 0)
                     end++;
+                var e = new Entity(pairs.GetRange(index, end - index));
+                string type = e.Pairs[0].Value.Trim();
+                if (type == "SECTION" || type == "BLOCK" || type == "ENDBLK" || type == "ENDSEC")
+                    container++; // выемки — только в контуре того же блока или раздела, что и линия гиба
+                e.Container = container;
 
-                var entity = pairs.GetRange(i, end - i);
-                if (IsBendLine(entity, layers, out var start, out var finish, out string layer))
+                if (IsBendLine(e.Pairs, layers, out var a, out var b, out string layer))
                 {
-                    double length = Distance(start, finish);
-                    var info = new BendLineInfo(items.Count + 1, layer, start[0], start[1], finish[0], finish[1]);
-                    var options = resolve(info) ?? new BendLineOptions();
-                    var layout = BendLineStrategies.Layout(length, options);
-                    items.Add(new ProcessedBendLine(info, options, layout));
+                    e.Bend = new BendWork(a, b, layer);
+                }
+                else if (IsOn(e.Pairs, outer))
+                {
+                    if (type == "LINE")
+                        e.Outer = OuterShape.FromLine(e.Pairs);
+                    else if (type == "LWPOLYLINE")
+                        e.Outer = OuterShape.FromPolyline(e.Pairs);
+                }
+                entities.Add(e);
+                index = end;
+            }
 
-                    if (options.Mode == BendLineMode.Keep)
+            // ===== План: параметры линий, выемки, укорочение линий у законцовок =====
+            var items = new List<ProcessedBendLine>();
+            var endFeatures = new List<Preview.Polyline2>();
+            bool changed = false;
+            foreach (var e in entities.Where(x => x.Bend != null))
+            {
+                var w = e.Bend;
+                w.Info = new BendLineInfo(items.Count + 1, w.Layer, w.Start[0], w.Start[1], w.Finish[0], w.Finish[1]);
+                w.Options = resolve(w.Info) ?? new BendLineOptions();
+                double length = Distance(w.Start, w.Finish);
+                var outlines = BendEnds.Outlines(w.Start[0], w.Start[1], w.Finish[0], w.Finish[1], w.Options);
+
+                if (outlines.Count == 2 && length > 0)
+                {
+                    changed = true;
+                    double ux = (w.Finish[0] - w.Start[0]) / length, uy = (w.Finish[1] - w.Start[1]) / length;
+                    double reach = BendEnds.For(w.Options.EndShape).Reach(w.Options.EndSize);
+                    double offset = Math.Min(w.Options.EndOffset, length / 2);
+                    for (int k = 0; k < 2; k++)
                     {
-                        output.AddRange(entity);
-                    }
-                    else
-                    {
-                        changed = true;
-                        foreach (var segment in layout.Segments)
+                        double ix = k == 0 ? ux : -ux, iy = k == 0 ? uy : -uy;
+                        var notch = MergeIntoOuter(entities, e.Container, outlines[k], ix, iy);
+                        if (notch == null)
+                            w.SeparateEnds.Add(outlines[k]);
+                        endFeatures.Add(EndFeature(outlines[k], notch));
+
+                        // Линия гиба внутри выреза не нужна — там пустота: укорачиваем, если вырез накрывает конец.
+                        if (offset <= reach + 1e-9)
                         {
-                            output.AddRange(layout.SlotHalfWidth <= 0 || length <= 0
-                                ? Segment(entity, start, finish, length, segment, handles)
-                                : layout.RoundedEnds
-                                    ? RoundSlot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles)
-                                    : Slot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles));
+                            double trim = Math.Min(offset + reach, length / 2);
+                            if (k == 0) w.TrimStart = trim; else w.TrimEnd = trim;
                         }
                     }
+                }
 
-                    // Законцовки — отдельные замкнутые контуры на своём слое, с любым способом обработки линии.
-                    foreach (var outline in BendEnds.Outlines(start[0], start[1], finish[0], finish[1], options))
-                    {
-                        changed = true;
-                        output.AddRange(EndEntity(entity, outline, start[2], options.EndLayer, handles));
-                    }
-                }
-                else
-                {
-                    output.AddRange(entity);
-                }
-                i = end;
+                w.Layout = BendLineStrategies.Layout(Math.Max(0, length - w.TrimStart - w.TrimEnd), w.Options);
+                items.Add(new ProcessedBendLine(w.Info, w.Options, w.Layout));
+                if (w.Options.Mode != BendLineMode.Keep)
+                    changed = true;
             }
 
             if (!changed)
                 return new BendProcessResult(dxf, items);
 
+            // ===== Проход 2: запись =====
+            var output = new List<Pair>(pairs.Count);
+            foreach (var e in entities)
+            {
+                if (e.Bend != null)
+                    output.AddRange(WriteBend(e.Pairs, e.Bend, handles));
+                else if (e.Outer != null && e.Outer.Notches.Count > 0)
+                    output.AddRange(e.Outer.Write(e.Pairs, handles));
+                else
+                    output.AddRange(e.Pairs);
+            }
+
             handles.UpdateSeed(output);
             var text = new StringBuilder(dxf.Length);
             foreach (var pair in output)
                 text.Append(pair.CodeText).Append(newline).Append(pair.Value).Append(newline);
-            return new BendProcessResult(text.ToString(), items);
+            return new BendProcessResult(text.ToString(), items, endFeatures);
+        }
+
+        /// <summary>Линия гиба: оставшаяся часть (после укорочения у законцовок) по раскладке, затем отдельные законцовки.</summary>
+        private static IEnumerable<Pair> WriteBend(List<Pair> entity, BendWork w, HandleAllocator handles)
+        {
+            var output = new List<Pair>();
+            double length = Distance(w.Start, w.Finish);
+            double shift = w.TrimStart;
+            bool trimmed = w.TrimStart > 0 || w.TrimEnd > 0;
+
+            if (w.Options.Mode == BendLineMode.Keep)
+            {
+                output.AddRange(trimmed
+                    ? Segment(entity, w.Start, w.Finish, length, new BendSegment(w.TrimStart, length - w.TrimEnd), handles)
+                    : entity);
+            }
+            else
+            {
+                foreach (var seg in w.Layout.Segments)
+                {
+                    var moved = new BendSegment(seg.Start + shift, seg.End + shift);
+                    output.AddRange(w.Layout.SlotHalfWidth <= 0 || length <= 0
+                        ? Segment(entity, w.Start, w.Finish, length, moved, handles)
+                        : w.Layout.RoundedEnds
+                            ? RoundSlot(entity, w.Start, w.Finish, length, moved, w.Layout.SlotHalfWidth, handles)
+                            : Slot(entity, w.Start, w.Finish, length, moved, w.Layout.SlotHalfWidth, handles));
+                }
+            }
+
+            foreach (var outline in w.SeparateEnds)
+                output.AddRange(EndEntity(entity, outline, w.Start[2], w.Options.EndLayer, handles));
+            return output;
+        }
+
+        /// <summary>Ищет прямое ребро наружного контура, которое законцовка пересекает, и планирует в нём выемку.</summary>
+        private static EdgeNotch MergeIntoOuter(List<Entity> entities, int container, EndOutline outline, double ix, double iy)
+        {
+            foreach (var e in entities.Where(x => x.Outer != null && x.Container == container))
+            {
+                var shape = e.Outer;
+                for (int seg = 0; seg < shape.SegmentCount; seg++)
+                {
+                    if (!shape.IsStraight(seg))
+                        continue;
+                    var (a, b) = shape.Segment(seg);
+                    var notch = EdgeNotch.Find(a[0], a[1], b[0], b[1], outline, ix, iy);
+                    if (notch == null)
+                        continue;
+                    // Две выемки на одном ребре не должны перекрываться — иначе вторая остаётся отдельным вырезом.
+                    if (shape.Notches.Any(n => n.Segment == seg && n.Notch.T1 < notch.T2 && notch.T1 < n.Notch.T2))
+                        return null;
+                    shape.Notches.Add((seg, notch));
+                    return notch;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Законцовка для показа в окне (красным): выемка — путь по форме, отдельный вырез — вся форма.</summary>
+        private static Preview.Polyline2 EndFeature(EndOutline outline, EdgeNotch notch)
+        {
+            var points = new List<Preview.Point2>();
+            if (notch != null)
+            {
+                double x = notch.P1X, y = notch.P1Y;
+                points.Add(new Preview.Point2(x, y));
+                foreach (var piece in notch.Path)
+                {
+                    if (piece.IsArc)
+                    {
+                        double a1 = Math.Atan2(y - piece.CenterY, x - piece.CenterX);
+                        double a2 = Math.Atan2(piece.ToY - piece.CenterY, piece.ToX - piece.CenterX);
+                        double sweep = piece.CounterClockwise ? EdgeNotch.Ccw(a1, a2) : -EdgeNotch.Ccw(a2, a1);
+                        int steps = Math.Max(8, (int)Math.Ceiling(Math.Abs(sweep) / (Math.PI / 36)));
+                        for (int k = 1; k <= steps; k++)
+                        {
+                            double a = a1 + sweep * k / steps;
+                            points.Add(new Preview.Point2(piece.CenterX + piece.Radius * Math.Cos(a), piece.CenterY + piece.Radius * Math.Sin(a)));
+                        }
+                    }
+                    else
+                    {
+                        points.Add(new Preview.Point2(piece.ToX, piece.ToY));
+                    }
+                    x = piece.ToX;
+                    y = piece.ToY;
+                }
+                return new Preview.Polyline2(EndFeatureLayer, points, closed: false);
+            }
+
+            if (outline.IsCircle)
+            {
+                for (int k = 0; k < 72; k++)
+                {
+                    double a = 2 * Math.PI * k / 72;
+                    points.Add(new Preview.Point2(outline.CenterX + outline.Radius * Math.Cos(a), outline.CenterY + outline.Radius * Math.Sin(a)));
+                }
+            }
+            else
+            {
+                points.AddRange(outline.Vertices.Select(v => new Preview.Point2(v.X, v.Y)));
+            }
+            return new Preview.Polyline2(EndFeatureLayer, points, closed: true);
+        }
+
+        private static bool IsOn(List<Pair> entity, HashSet<string> layers)
+        {
+            string layer = entity.FirstOrDefault(p => p.Code == 8).Value?.Trim();
+            return layer != null && layers.Contains(layer);
+        }
+
+        /// <summary>Объект файла и что с ним делать при записи.</summary>
+        private sealed class Entity
+        {
+            public Entity(List<Pair> pairs) => Pairs = pairs;
+
+            public List<Pair> Pairs { get; }
+            public int Container { get; set; }
+            public BendWork Bend { get; set; }
+            public OuterShape Outer { get; set; }
+        }
+
+        /// <summary>Линия гиба в обработке.</summary>
+        private sealed class BendWork
+        {
+            public BendWork(double[] start, double[] finish, string layer)
+            {
+                Start = start;
+                Finish = finish;
+                Layer = layer;
+            }
+
+            public double[] Start { get; }
+            public double[] Finish { get; }
+            public string Layer { get; }
+            public BendLineInfo Info { get; set; }
+            public BendLineOptions Options { get; set; }
+            public BendLineLayout Layout { get; set; }
+            public double TrimStart { get; set; }
+            public double TrimEnd { get; set; }
+            public List<EndOutline> SeparateEnds { get; } = new List<EndOutline>();
+        }
+
+        /// <summary>
+        /// Элемент наружного контура (LINE или LWPOLYLINE) и запланированные в нём выемки законцовок.
+        /// LINE: выемка — отдельные отрезки и дуги (красные, на слое контура), стыкующиеся с остатками ребра.
+        /// LWPOLYLINE: вершины выемки вставляются в саму полилинию — контур остаётся одним объектом.
+        /// </summary>
+        private sealed class OuterShape
+        {
+            private readonly List<double[]> _points;
+            private readonly List<double> _bulges;
+            private readonly bool _closed;
+            private readonly bool _isLine;
+            private readonly double _z;
+
+            private OuterShape(List<double[]> points, List<double> bulges, bool closed, bool isLine, double z)
+            {
+                _points = points;
+                _bulges = bulges;
+                _closed = closed;
+                _isLine = isLine;
+                _z = z;
+            }
+
+            public List<(int Segment, EdgeNotch Notch)> Notches { get; } = new List<(int, EdgeNotch)>();
+
+            public int SegmentCount => _isLine ? 1 : _closed ? _points.Count : _points.Count - 1;
+
+            public bool IsStraight(int segment) => _isLine || Math.Abs(_bulges[segment]) < 1e-12;
+
+            public (double[] A, double[] B) Segment(int segment) =>
+                (_points[segment], _points[(segment + 1) % _points.Count]);
+
+            public static OuterShape FromLine(List<Pair> e) => new OuterShape(
+                new List<double[]> { new[] { Number(e, 10), Number(e, 20) }, new[] { Number(e, 11), Number(e, 21) } },
+                new List<double> { 0 }, closed: false, isLine: true, z: Number(e, 30));
+
+            public static OuterShape FromPolyline(List<Pair> e)
+            {
+                var points = new List<double[]>();
+                var bulges = new List<double>();
+                double x = 0;
+                foreach (var p in e)
+                {
+                    if (p.Code == 10)
+                        x = Parse(p.Value);
+                    else if (p.Code == 20)
+                    {
+                        points.Add(new[] { x, Parse(p.Value) });
+                        bulges.Add(0);
+                    }
+                    else if (p.Code == 42 && bulges.Count > 0)
+                        bulges[bulges.Count - 1] = Parse(p.Value);
+                }
+                bool closed = (((int)Number(e, 70)) & 1) != 0;
+                return points.Count >= 2 ? new OuterShape(points, bulges, closed, isLine: false, z: Number(e, 38)) : null;
+            }
+
+            private static double Parse(string value) =>
+                double.TryParse(value.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double v) ? v : 0;
+
+            public IEnumerable<Pair> Write(List<Pair> entity, HandleAllocator handles) =>
+                _isLine ? WriteLine(entity, handles) : WritePolyline(entity);
+
+            private IEnumerable<Pair> WriteLine(List<Pair> entity, HandleAllocator handles)
+            {
+                var result = new List<Pair>();
+                var red = WithColor(entity, 1);
+                double[] current = _points[0];
+                bool first = true;
+                foreach (var (_, notch) in Notches.OrderBy(n => n.Notch.T1))
+                {
+                    // Остаток ребра до выемки: первый — сам исходный объект (handle не меняется), остальные — новые.
+                    result.AddRange(first
+                        ? Line(entity, current, new[] { notch.P1X, notch.P1Y }, null, keepHandle: true)
+                        : Line(entity, current, new[] { notch.P1X, notch.P1Y }, handles));
+                    first = false;
+                    double x = notch.P1X, y = notch.P1Y;
+                    foreach (var piece in notch.Path)
+                    {
+                        result.AddRange(piece.IsArc
+                            ? ArcEntity(red, piece, x, y, _z, handles)
+                            : Line(red, new[] { x, y, _z }, new[] { piece.ToX, piece.ToY, _z }, handles));
+                        x = piece.ToX;
+                        y = piece.ToY;
+                    }
+                    current = new[] { notch.P2X, notch.P2Y };
+                }
+                result.AddRange(Line(entity, current, _points[1], handles));
+                return result;
+            }
+
+            private IEnumerable<Pair> WritePolyline(List<Pair> entity)
+            {
+                var vertices = new List<(double X, double Y, double Bulge)>();
+                for (int i = 0; i < _points.Count; i++)
+                {
+                    var notches = Notches.Where(n => n.Segment == i).Select(n => n.Notch).OrderBy(n => n.T1).ToList();
+                    vertices.Add((_points[i][0], _points[i][1], notches.Count > 0 ? 0 : _bulges[i]));
+                    foreach (var notch in notches)
+                    {
+                        double x = notch.P1X, y = notch.P1Y;
+                        for (int k = 0; k < notch.Path.Count; k++)
+                        {
+                            var piece = notch.Path[k];
+                            vertices.Add((x, y, piece.IsArc ? Bulge(piece, x, y) : 0));
+                            x = piece.ToX;
+                            y = piece.ToY;
+                        }
+                        vertices.Add((notch.P2X, notch.P2Y, 0));
+                    }
+                }
+
+                int width = entity[0].CodeText.Length;
+                Pair New(int code, string value) => new Pair(code.ToString(CultureInfo.InvariantCulture).PadLeft(width), value);
+                var vertexCodes = new HashSet<int> { 10, 20, 40, 41, 42, 91 };
+                bool written = false;
+                foreach (var pair in entity)
+                {
+                    if (pair.Code == 90)
+                    {
+                        yield return pair.With(vertices.Count.ToString(CultureInfo.InvariantCulture));
+                        continue;
+                    }
+                    if (!vertexCodes.Contains(pair.Code))
+                    {
+                        yield return pair;
+                        continue;
+                    }
+                    if (written || pair.Code != 10)
+                        continue;
+                    written = true;
+                    foreach (var v in vertices)
+                    {
+                        yield return New(10, Format(v.X));
+                        yield return New(20, Format(v.Y));
+                        if (Math.Abs(v.Bulge) > 1e-12)
+                            yield return New(42, Format(v.Bulge));
+                    }
+                }
+            }
+
+            /// <summary>Выпуклость участка-дуги от (x; y) до piece.To: tg(угол/4), знак — направление.</summary>
+            private static double Bulge(NotchPiece piece, double x, double y)
+            {
+                double a1 = Math.Atan2(y - piece.CenterY, x - piece.CenterX);
+                double a2 = Math.Atan2(piece.ToY - piece.CenterY, piece.ToX - piece.CenterX);
+                return piece.CounterClockwise ? Math.Tan(EdgeNotch.Ccw(a1, a2) / 4) : -Math.Tan(EdgeNotch.Ccw(a2, a1) / 4);
+            }
+        }
+
+        /// <summary>Копия объекта с другим цветом (62); нет кода цвета — добавляется после слоя.</summary>
+        private static List<Pair> WithColor(List<Pair> entity, int color)
+        {
+            string value = color.ToString(CultureInfo.InvariantCulture);
+            if (entity.Any(p => p.Code == 62))
+                return entity.Select(p => p.Code == 62 ? p.With(value) : p).ToList();
+            var result = new List<Pair>();
+            int width = entity[0].CodeText.Length;
+            foreach (var p in entity)
+            {
+                result.Add(p);
+                if (p.Code == 8)
+                    result.Add(new Pair("62".PadLeft(width), value));
+            }
+            return result;
+        }
+
+        /// <summary>Дуга выемки ARC из шаблона LINE: от (x; y) до piece.To по окружности piece (R12 и R13+).</summary>
+        private static IEnumerable<Pair> ArcEntity(List<Pair> template, NotchPiece piece, double x, double y, double z, HandleAllocator handles)
+        {
+            double a1 = Math.Atan2(y - piece.CenterY, x - piece.CenterX) * 180 / Math.PI;
+            double a2 = Math.Atan2(piece.ToY - piece.CenterY, piece.ToX - piece.CenterX) * 180 / Math.PI;
+            // ARC в DXF всегда против часовой стрелки: для обхода по часовой меняем начало и конец.
+            double start = piece.CounterClockwise ? a1 : a2, finish = piece.CounterClockwise ? a2 : a1;
+
+            int width = template[0].CodeText.Length;
+            Pair New(int code, string value) => new Pair(code.ToString(CultureInfo.InvariantCulture).PadLeft(width), value);
+            bool subclasses = template.Any(p => p.Code == 100 && p.Value.Trim() == "AcDbLine");
+            bool has30 = template.Any(p => p.Code == 30);
+            IEnumerable<Pair> Tail()
+            {
+                yield return New(40, Format(piece.Radius));
+                if (subclasses)
+                    yield return New(100, "AcDbArc");
+                yield return New(50, Format(Normalize(start)));
+                yield return New(51, Format(Normalize(finish)));
+            }
+
+            string handle = null;
+            var result = new List<Pair>();
+            foreach (var pair in template)
+            {
+                switch (pair.Code)
+                {
+                    case 0: result.Add(pair.With("ARC")); break;
+                    case 5: result.Add(pair.With(handle = handle ?? handles.Next())); break;
+                    case 100: result.Add(pair.Value.Trim() == "AcDbLine" ? pair.With("AcDbCircle") : pair); break;
+                    case 10: result.Add(pair.With(Format(piece.CenterX))); break;
+                    case 20:
+                        result.Add(pair.With(Format(piece.CenterY)));
+                        if (!has30)
+                            result.AddRange(Tail());
+                        break;
+                    case 30:
+                        result.Add(pair.With(Format(z)));
+                        result.AddRange(Tail());
+                        break;
+                    case 11:
+                    case 21:
+                    case 31:
+                        break;
+                    default: result.Add(pair); break;
+                }
+            }
+            return result;
         }
 
         #region Разбор
@@ -418,15 +821,19 @@ namespace InvAuto.Core.Bends
             };
         }
 
-        /// <summary>Копия исходного LINE с заданными концами и новым handle.</summary>
-        private static IEnumerable<Pair> Line(List<Pair> entity, double[] a, double[] b, HandleAllocator handles)
+        /// <summary>Копия исходного LINE с заданными концами и новым handle (keepHandle — с прежним).</summary>
+        private static IEnumerable<Pair> Line(List<Pair> entity, double[] a, double[] b, HandleAllocator handles, bool keepHandle = false)
         {
             string handle = null;
+            if (a.Length < 3)
+                a = new[] { a[0], a[1], Number(entity, 30) };
+            if (b.Length < 3)
+                b = new[] { b[0], b[1], Number(entity, 31) };
             foreach (var pair in entity)
             {
                 switch (pair.Code)
                 {
-                    case 5: yield return pair.With(handle = handle ?? handles.Next()); break;
+                    case 5: yield return keepHandle ? pair : pair.With(handle = handle ?? handles.Next()); break;
                     case 10: yield return pair.With(Format(a[0])); break;
                     case 20: yield return pair.With(Format(a[1])); break;
                     case 30: yield return pair.With(Format(a[2])); break;

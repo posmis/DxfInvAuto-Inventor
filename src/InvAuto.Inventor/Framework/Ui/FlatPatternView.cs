@@ -320,6 +320,8 @@ namespace InvAuto.Framework.Ui
             // Линии гиба — сплошные: в превью уже реальные участки, которые прорежет лазер.
             DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.Bend), Map, Pen(BendBrush, null, 1.5));
             DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.Profile), Map, Pen(ProfileBrush, null));
+            // Законцовки линий гиба — красным поверх контура.
+            DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.EndFeature), Map, EndFeaturePen);
 
             var labels = Labels;
             if (labels != null)
@@ -337,6 +339,8 @@ namespace InvAuto.Framework.Ui
             StartLineCap = PenLineCap.Round,
             EndLineCap = PenLineCap.Round
         });
+
+        private static readonly Pen EndFeaturePen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xD3, 0x2F, 0x2F)), 1.6) { LineJoin = PenLineJoin.Round });
 
         private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xFF)));
         private static readonly Pen LabelPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0x2E, 0x39, 0x43)), 1));

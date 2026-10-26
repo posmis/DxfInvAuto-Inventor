@@ -80,6 +80,9 @@ namespace InvAuto.Core.Bends
         string SizeTitle { get; }
 
         EndOutline Outline(double cx, double cy, double ux, double uy, double size);
+
+        /// <summary>Насколько форма выступает от центра вдоль линии гиба, мм.</summary>
+        double Reach(double size);
     }
 
     public static class BendEnds
@@ -137,6 +140,7 @@ namespace InvAuto.Core.Bends
             public string Title => "Нет";
             public string SizeTitle => "Размер";
             public EndOutline Outline(double cx, double cy, double ux, double uy, double size) => null;
+            public double Reach(double size) => 0;
         }
 
         private sealed class CircleEnds : IBendEndShape
@@ -145,6 +149,7 @@ namespace InvAuto.Core.Bends
             public string Title => "Окружность";
             public string SizeTitle => "Диаметр";
             public EndOutline Outline(double cx, double cy, double ux, double uy, double size) => EndOutline.Circle(cx, cy, size / 2);
+            public double Reach(double size) => size / 2;
         }
 
         /// <summary>Квадрат: стороны вдоль линии гиба и поперёк неё.</summary>
@@ -153,6 +158,7 @@ namespace InvAuto.Core.Bends
             public BendEndShape Shape => BendEndShape.Square;
             public string Title => "Квадрат 0°";
             public string SizeTitle => "Сторона";
+            public double Reach(double size) => size / 2;
 
             public EndOutline Outline(double cx, double cy, double ux, double uy, double size)
             {
@@ -174,6 +180,7 @@ namespace InvAuto.Core.Bends
             public BendEndShape Shape => BendEndShape.Diamond;
             public string Title => "Квадрат 45°";
             public string SizeTitle => "Сторона";
+            public double Reach(double size) => size / Math.Sqrt(2);
 
             public EndOutline Outline(double cx, double cy, double ux, double uy, double size)
             {

@@ -28,11 +28,20 @@ namespace InvAuto.Core.Preview
         Bend,
 
         /// <summary>Элементы формовки, касательные и прочие вспомогательные линии.</summary>
-        Auxiliary
+        Auxiliary,
+
+        /// <summary>
+        /// Законцовки линий гиба — только для показа отдельным цветом поверх контура (в DXF они — часть контура
+        /// или отдельные вырезы). В площади, длине реза и проверке не участвуют.
+        /// </summary>
+        EndFeature
     }
 
     public sealed class Polyline2
     {
+        /// <summary>Слой законцовок для показа (см. LayerKind.EndFeature).</summary>
+        public const string EndFeatureLayer = "INVAUTO_BEND_ENDS";
+
         public Polyline2(string layer, IReadOnlyList<Point2> points, bool closed)
         {
             Layer = layer ?? string.Empty;
@@ -49,6 +58,8 @@ namespace InvAuto.Core.Preview
         public static LayerKind ClassifyLayer(string layer)
         {
             string upper = layer.ToUpperInvariant();
+            if (upper == EndFeatureLayer)
+                return LayerKind.EndFeature;
             if (upper.Contains("BEND"))
                 return LayerKind.Bend;
             if (upper.Contains("FEATURE") || upper.Contains("TANGENT") || upper.Contains("ROLL") || upper.Contains("CENTER"))
@@ -94,5 +105,9 @@ namespace InvAuto.Core.Preview
         public double Width => MaxX - MinX;
         public double Height => MaxY - MinY;
         public bool IsEmpty => Polylines.Count == 0 || (Width <= 0 && Height <= 0);
+
+        /// <summary>Тот же чертёж плюс законцовки для показа (геометрия для измерений не меняется).</summary>
+        public FlatDrawing WithEndFeatures(IReadOnlyList<Polyline2> features) =>
+            features == null || features.Count == 0 ? this : new FlatDrawing(Polylines.Concat(features).ToList(), Geometry);
     }
 }

@@ -55,7 +55,8 @@ namespace InvAuto.InventorApi
                 return (null, Array.Empty<ProcessedBendLine>());
 
             var processed = DxfBendProcessor.Process(RawText, bendLayers, resolve);
-            return (DxfReader.Read(new IO.StringReader(processed.Text)), processed.Items);
+            // Законцовки добавляются отдельными линиями — окно рисует их красным поверх контура.
+            return (DxfReader.Read(new IO.StringReader(processed.Text)).WithEndFeatures(processed.EndFeatures), processed.Items);
         }
     }
 

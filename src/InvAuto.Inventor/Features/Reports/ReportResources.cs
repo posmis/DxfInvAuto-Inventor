@@ -14,6 +14,7 @@ namespace InvAuto.Features.Reports
     {
         private static readonly Brush ProfileBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2B, 0x2F, 0x33)));
         private static readonly Brush BendBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x06, 0x96, 0xD7)));
+        private static readonly Brush EndBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xD3, 0x2F, 0x2F)));
 
         /// <summary>
         /// PNG развертки для Excel. Рисуется вдвое крупнее (width × height в пикселях ячейки), чтобы картинка
@@ -33,9 +34,10 @@ namespace InvAuto.Features.Reports
             using (var dc = visual.RenderOpen())
             {
                 dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, w, h));
-                foreach (var kind in new[] { LayerKind.Bend, LayerKind.Profile })
+                foreach (var kind in new[] { LayerKind.Bend, LayerKind.Profile, LayerKind.EndFeature })
                 {
-                    var pen = new Pen(kind == LayerKind.Bend ? BendBrush : ProfileBrush, kind == LayerKind.Bend ? 1.2 : 1.6) { LineJoin = PenLineJoin.Round };
+                    var brush = kind == LayerKind.Bend ? BendBrush : kind == LayerKind.EndFeature ? EndBrush : ProfileBrush;
+                    var pen = new Pen(brush, kind == LayerKind.Bend ? 1.2 : 1.6) { LineJoin = PenLineJoin.Round };
                     pen.Freeze();
                     var geometry = new StreamGeometry();
                     using (var g = geometry.Open())

@@ -29,6 +29,7 @@ namespace InvAuto.Core.Reports
         private static readonly PdfColor Accent = PdfColor.Rgb(0x06, 0x96, 0xD7);
         private static readonly PdfColor Warning = PdfColor.Rgb(0xB2, 0x6A, 0x00);
         private static readonly PdfColor Profile = PdfColor.Rgb(0x2B, 0x2F, 0x33);
+        private static readonly PdfColor EndColor = PdfColor.Rgb(0xD3, 0x2F, 0x2F);
 
         private readonly ProductionReport _report;
         private readonly PdfDocument _pdf;
@@ -344,11 +345,11 @@ namespace InvAuto.Core.Reports
             double w = Math.Max(flat.Width, 1e-6), h = Math.Max(flat.Height, 1e-6);
             double scale = Math.Min(width / w, height / h);
             double ox = x + (width - w * scale) / 2, oy = y + (height - h * scale) / 2;
-            foreach (var p in flat.Polylines.Where(p => p.Kind != LayerKind.Auxiliary))
+            foreach (var p in flat.Polylines.Where(p => p.Kind != LayerKind.Auxiliary).OrderBy(p => p.Kind == LayerKind.EndFeature))
             {
                 var points = p.Points.Select(pt => (ox + (pt.X - flat.MinX) * scale, oy + (flat.MaxY - pt.Y) * scale)).ToList();
-                bool bend = p.Kind == LayerKind.Bend;
-                _page.Polyline(points, p.Closed, bend ? 0.35 : 0.5, bend ? Accent : Profile);
+                var color = p.Kind == LayerKind.Bend ? Accent : p.Kind == LayerKind.EndFeature ? EndColor : Profile;
+                _page.Polyline(points, p.Closed, p.Kind == LayerKind.Bend ? 0.35 : 0.5, color);
             }
         }
 

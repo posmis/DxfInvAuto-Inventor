@@ -129,12 +129,108 @@ namespace InvAuto.Core.Tests
         {
             foreach (BendLineMode mode in Enum.GetValues(typeof(BendLineMode)))
             {
+                // На краю детали — выемки в контуре: отдельных вырезов нет, контур один и замкнут.
                 var options = Ends(BendEndShape.Diamond, 3, mode: mode);
                 options.EndLayer = "RELIEF";
-                var result = DxfBendProcessor.Process(TestDxf.Inventor2004(), DxfBendProcessor.DefaultLayers, options);
-                DxfValidator.AssertValid(result.Text);
-                Assert.Equal(4, Read(result.Text).Polylines.Count(p => p.Layer == "RELIEF")); // 2 линии × 2 конца
+                var merged = DxfBendProcessor.Process(TestDxf.Inventor2004(), DxfBendProcessor.DefaultLayers, options);
+                DxfValidator.AssertValid(merged.Text);
+                var drawing = Read(merged.Text);
+                Assert.Equal(0, drawing.Polylines.Count(p => p.Layer == "RELIEF"));
+                Assert.Equal(2, FlatContours.Build(drawing).Count(c => c.Closed));    // контур и отверстие детали
+                Assert.DoesNotContain(FlatContours.Build(drawing), c => !c.Closed);
+                Assert.Equal(4, merged.EndFeatures.Count);
+
+                // Сдвинуты внутрь дальше своего размера — отдельные вырезы на заданном слое.
+                options.EndOffset = 5;
+                var separate = DxfBendProcessor.Process(TestDxf.Inventor2004(), DxfBendProcessor.DefaultLayers, options);
+                DxfValidator.AssertValid(separate.Text);
+                Assert.Equal(4, Read(separate.Text).Polylines.Count(p => p.Layer == "RELIEF")); // 2 линии × 2 конца
+                Assert.All(separate.EndFeatures, f => Assert.True(f.Closed));
             }
+        }
+
+        private static string LinePlate(bool modern, string bends)
+        {
+            // Пластина 200×100 из четырёх LINE на слое наружного контура.
+            var sb = new System.Text.StringBuilder();
+            int handle = 0x40;
+            void Edge(double x1, double y1, double x2, double y2)
+            {
+                sb.Append("  0\r\nLINE\r\n");
+                if (modern)
+                    sb.Append(FormattableString.Invariant($"  5\r\n{handle++:X}\r\n100\r\nAcDbEntity\r\n"));
+                sb.Append("  8\r\nIV_OUTER_PROFILE\r\n");
+                if (modern)
+                    sb.Append("100\r\nAcDbLine\r\n");
+                sb.Append(FormattableString.Invariant($" 10\r\n{x1}\r\n 20\r\n{y1}\r\n 30\r\n0.0\r\n 11\r\n{x2}\r\n 21\r\n{y2}\r\n 31\r\n0.0\r\n"));
+            }
+            Edge(0, 0, 200, 0);
+            Edge(200, 0, 200, 100);
+            Edge(200, 100, 0, 100);
+            Edge(0, 100, 0, 0);
+            return Dxf(sb + bends);
+        }
+
+        [Theory]
+        [InlineData(BendEndShape.Circle, true)]
+        [InlineData(BendEndShape.Circle, false)]
+        [InlineData(BendEndShape.Square, true)]
+        [InlineData(BendEndShape.Diamond, false)]
+        public void LineContour_EndsBecomeNotches_ContourStaysClosed(BendEndShape shape, bool modern)
+        {
+            var result = DxfBendProcessor.Process(LinePlate(modern, modern ? ModernLine : R12Line), DxfBendProcessor.DefaultLayers, Ends(shape, 4));
+            DxfValidator.AssertValid(result.Text);
+            var drawing = Read(result.Text);
+
+            Assert.DoesNotContain(drawing.Polylines, p => p.Layer == "IV_INTERIOR_PROFILES"); // отдельных вырезов нет
+            var contours = FlatContours.Build(drawing);
+            Assert.Single(contours);
+            Assert.True(contours[0].Closed);
+
+            // Площадь: из детали вычитаются половинки законцовок (центр на краю).
+            double removed = shape == BendEndShape.Circle ? Math.PI * 4 : 16; // два квадрата 4×4 пополам
+            var metrics = FlatMetrics.Compute(drawing);
+            Assert.Equal(20000 - removed, metrics.Area, 0.5);
+            Assert.Equal(1, metrics.Pierces);
+
+            // Линия гиба укорочена: внутри выемки пустота.
+            var bend = drawing.Polylines.Single(p => p.Kind == LayerKind.Bend);
+            double reach = shape == BendEndShape.Diamond ? 4 / Math.Sqrt(2) : 2;
+            Assert.Equal(reach, bend.Points.Min(p => p.X), 6);
+            Assert.Equal(200 - reach, bend.Points.Max(p => p.X), 6);
+
+            // Участки выемки — красные (цвет 1), дуга окружности — ARC; для окна — две разомкнутые линии.
+            Assert.Contains("\r\n 62\r\n1\r\n", result.Text);
+            Assert.Equal(shape == BendEndShape.Circle, result.Text.Contains("\r\nARC\r\n"));
+            Assert.Equal(2, result.EndFeatures.Count);
+            Assert.All(result.EndFeatures, f => Assert.False(f.Closed));
+            Assert.All(result.EndFeatures, f => Assert.Equal(LayerKind.EndFeature, f.Kind));
+        }
+
+        [Fact]
+        public void PolylineContour_GetsNotchVertices_StaysOneEntity()
+        {
+            var result = DxfBendProcessor.Process(TestDxf.Inventor2004(), DxfBendProcessor.DefaultLayers, Ends(BendEndShape.Circle, 4));
+            DxfValidator.AssertValid(result.Text);
+            Assert.Equal(1, Count(result.Text, "IV_OUTER_PROFILE\r\n100\r\nAcDbPolyline"));
+            Assert.Single(Read(result.Text).Polylines, p => p.Layer == "IV_OUTER_PROFILE");
+            Assert.Contains("\r\n 90\r\n16\r\n", result.Text);                         // 8 вершин + по 2 на выемку
+            var drawing = Read(result.Text);
+            var contours = FlatContours.Build(drawing);
+            Assert.Equal(2, contours.Count(c => c.Closed));
+            var outer = contours.Single(c => c.IsOuter);
+            Assert.Equal(20000 - 100 + 25 * Math.PI - 2 * Math.PI * 4, outer.Area, 0.5);   // скругления R5 и 4 половинки Ø4
+        }
+
+        [Fact]
+        public void OverlappingNotches_SecondBecomesSeparateHole()
+        {
+            string second = ModernLine.Replace("2B", "2C").Replace(" 20\r\n50.0", " 20\r\n51.0").Replace(" 21\r\n50.0", " 21\r\n51.0");
+            var result = DxfBendProcessor.Process(LinePlate(true, ModernLine + second), DxfBendProcessor.DefaultLayers, Ends(BendEndShape.Circle, 4));
+            DxfValidator.AssertValid(result.Text);
+            var drawing = Read(result.Text);
+            Assert.Equal(2, drawing.Polylines.Count(p => p.Layer == "IV_INTERIOR_PROFILES"));
+            Assert.Single(FlatContours.Build(drawing), c => c.IsOuter);
         }
 
         [Fact]
@@ -160,7 +256,7 @@ namespace InvAuto.Core.Tests
             var result = DxfBendProcessor.Process(plate, DxfBendProcessor.DefaultLayers, Ends(BendEndShape.Circle, 10));
             var metrics = FlatMetrics.Compute(Read(result.Text));
 
-            Assert.Equal(3, metrics.Pierces);
+            Assert.Equal(1, metrics.Pierces);                       // законцовки — выемки в контуре, не отверстия
             Assert.Equal(20000 - Math.PI * 25, metrics.Area, 1.5); // две половинки круга = один круг
 
             // Проверка не считает законцовки «отверстиями у линии гиба».
@@ -187,12 +283,13 @@ namespace InvAuto.Core.Tests
             {
                 var options = Ends(shape, 8, mode: mode);
                 options.SlotWidth = 3;
-                var drawing = Read(DxfBendProcessor.Process(TestDxf.Inventor2004(), DxfBendProcessor.DefaultLayers, options).Text);
+                var processed = DxfBendProcessor.Process(TestDxf.Inventor2004(), DxfBendProcessor.DefaultLayers, options);
+                var drawing = Read(processed.Text).WithEndFeatures(processed.EndFeatures);
                 svg.Append(FormattableString.Invariant($"<g transform='translate({x},{drawing.MaxY + 10}) scale(1,-1)'>"));
                 foreach (var p in drawing.Polylines)
                 {
-                    string color = p.Kind == LayerKind.Bend ? "#0696D7" : p.Layer == "IV_INTERIOR_PROFILES" && p.Points.Count < 80 ? "#C62828" : "#222";
-                    svg.Append("<polyline fill='none' stroke='").Append(color).Append("' stroke-width='0.6' points='")
+                    string color = p.Kind == LayerKind.Bend ? "#0696D7" : p.Kind == LayerKind.EndFeature ? "#D32F2F" : "#222";
+                    svg.Append("<polyline fill='none' stroke='").Append(color).Append(p.Kind == LayerKind.EndFeature ? "' stroke-width='1' points='" : "' stroke-width='0.6' points='")
                        .Append(string.Join(" ", p.Points.Concat(p.Closed ? new[] { p.Points[0] } : new Point2[0]).Select(q => FormattableString.Invariant($"{q.X - drawing.MinX:0.##},{q.Y - drawing.MinY:0.##}"))))
                        .Append("'/>");
                 }
