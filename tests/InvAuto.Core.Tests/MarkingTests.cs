@@ -114,6 +114,26 @@ namespace InvAuto.Core.Tests
         }
 
         [Fact]
+        public void Frame_TextGoesOnMetal_NotIntoBigCutout()
+        {
+            // Рамка 200×100 с вырезом 20…180 × 20…80: центр детали вырезается, текст — на полосе рамки.
+            string frame = Rect(200, 100).Replace("  0\r\nENDSEC\r\n  0\r\nEOF",
+                "  0\r\nLWPOLYLINE\r\n  5\r\n21\r\n330\r\n1F\r\n100\r\nAcDbEntity\r\n  8\r\nIV_INTERIOR_PROFILES\r\n100\r\nAcDbPolyline\r\n 90\r\n4\r\n 70\r\n1\r\n" +
+                " 10\r\n20\r\n 20\r\n20\r\n 10\r\n180\r\n 20\r\n20\r\n 10\r\n180\r\n 20\r\n80\r\n 10\r\n20\r\n 20\r\n80\r\n" +
+                "  0\r\nENDSEC\r\n  0\r\nEOF");
+            var result = DxfMarking.Apply(frame, "АПФД.В9.13.00.012", On());
+            Assert.Equal(MarkingStatus.Placed, result.Status);
+            var t = result.Text;
+            bool inCutout = t.MaxX > 20 && t.MinX < 180 && t.MaxY > 20 && t.MinY < 80;
+            Assert.False(inCutout, "текст попал в вырез");
+            Assert.True(t.MinX >= 2 && t.MaxX <= 198 && t.MinY >= 2 && t.MaxY <= 98);
+
+            // Узкая рамка, где текст не помещается ни на одной полосе, — «не помещается», а не в вырез.
+            string thin = frame.Replace("\r\n20\r\n", "\r\n4\r\n").Replace("\r\n180\r\n", "\r\n196\r\n").Replace("\r\n80\r\n", "\r\n96\r\n");
+            Assert.Equal(MarkingStatus.NoRoom, DxfMarking.Apply(thin, "АПФД.В9.13.00.012", On()).Status);
+        }
+
+        [Fact]
         public void NoPartNumber_NoText()
         {
             var result = DxfMarking.Apply(Rect(200, 100), "  ", On());

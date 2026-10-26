@@ -55,8 +55,8 @@ namespace InvAuto.Core.Marking
     }
 
     /// <summary>
-    /// Маркировка развертки обозначением: место ищется автоматически — как можно ближе к центру детали, внутри
-    /// наружного контура, с отступом от контура, отверстий и линий гиба. Сначала горизонтально, затем вертикально;
+    /// Маркировка развертки обозначением: место ищется автоматически — как можно ближе к центру детали, на металле
+    /// (внутри наружного контура и не в вырезе), с отступом от контура, отверстий и линий гиба. Сначала горизонтально, затем вертикально;
     /// не помещается — высота уменьшается (до MinHeight).
     /// </summary>
     public static class DxfMarking
@@ -88,9 +88,12 @@ namespace InvAuto.Core.Marking
         public static FlatText Place(FlatDrawing drawing, string text, MarkingOptions options)
         {
             var o = options.Normalized();
-            var outer = FlatContours.Build(drawing).FirstOrDefault(c => c.IsOuter);
+            var contours = FlatContours.Build(drawing);
+            var outer = contours.FirstOrDefault(c => c.IsOuter);
             if (outer == null || string.IsNullOrWhiteSpace(text))
                 return null;
+            // Вырезы: то, что внутри них, при резке отпадает — маркировать там нельзя.
+            var holes = contours.Where(c => c.Closed && !c.IsOuter).ToList();
 
             var segments = new List<(Point2 A, Point2 B)>();
             foreach (var p in drawing.Polylines.Where(p => p.Kind == LayerKind.Profile || p.Kind == LayerKind.Bend))
@@ -120,7 +123,11 @@ namespace InvAuto.Core.Marking
                     foreach (var c in candidates.OrderBy(c => c.D))
                     {
                         double x0 = c.X - bw / 2, y0 = c.Y - bh / 2, x1 = c.X + bw / 2, y1 = c.Y + bh / 2;
-                        if (!outer.Contains(new Point2(c.X, c.Y)) || !Clear(segments, x0 - o.Margin, y0 - o.Margin, x1 + o.Margin, y1 + o.Margin))
+                        // Рамку не пересекает ни одна линия — значит, она целиком там же, где её центр:
+                        // достаточно, чтобы центр был на металле (внутри контура и не в вырезе).
+                        var center = new Point2(c.X, c.Y);
+                        if (!outer.Contains(center) || holes.Any(h => h.Contains(center)) ||
+                            !Clear(segments, x0 - o.Margin, y0 - o.Margin, x1 + o.Margin, y1 + o.Margin))
                             continue;
                         // Точка вставки — начало базовой линии; вертикальный текст идёт снизу вверх, верх букв — влево.
                         return vertical
