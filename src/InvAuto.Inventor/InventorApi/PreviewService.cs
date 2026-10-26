@@ -18,7 +18,8 @@ namespace InvAuto.InventorApi
         {
             try
             {
-                object picture = document.Thumbnail;
+                // Thumbnail имеет тип stdole.IPictureDisp. Через dynamic не нужна ссылка на сборку stdole.
+                object picture = ((dynamic)document).Thumbnail;
                 if (picture == null)
                     return null;
 
