@@ -60,9 +60,15 @@ namespace InvAuto.Core.Preview
     /// <summary>Плоский чертёж развертки: набор полилиний в миллиметрах (единицы DXF).</summary>
     public sealed class FlatDrawing
     {
-        public FlatDrawing(IReadOnlyList<Polyline2> polylines)
+        private readonly Lazy<FlatGeometry> _geometry;
+
+        /// <param name="geometry">Точные отрезки и дуги для измерений; null — построить из полилиний.</param>
+        public FlatDrawing(IReadOnlyList<Polyline2> polylines, FlatGeometry geometry = null)
         {
             Polylines = polylines;
+            _geometry = geometry != null
+                ? new Lazy<FlatGeometry>(() => geometry)
+                : new Lazy<FlatGeometry>(() => FlatGeometry.FromPolylines(polylines));
 
             var points = polylines.SelectMany(p => p.Points).ToList();
             if (points.Count == 0)
@@ -77,6 +83,10 @@ namespace InvAuto.Core.Preview
         public static FlatDrawing Empty { get; } = new FlatDrawing(Array.Empty<Polyline2>());
 
         public IReadOnlyList<Polyline2> Polylines { get; }
+
+        /// <summary>Отрезки и дуги в том виде, как они записаны в DXF, — для привязок при измерениях.</summary>
+        public FlatGeometry Geometry => _geometry.Value;
+
         public double MinX { get; }
         public double MinY { get; }
         public double MaxX { get; }

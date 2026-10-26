@@ -47,9 +47,10 @@ namespace InvAuto.Core.Preview
             }
 
             var result = new List<Polyline2>();
+            var geometry = new FlatGeometry();
             foreach (var entity in entities)
-                Convert(entity, Transform.Identity, blocks, result, depth: 0, parentLayer: null);
-            return new FlatDrawing(result);
+                Convert(entity, Transform.Identity, blocks, result, geometry, depth: 0, parentLayer: null);
+            return new FlatDrawing(result, geometry);
         }
 
         #region Разбор групп
@@ -190,7 +191,7 @@ namespace InvAuto.Core.Preview
         #region Преобразование в полилинии
 
         private static void Convert(Entity e, Transform t, Dictionary<string, List<Entity>> blocks,
-            List<Polyline2> output, int depth, string parentLayer)
+            List<Polyline2> output, FlatGeometry geometry, int depth, string parentLayer)
         {
             // Объекты блока на слое "0" наследуют слой вставки — так принято в DXF.
             string layer = e.Layer;
@@ -204,14 +205,50 @@ namespace InvAuto.Core.Preview
                     output.Add(new Polyline2(layer, transformed, closed));
             }
 
+            // Точная геометрия для измерений — в координатах чертежа, как и полилинии.
+            void AddLine(Point2 a, Point2 b) => geometry.Lines.Add(new Segment2(t.Apply(a), t.Apply(b), layer));
+
+            void AddArc(double cx, double cy, double r, double start, double sweep)
+            {
+                var center = t.Apply(new Point2(cx, cy));
+                var from = t.Apply(new Point2(cx + r * Math.Cos(start), cy + r * Math.Sin(start)));
+                geometry.Arcs.Add(new Arc2(center, Geometry2.Distance(center, from),
+                    Math.Atan2(from.Y - center.Y, from.X - center.X), t.Mirrors ? -sweep : sweep, layer));
+            }
+
+            void AddVertices(List<(Point2 Point, double Bulge)> vertices, bool closed)
+            {
+                int count = vertices.Count;
+                int segments = closed ? count : count - 1;
+                for (int k = 0; k < segments; k++)
+                {
+                    var p1 = vertices[k].Point;
+                    var p2 = vertices[(k + 1) % count].Point;
+                    if (Math.Abs(vertices[k].Bulge) < 1e-9)
+                        AddLine(p1, p2);
+                    else if (BulgeCenter(p1, p2, vertices[k].Bulge, out double cx, out double cy, out double r, out double start, out double sweep))
+                        AddArc(cx, cy, r, start, sweep);
+                }
+            }
+
+            void AddEnds(List<Point2> points)
+            {
+                if (points.Count == 0)
+                    return;
+                geometry.Points.Add(t.Apply(points[0]));
+                geometry.Points.Add(t.Apply(points[points.Count - 1]));
+            }
+
             switch (e.Type)
             {
                 case "LINE":
                     Add(new[] { new Point2(e.Number(10), e.Number(20)), new Point2(e.Number(11), e.Number(21)) }, false);
+                    AddLine(new Point2(e.Number(10), e.Number(20)), new Point2(e.Number(11), e.Number(21)));
                     break;
 
                 case "CIRCLE":
                     Add(Arc(e.Number(10), e.Number(20), e.Number(40), 0, 2 * Math.PI, includeEnd: false), true);
+                    AddArc(e.Number(10), e.Number(20), e.Number(40), 0, 2 * Math.PI);
                     break;
 
                 case "ARC":
@@ -221,16 +258,26 @@ namespace InvAuto.Core.Preview
                     if (end <= start)
                         end += 2 * Math.PI;
                     Add(Arc(e.Number(10), e.Number(20), e.Number(40), start, end - start, includeEnd: true), false);
+                    AddArc(e.Number(10), e.Number(20), e.Number(40), start, end - start);
                     break;
                 }
 
                 case "ELLIPSE":
-                    Add(Ellipse(e), false);
+                {
+                    var points = Ellipse(e);
+                    Add(points, false);
+                    AddEnds(points);
                     break;
+                }
 
                 case "LWPOLYLINE":
-                    Add(Bulged(LwVertices(e), closed: (e.Flags & 1) != 0), (e.Flags & 1) != 0);
+                {
+                    var vertices = LwVertices(e);
+                    bool closed = (e.Flags & 1) != 0;
+                    Add(Bulged(vertices, closed), closed);
+                    AddVertices(vertices, closed);
                     break;
+                }
 
                 case "POLYLINE":
                 {
@@ -240,13 +287,16 @@ namespace InvAuto.Core.Preview
                         .ToList();
                     bool closed = (e.Flags & 1) != 0;
                     Add(Bulged(vertices, closed), closed);
+                    AddVertices(vertices, closed);
                     break;
                 }
 
                 case "SPLINE":
                 {
                     var fit = Points(e, 11, 21);
-                    Add(fit.Count >= 2 ? fit : Points(e, 10, 20), (e.Flags & 1) != 0);
+                    var points = fit.Count >= 2 ? fit : Points(e, 10, 20);
+                    Add(points, (e.Flags & 1) != 0);
+                    AddEnds(points);
                     break;
                 }
 
@@ -256,7 +306,7 @@ namespace InvAuto.Core.Preview
                         break;
                     var local = Transform.Insert(e.Number(10), e.Number(20), e.Number(41, 1), e.Number(42, 1), DegToRad(e.Number(50)));
                     foreach (var child in content)
-                        Convert(child, t.Then(local), blocks, output, depth + 1, layer);
+                        Convert(child, t.Then(local), blocks, output, geometry, depth + 1, layer);
                     break;
                 }
 
@@ -264,7 +314,7 @@ namespace InvAuto.Core.Preview
                 {
                     var shift = Transform.Insert(e.Number(10), e.Number(20), 1, 1, 0);
                     foreach (var child in e.Vertices)
-                        Convert(child, t.Then(shift), blocks, output, depth, parentLayer);
+                        Convert(child, t.Then(shift), blocks, output, geometry, depth, parentLayer);
                     break;
                 }
             }
@@ -332,21 +382,31 @@ namespace InvAuto.Core.Preview
 
         internal static List<Point2> BulgeArc(Point2 p1, Point2 p2, double bulge)
         {
-            double dx = p2.X - p1.X, dy = p2.Y - p1.Y;
-            double chord = Math.Sqrt(dx * dx + dy * dy);
-            if (chord < 1e-12)
+            if (!BulgeCenter(p1, p2, bulge, out double cx, out double cy, out double radius, out double start, out double sweep))
                 return new List<Point2> { p1, p2 };
-
-            double sweep = 4 * Math.Atan(bulge);
-            double h = chord * (1 - bulge * bulge) / (4 * bulge);
-            double cx = (p1.X + p2.X) / 2 - dy / chord * h;
-            double cy = (p1.Y + p2.Y) / 2 + dx / chord * h;
-            double radius = Math.Sqrt((p1.X - cx) * (p1.X - cx) + (p1.Y - cy) * (p1.Y - cy));
-            double start = Math.Atan2(p1.Y - cy, p1.X - cx);
 
             var points = Arc(cx, cy, radius, start, sweep, includeEnd: true);
             points[points.Count - 1] = p2;
             return points;
+        }
+
+        /// <summary>Дуга участка полилинии с bulge: центр, радиус, начальный угол, раствор со знаком.</summary>
+        private static bool BulgeCenter(Point2 p1, Point2 p2, double bulge,
+            out double cx, out double cy, out double radius, out double start, out double sweep)
+        {
+            double dx = p2.X - p1.X, dy = p2.Y - p1.Y;
+            double chord = Math.Sqrt(dx * dx + dy * dy);
+            cx = cy = radius = start = sweep = 0;
+            if (chord < 1e-12)
+                return false;
+
+            sweep = 4 * Math.Atan(bulge);
+            double h = chord * (1 - bulge * bulge) / (4 * bulge);
+            cx = (p1.X + p2.X) / 2 - dy / chord * h;
+            cy = (p1.Y + p2.Y) / 2 + dx / chord * h;
+            radius = Math.Sqrt((p1.X - cx) * (p1.X - cx) + (p1.Y - cy) * (p1.Y - cy));
+            start = Math.Atan2(p1.Y - cy, p1.X - cx);
+            return true;
         }
 
         private static List<Point2> Arc(double cx, double cy, double r, double start, double sweep, bool includeEnd)
@@ -417,6 +477,9 @@ namespace InvAuto.Core.Preview
                 _b * inner._c + _d * inner._d,
                 _a * inner._e + _c * inner._f + _e,
                 _b * inner._e + _d * inner._f + _f);
+
+            /// <summary>Зеркальное отображение: направление обхода дуг меняется.</summary>
+            public bool Mirrors => _a * _d - _b * _c < 0;
 
             public Point2 Apply(Point2 p) => new Point2(_a * p.X + _c * p.Y + _e, _b * p.X + _d * p.Y + _f);
         }

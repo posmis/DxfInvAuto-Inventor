@@ -23,6 +23,28 @@
                 <Setter Property="Padding" Value="8,0" />
                 <Setter Property="Focusable" Value="False" />
             </Style>
+            <SolidColorBrush x:Key="MeasureBrush" Color="#D9480F" />
+            <Style x:Key="LinkButton" TargetType="Button">
+                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Padding" Value="4,0" />
+                <Setter Property="VerticalAlignment" Value="Top" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <Style x:Key="PropertyName" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
                 <Setter Property="Margin" Value="0,2,10,2" />
                 <Setter Property="VerticalAlignment" Value="Top" />
@@ -41,6 +63,13 @@
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                     <Button x:Name="PrevButton" Style="{StaticResource ToolButton}" Click="OnPrev" ToolTip="Предыдущая деталь (PageUp)">‹</Button>
                     <Button x:Name="NextButton" Style="{StaticResource ToolButton}" Click="OnNext" ToolTip="Следующая деталь (PageDown)">›</Button>
+                    <Border Width="1" Margin="8,3" Background="{StaticResource BorderBrush}" />
+                    <ToggleButton x:Name="DistanceTool" Style="{StaticResource ToolButton}" Click="OnDistanceTool"
+                                  ToolTip="Расстояние между двумя точками (D). Привязки: конец, середина, центр, точка на линии; Ctrl — без привязки">Расстояние</ToggleButton>
+                    <ToggleButton x:Name="AngleTool" Style="{StaticResource ToolButton}" Click="OnAngleTool"
+                                  ToolTip="Угол между двумя отрезками (A). Щёлкайте по тем частям отрезков, между которыми нужен угол">Угол</ToggleButton>
+                    <Button x:Name="ClearMeasuresButton" Style="{StaticResource ToolButton}" Click="OnClearMeasures" IsEnabled="False"
+                            ToolTip="Удалить все измерения">Очистить</Button>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <ToggleButton x:Name="NumbersToggle" Style="{StaticResource ToolButton}" IsChecked="True" Click="OnNumbersToggle"
@@ -60,8 +89,7 @@
                 <TextBlock x:Name="PositionText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" Margin="16,0,0,0" MinWidth="110" />
                 <TextBlock x:Name="CursorText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" Margin="16,0,0,0" MinWidth="170" />
                 <TextBlock x:Name="ZoomText" DockPanel.Dock="Right" Style="{StaticResource MutedText}" MinWidth="110" />
-                <TextBlock Style="{StaticResource MutedText}"
-                           Text="Колесо мыши — масштаб · левая или средняя кнопка — перемещение · двойной щелчок — вписать" />
+                <TextBlock x:Name="HintText" Style="{StaticResource MutedText}" TextTrimming="CharacterEllipsis" />
             </DockPanel>
         </Border>
 
@@ -78,7 +106,7 @@
                                     ProfileBrush="{StaticResource FlatProfileBrush}"
                                     BendBrush="{StaticResource FlatBendBrush}"
                                     AuxiliaryBrush="{StaticResource FlatAuxBrush}"
-                                    ViewChanged="OnViewChanged" CursorMoved="OnCursorMoved" />
+                                    ViewChanged="OnViewChanged" CursorMoved="OnCursorMoved" ModelClicked="OnModelClicked" />
                 <TextBlock x:Name="EmptyText" Style="{StaticResource MutedText}" FontSize="13"
                            HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
             </Grid>
@@ -88,7 +116,28 @@
             <!-- Свойства -->
             <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="14,12">
-                    <TextBlock Text="Деталь" Style="{StaticResource PanelTitle}" Margin="0,0,0,8" />
+                    <DockPanel Margin="0,0,0,8">
+                        <Button x:Name="CopyMeasuresButton" DockPanel.Dock="Right" Style="{StaticResource LinkButton}" Click="OnCopyMeasures"
+                                IsEnabled="False" ToolTip="Скопировать измерения в буфер обмена">Копировать</Button>
+                        <TextBlock Text="Измерения" Style="{StaticResource PanelTitle}" />
+                    </DockPanel>
+                    <TextBlock x:Name="NoMeasuresText" Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                               Text="Нет измерений. Выберите «Расстояние» или «Угол» на панели инструментов." />
+                    <ItemsControl x:Name="MeasureList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,0,0,6">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource LinkButton}" Content="×" FontSize="14"
+                                            Tag="{Binding}" Click="OnRemoveMeasure" ToolTip="Удалить измерение" />
+                                    <TextBlock Text="{Binding Number, StringFormat={}{0})}" FontWeight="SemiBold" Margin="0,0,6,0"
+                                               Foreground="{StaticResource MeasureBrush}" />
+                                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Деталь" Style="{StaticResource PanelTitle}" Margin="0,16,0,8" />
                     <Grid x:Name="PropertiesGrid">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />

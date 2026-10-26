@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using InvAuto.Core.Measuring;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
 using InvAuto.InventorApi;
@@ -16,9 +18,17 @@ namespace InvAuto.Features.SheetMetal
     /// Просмотр развертки: масштаб колесом мыши вокруг курсора, перемещение мышью, «вписать»,
     /// координаты курсора в мм. Показывает развертку так, как она будет выгружена (с обработанными
     /// линиями гиба). Листает детали текущего списка, не закрывая окно.
+    /// Измерения: расстояние между точками и угол между отрезками, с привязками к геометрии DXF.
     /// </summary>
     public partial class FlatViewerWindow : Window
     {
+        /// <summary>Радиус захвата привязки, px экрана.</summary>
+        private const double SnapPixels = 10;
+
+        private const string NavigationHint =
+            "Колесо мыши — масштаб · левая или средняя кнопка — перемещение · двойной щелчок — вписать";
+
+        private readonly MeasureSession _measure = new MeasureSession();
         private readonly IReadOnlyList<PartRow> _rows;
         private readonly Func<PartRow, Task<bool>> _ensureFlat;
         private int _index;
@@ -32,6 +42,11 @@ namespace InvAuto.Features.SheetMetal
             InitializeComponent();
             _rows = rows;
             _ensureFlat = ensureFlat;
+            View.Overlay = new MeasureOverlay(_measure, View);
+            MeasureList.ItemsSource = _measure.Results;
+            _measure.Results.CollectionChanged += (s, e) => UpdateMeasureState();
+            UpdateMeasureState();
+            UpdateHint();
             Loaded += async (s, e) => await ShowPartAsync(Math.Max(0, Math.Min(index, rows.Count - 1)));
         }
 
@@ -77,6 +92,7 @@ namespace InvAuto.Features.SheetMetal
 
             EmptyText.Visibility = Visibility.Collapsed;
             View.Drawing = row.Flat;
+            _measure.SetDrawing(row.Flat); // измерения относятся к одной детали
             ApplyLabels();
             FillBends(row);
             View.Fit();
@@ -85,6 +101,7 @@ namespace InvAuto.Features.SheetMetal
         private void ShowMessage(string text)
         {
             View.Drawing = null;
+            _measure.SetDrawing(null);
             View.Labels = null;
             EmptyText.Text = text;
             EmptyText.Visibility = Visibility.Visible;
@@ -152,10 +169,31 @@ namespace InvAuto.Features.SheetMetal
         private void UpdateZoomText() =>
             ZoomText.Text = View.Drawing == null ? string.Empty : $"Масштаб {View.Zoom * 100:0} %";
 
-        private void OnCursorMoved(object sender, Point2? position) =>
-            CursorText.Text = position is Point2 p
-                ? string.Format(CultureInfo.CurrentCulture, "X {0:0.0}   Y {1:0.0} мм", p.X, p.Y)
-                : string.Empty;
+        private void OnCursorMoved(object sender, Point2? position)
+        {
+            if (!(position is Point2 p))
+            {
+                CursorText.Text = string.Empty;
+                _measure.Leave();
+                View.InvalidateVisual();
+                return;
+            }
+
+            if (_measure.Mode == MeasureMode.None)
+            {
+                CursorText.Text = Coordinates(p);
+                return;
+            }
+
+            _measure.Move(p, SnapTolerance);
+            CursorText.Text = _measure.Hover is SnapResult hover
+                ? Coordinates(hover.Point) + " · " + hover.KindName
+                : Coordinates(p);
+            View.InvalidateVisual();
+        }
+
+        private static string Coordinates(Point2 p) =>
+            string.Format(CultureInfo.CurrentCulture, "X {0:0.0}   Y {1:0.0} мм", p.X, p.Y);
 
         private void OnFit(object sender, RoutedEventArgs e) => View.Fit();
 
@@ -164,6 +202,84 @@ namespace InvAuto.Features.SheetMetal
         private void OnZoomOut(object sender, RoutedEventArgs e) => View.ZoomBy(0.8);
 
         private void OnNumbersToggle(object sender, RoutedEventArgs e) => ApplyLabels();
+
+        #endregion
+
+        #region Измерения
+
+        /// <summary>Допуск привязки в мм; Ctrl при измерении расстояния — без привязки.</summary>
+        private double SnapTolerance =>
+            _measure.Mode == MeasureMode.Distance && (Keyboard.Modifiers & ModifierKeys.Control) != 0
+                ? 0
+                : SnapPixels / Math.Max(View.PixelsPerMm, 1e-9);
+
+        private void OnDistanceTool(object sender, RoutedEventArgs e) =>
+            SetMeasureMode(DistanceTool.IsChecked == true ? MeasureMode.Distance : MeasureMode.None);
+
+        private void OnAngleTool(object sender, RoutedEventArgs e) =>
+            SetMeasureMode(AngleTool.IsChecked == true ? MeasureMode.Angle : MeasureMode.None);
+
+        private void SetMeasureMode(MeasureMode mode)
+        {
+            _measure.SetMode(mode);
+            DistanceTool.IsChecked = mode == MeasureMode.Distance;
+            AngleTool.IsChecked = mode == MeasureMode.Angle;
+            View.DoubleClickFits = mode == MeasureMode.None; // при измерении двойной щелчок — это две точки
+            UpdateHint();
+            View.InvalidateVisual();
+        }
+
+        private void OnModelClicked(object sender, Point2 position)
+        {
+            if (_measure.Mode == MeasureMode.None)
+                return;
+            _measure.Click(position, SnapTolerance);
+            UpdateHint();
+            View.InvalidateVisual();
+        }
+
+        private void OnClearMeasures(object sender, RoutedEventArgs e)
+        {
+            _measure.Clear();
+            UpdateHint();
+            View.InvalidateVisual();
+        }
+
+        private void OnRemoveMeasure(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.Tag is Measurement measurement)
+            {
+                _measure.Remove(measurement);
+                View.InvalidateVisual();
+            }
+        }
+
+        private void OnCopyMeasures(object sender, RoutedEventArgs e)
+        {
+            var text = new StringBuilder();
+            text.AppendLine(PartTitle.Text);
+            foreach (var m in _measure.Results)
+                text.Append(m.Number.ToString(CultureInfo.CurrentCulture)).Append(") ").AppendLine(m.Text);
+            try
+            {
+                Clipboard.SetText(text.ToString());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "Не удалось скопировать: " + ex.Message, "InvAuto", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void UpdateMeasureState()
+        {
+            bool any = _measure.Results.Count > 0;
+            NoMeasuresText.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+            ClearMeasuresButton.IsEnabled = any;
+            CopyMeasuresButton.IsEnabled = any;
+        }
+
+        private void UpdateHint() =>
+            HintText.Text = _measure.Mode == MeasureMode.None ? NavigationHint : _measure.Prompt;
 
         #endregion
 
@@ -202,8 +318,23 @@ namespace InvAuto.Features.SheetMetal
                 case Key.OemMinus:
                     View.ZoomBy(0.8);
                     break;
+                case Key.D:
+                    SetMeasureMode(_measure.Mode == MeasureMode.Distance ? MeasureMode.None : MeasureMode.Distance);
+                    break;
+                case Key.A:
+                    SetMeasureMode(_measure.Mode == MeasureMode.Angle ? MeasureMode.None : MeasureMode.Angle);
+                    break;
                 case Key.Escape:
-                    Close();
+                    // Сначала отменяется начатое измерение, затем выключается инструмент, затем закрывается окно.
+                    if (_measure.Cancel())
+                    {
+                        UpdateHint();
+                        View.InvalidateVisual();
+                    }
+                    else if (_measure.Mode != MeasureMode.None)
+                        SetMeasureMode(MeasureMode.None);
+                    else
+                        Close();
                     break;
                 default:
                     return;

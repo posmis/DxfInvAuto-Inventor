@@ -21,6 +21,12 @@ namespace InvAuto.Framework.Ui
         public string Text { get; }
     }
 
+    /// <summary>Слой поверх развертки (например, измерения). map переводит мм в пиксели элемента.</summary>
+    public interface IFlatOverlay
+    {
+        void Render(DrawingContext dc, Func<Point2, Point> map, double pixelsPerMm);
+    }
+
     /// <summary>
     /// Рисует развертку линиями постоянной толщины 1 px при любом масштабе:
     /// контур — тёмным, линии гиба — акцентным цветом, вспомогательные — серым.
@@ -44,8 +50,38 @@ namespace InvAuto.Framework.Ui
             set => SetValue(InteractiveProperty, value);
         }
 
+        /// <summary>Сдвиг мыши, после которого нажатие левой кнопки считается перетаскиванием, а не щелчком, px.</summary>
+        private const double DragThreshold = 4;
+
         private readonly Viewport _viewport = new Viewport();
         private Point? _dragFrom;
+        private Point? _pressedAt;
+        private Cursor _cursorBeforeDrag;
+        private IFlatOverlay _overlay;
+
+        /// <summary>Щелчок левой кнопкой без перетаскивания: точка в мм.</summary>
+        public event EventHandler<Point2> ModelClicked;
+
+        /// <summary>Двойной щелчок вписывает чертёж (в режиме измерений выключается).</summary>
+        public bool DoubleClickFits { get; set; } = true;
+
+        /// <summary>Слой поверх развертки; после изменения его данных вызовите InvalidateVisual.</summary>
+        public IFlatOverlay Overlay
+        {
+            get => _overlay;
+            set
+            {
+                _overlay = value;
+                InvalidateVisual();
+            }
+        }
+
+        /// <summary>Точка элемента (px) → координаты чертежа (мм).</summary>
+        public Point2 ToModel(Point screen)
+        {
+            _viewport.SetViewSize(ActualWidth, ActualHeight);
+            return _viewport.ToModel(screen.X, screen.Y);
+        }
 
         /// <summary>Масштаб или положение изменились (для подписи масштаба в окне).</summary>
         public event EventHandler ViewChanged;
@@ -114,15 +150,19 @@ namespace InvAuto.Framework.Ui
             base.OnMouseDown(e);
             if (!Interactive || (e.ChangedButton != MouseButton.Left && e.ChangedButton != MouseButton.Middle))
                 return;
-            if (e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
+            if (e.ChangedButton == MouseButton.Left && e.ClickCount == 2 && DoubleClickFits)
             {
                 Fit();
                 e.Handled = true;
                 return;
             }
-            _dragFrom = e.GetPosition(this);
+
+            // Средняя кнопка — сразу перемещение; левая — щелчок, пока мышь не сдвинулась дальше порога.
             CaptureMouse();
-            Cursor = Cursors.SizeAll;
+            if (e.ChangedButton == MouseButton.Middle)
+                BeginDrag(e.GetPosition(this));
+            else
+                _pressedAt = e.GetPosition(this);
             e.Handled = true;
         }
 
@@ -132,6 +172,11 @@ namespace InvAuto.Framework.Ui
             if (!Interactive)
                 return;
             var p = e.GetPosition(this);
+            if (_pressedAt is Point pressed && (p - pressed).Length > DragThreshold)
+            {
+                _pressedAt = null;
+                BeginDrag(pressed);
+            }
             if (_dragFrom is Point from)
             {
                 _viewport.Pan(p.X - from.X, p.Y - from.Y);
@@ -144,11 +189,37 @@ namespace InvAuto.Framework.Ui
         protected override void OnMouseUp(MouseButtonEventArgs e)
         {
             base.OnMouseUp(e);
+            if (_pressedAt is Point pressed && e.ChangedButton == MouseButton.Left)
+            {
+                _pressedAt = null;
+                ReleaseMouseCapture();
+                if (Drawing != null)
+                    ModelClicked?.Invoke(this, ToModel(pressed));
+                return;
+            }
             if (_dragFrom == null)
                 return;
             _dragFrom = null;
             ReleaseMouseCapture();
-            Cursor = null;
+            Cursor = _cursorBeforeDrag;
+        }
+
+        protected override void OnLostMouseCapture(MouseEventArgs e)
+        {
+            base.OnLostMouseCapture(e);
+            _pressedAt = null;
+            if (_dragFrom != null)
+            {
+                _dragFrom = null;
+                Cursor = _cursorBeforeDrag;
+            }
+        }
+
+        private void BeginDrag(Point from)
+        {
+            _dragFrom = from;
+            _cursorBeforeDrag = Cursor; // в окне просмотра — перекрестие, его и вернём
+            Cursor = Cursors.SizeAll;
         }
 
         protected override void OnMouseLeave(MouseEventArgs e)
@@ -257,6 +328,8 @@ namespace InvAuto.Framework.Ui
                 foreach (var label in labels)
                     DrawLabel(dc, Map(label.Position), label.Text, dpi);
             }
+
+            _overlay?.Render(dc, Map, _viewport.Scale);
         }
 
         private static readonly Pen HighlightPen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0x90, 0xF0, 0x9A, 0x1A)), 7)
