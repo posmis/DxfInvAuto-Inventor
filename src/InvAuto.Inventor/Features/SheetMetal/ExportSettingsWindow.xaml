@@ -78,11 +78,17 @@
 
                 <TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource Hint}">
                     Поля: {Name} {PartNumber} {Description} {Material} {Thickness:0.0} {Qty} {Length} {Width} {Assembly}
-                    и любые пользовательские iProperties, например {Заказ}. Подпапки: {Material}\{Thickness:0.0}мм
+                    и любые пользовательские iProperties, например {Заказ}. Подпапки: {Material}\{Thickness:0.0}мм.
+                    Пробелы в имени файла заменяются на «-».
                 </TextBlock>
 
-                <TextBlock Grid.Row="5" Text="Пример" Style="{StaticResource Label}" Margin="0,8,12,0" />
-                <TextBlock x:Name="PreviewText" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0"
+                <CheckBox x:Name="ThicknessFolderBox" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0"
+                          Checked="OnTemplateChanged" Unchecked="OnTemplateChanged">
+                    Раскладывать по папкам по толщине (3.0мм, 1.5мм…)
+                </CheckBox>
+
+                <TextBlock Grid.Row="6" Text="Пример" Style="{StaticResource Label}" Margin="0,8,12,0" />
+                <TextBlock x:Name="PreviewText" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,8,0,0"
                            Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
             </Grid>
 

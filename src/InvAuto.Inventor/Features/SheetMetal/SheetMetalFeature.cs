@@ -14,7 +14,6 @@ namespace InvAuto.Features.SheetMetal
         public override string Id => "SheetMetal";
         public override string DisplayName => "Листовые детали";
         public override string Description => "Список листовых деталей сборки с превью разверток и выгрузкой в DXF";
-        public override string Panel => "Листовой металл";
         public override int Order => 10;
 
         public override void Execute(FeatureContext context)

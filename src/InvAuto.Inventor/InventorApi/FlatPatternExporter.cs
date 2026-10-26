@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Inventor;
+using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
-using InvAuto.Core.Naming;
 using IO = System.IO;
 
 namespace InvAuto.InventorApi
@@ -23,6 +23,15 @@ namespace InvAuto.InventorApi
             _assemblyName = assemblyName;
             _writer = writer;
         }
+
+        /// <summary>Параметры линий гиба для детали. null — линии гиба не обрабатываются.</summary>
+        public Func<SheetMetalPart, BendLineOptions> BendOptions { get; set; }
+
+        /// <summary>Слои, отрезки на которых считаются линиями гиба.</summary>
+        public IReadOnlyCollection<string> BendLayers { get; set; } = DxfBendProcessor.DefaultLayers;
+
+        /// <summary>Вызывается с путём к DXF, только что записанному транслятором (до обработки линий гиба).</summary>
+        public Action<CollectedPart, string> RawDxfWritten { get; set; }
 
         public ExportResult Export(CollectedPart part)
         {
@@ -49,7 +58,18 @@ namespace InvAuto.InventorApi
                     return new ExportResult(info, ExportStatus.Skipped, path, "файл уже существует");
 
                 IO.Directory.CreateDirectory(IO.Path.GetDirectoryName(path));
-                _writer.Write(definition, path);
+                string raw = path + ".raw.dxf";
+                try
+                {
+                    _writer.Write(definition, raw);
+                    RawDxfWritten?.Invoke(part, raw);
+                    WriteFinal(raw, path, BendOptions?.Invoke(info));
+                }
+                finally
+                {
+                    if (IO.File.Exists(raw))
+                        IO.File.Delete(raw);
+                }
 
                 return new ExportResult(info, ExportStatus.Exported, path, note);
             }
@@ -59,22 +79,33 @@ namespace InvAuto.InventorApi
             }
         }
 
+        /// <summary>Итоговый DXF: сырой файл транслятора с обработанными линиями гиба.</summary>
+        private void WriteFinal(string raw, string path, BendLineOptions bends)
+        {
+            if (IO.File.Exists(path))
+                IO.File.Delete(path);
+
+            if (bends == null || bends.Mode == BendLineMode.Keep)
+            {
+                IO.File.Move(raw, path);
+                return;
+            }
+
+            string text = IO.File.ReadAllText(raw, DxfBendProcessor.FileEncoding);
+            var processed = DxfBendProcessor.Process(text, BendLayers, bends);
+            IO.File.WriteAllText(path, processed.Text, DxfBendProcessor.FileEncoding);
+        }
+
         private string BuildPath(SheetMetalPart info)
         {
             var values = info.ToTemplateValues(_settings.QuantityMultiplier, _assemblyName);
-
-            string folder = _outputFolder;
-            string subfolder = FileNameTemplate.SanitizeRelativePath(
-                FileNameTemplate.Render(_settings.SubfolderTemplate, values));
-            if (subfolder.Length > 0)
-                folder = IO.Path.Combine(folder, subfolder);
-
-            string name = FileNameTemplate.SanitizeFileName(FileNameTemplate.Render(_settings.FileNameTemplate, values));
+            string folder = IO.Path.Combine(_outputFolder, ExportNaming.RelativeFolder(_settings, values));
+            string name = ExportNaming.FileName(_settings, values);
 
             // Разные детали могут дать одинаковое имя по шаблону — не затираем друг друга.
             string path = IO.Path.Combine(folder, name + ".dxf");
             for (int i = 2; !_usedPaths.Add(path); i++)
-                path = IO.Path.Combine(folder, $"{name} ({i}).dxf");
+                path = IO.Path.Combine(folder, $"{name}_{i}.dxf");
 
             return path;
         }

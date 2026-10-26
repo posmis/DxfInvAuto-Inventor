@@ -21,6 +21,9 @@ namespace InvAuto.Core.Export
         /// <summary>Шаблон подпапок, например "{Material}\{Thickness:0.0}мм". Пусто — без подпапок.</summary>
         public string SubfolderTemplate { get; set; } = string.Empty;
 
+        /// <summary>Раскладывать файлы по папкам толщины («3.0мм», «1.5мм») — перед подпапками шаблона.</summary>
+        public bool SortByThickness { get; set; }
+
         /// <summary>Количество изделий: количество каждой детали умножается на это число.</summary>
         public int QuantityMultiplier { get; set; } = 1;
 

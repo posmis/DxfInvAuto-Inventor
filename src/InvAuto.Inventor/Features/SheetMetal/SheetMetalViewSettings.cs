@@ -8,7 +8,7 @@ namespace InvAuto.Features.SheetMetal
     public sealed class SheetMetalViewSettings
     {
         /// <summary>Меняется, когда меняется набор колонок по умолчанию: старые сохранённые наборы сбрасываются.</summary>
-        public const int CurrentColumnsVersion = 2;
+        public const int CurrentColumnsVersion = 3;
 
         public static IReadOnlyList<string> DefaultColumns { get; } = new[]
         {
@@ -17,7 +17,8 @@ namespace InvAuto.Features.SheetMetal
             PartColumns.FlatSize,
             PartColumns.Quantity,
             PartColumns.Flat,
-            PartColumns.Thumbnail
+            PartColumns.Thumbnail,
+            PartColumns.Bends
         };
 
         /// <summary>

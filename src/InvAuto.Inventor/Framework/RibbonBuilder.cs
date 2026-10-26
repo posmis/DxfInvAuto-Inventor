@@ -7,13 +7,15 @@ using Inventor;
 namespace InvAuto.Framework
 {
     /// <summary>
-    /// Создаёт вкладку "InvAuto" в нужных лентах Inventor, панели и кнопки для каждой функции.
+    /// Создаёт панель InvAuto на вкладке «Среды» в нужных лентах Inventor и кнопки для каждой функции.
     /// Ошибки внутри функций перехватываются здесь, чтобы ни одна из них не уронила Inventor.
     /// </summary>
     public sealed class RibbonBuilder : IDisposable
     {
-        private const string TabName = "InvAuto";
-        private const string TabInternalName = "id_TabInvAuto";
+        // Кнопки InvAuto — отдельная панель на стандартной вкладке «Среды» (Environments).
+        private const string EnvironmentsTab = "id_TabEnvironments";
+        private const string PanelName = "InvAuto";
+        private const string PanelInternalName = "id_PanelInvAuto";
 
         private static readonly Dictionary<RibbonTargets, string> RibbonNames = new Dictionary<RibbonTargets, string>
         {
@@ -101,15 +103,18 @@ namespace InvAuto.Framework
         {
             Ribbon ribbon = _context.App.UserInterfaceManager.Ribbons[ribbonName];
 
-            RibbonTab tab = TryGet(() => ribbon.RibbonTabs[TabInternalName])
-                ?? ribbon.RibbonTabs.Add(TabName, TabInternalName, _clientId);
+            RibbonTab tab = TryGet(() => ribbon.RibbonTabs[EnvironmentsTab]);
+            if (tab == null)
+            {
+                _context.Log.Warn($"В ленте {ribbonName} нет вкладки «Среды» — кнопка {feature.Id} не добавлена");
+                return;
+            }
 
-            string panelInternalName = "id_PanelInvAuto_" + Sanitize(feature.Panel);
-            RibbonPanel panel = TryGet(() => tab.RibbonPanels[panelInternalName])
-                ?? tab.RibbonPanels.Add(feature.Panel, panelInternalName, _clientId);
+            RibbonPanel panel = TryGet(() => tab.RibbonPanels[PanelInternalName])
+                ?? tab.RibbonPanels.Add(PanelName, PanelInternalName, _clientId);
 
             if (TryGet(() => panel.CommandControls[button.InternalName]) == null)
-                panel.CommandControls.AddButton(button, true);
+                panel.CommandControls.AddButton(button, feature.LargeButton);
         }
 
         public void Dispose()
@@ -130,9 +135,6 @@ namespace InvAuto.Framework
         }
 
         private static string InternalName(IFeature feature) => "InvAuto." + feature.Id;
-
-        private static string Sanitize(string text) =>
-            new string(text.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray());
 
         /// <summary>Индексаторы коллекций Inventor бросают исключение, если элемента нет.</summary>
         private static T TryGet<T>(Func<T> getter) where T : class

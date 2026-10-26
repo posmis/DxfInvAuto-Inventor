@@ -18,6 +18,7 @@ namespace InvAuto.Features.SheetMetal
         public const string Total = "Total";
         public const string Status = "Status";
         public const string FilePath = "FilePath";
+        public const string Bends = "Bends";
 
         /// <summary>Префикс колонок с пользовательскими iProperties: "prop:Заказ".</summary>
         public const string PropertyPrefix = "prop:";
@@ -30,6 +31,7 @@ namespace InvAuto.Features.SheetMetal
             (Quantity, "Количество"),
             (Flat, "Развертка"),
             (Thumbnail, "Миниатюра"),
+            (Bends, "Линии гиба"),
             (PartNumber, "Обозначение"),
             (Description, "Наименование"),
             (Material, "Материал"),

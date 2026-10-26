@@ -51,7 +51,7 @@ namespace InvAuto.Framework
                 }
             }
 
-            return features.OrderBy(f => f.Panel).ThenBy(f => f.Order).ToList();
+            return features.OrderBy(f => f.Order).ToList();
         }
 
         private IEnumerable<Assembly> LoadPluginAssemblies(string folder)

@@ -13,8 +13,8 @@ namespace InvAuto.Features.Service
         public override string Id => "OpenDataFolder";
         public override string DisplayName => "Логи и настройки";
         public override string Description => "Открыть папку с настройками и логами InvAuto";
-        public override string Panel => "Сервис";
-        public override RibbonTargets Targets => RibbonTargets.All;
+        public override bool LargeButton => false;
+        public override RibbonTargets Targets => RibbonTargets.Part | RibbonTargets.Assembly | RibbonTargets.Drawing;
         public override int Order => 900;
 
         public override void Execute(FeatureContext context)

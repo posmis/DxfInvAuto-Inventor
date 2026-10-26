@@ -2,7 +2,6 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using InvAuto.Core.Export;
-using InvAuto.Core.Naming;
 using InvAuto.InventorApi;
 
 namespace InvAuto.Features.SheetMetal
@@ -36,6 +35,7 @@ namespace InvAuto.Features.SheetMetal
             FolderBox.Text = _settings.OutputFolder;
             NameBox.Text = _settings.FileNameTemplate;
             SubfolderBox.Text = _settings.SubfolderTemplate;
+            ThicknessFolderBox.IsChecked = _settings.SortByThickness;
 
             IniMethod.IsChecked = _settings.Method == DxfExportMethod.IniFile;
             FormatMethod.IsChecked = _settings.Method == DxfExportMethod.FormatString;
@@ -75,6 +75,7 @@ namespace InvAuto.Features.SheetMetal
             _settings.OutputFolder = FolderBox.Text.Trim();
             _settings.FileNameTemplate = NameBox.Text.Trim().Length > 0 ? NameBox.Text.Trim() : new FlatPatternExportSettings().FileNameTemplate;
             _settings.SubfolderTemplate = SubfolderBox.Text.Trim();
+            _settings.SortByThickness = ThicknessFolderBox.IsChecked == true;
             _settings.Method = method;
             _settings.IniFilePath = ini;
             _settings.AcadVersion = (string)AcadBox.SelectedItem ?? "2004";
@@ -91,15 +92,21 @@ namespace InvAuto.Features.SheetMetal
             DialogResult = true;
         }
 
-        private void OnTemplateChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) => UpdatePreview();
+        private void OnTemplateChanged(object sender, RoutedEventArgs e) => UpdatePreview();
 
         private void UpdatePreview()
         {
             if (PreviewText == null)
                 return;
             var values = _sample.ToTemplateValues(_settings.QuantityMultiplier, _assemblyName);
-            string sub = FileNameTemplate.SanitizeRelativePath(FileNameTemplate.Render(SubfolderBox.Text, values));
-            string name = FileNameTemplate.SanitizeFileName(FileNameTemplate.Render(NameBox.Text, values));
+            var draft = new FlatPatternExportSettings
+            {
+                FileNameTemplate = NameBox.Text,
+                SubfolderTemplate = SubfolderBox.Text,
+                SortByThickness = ThicknessFolderBox.IsChecked == true
+            };
+            string sub = ExportNaming.RelativeFolder(draft, values);
+            string name = ExportNaming.FileName(draft, values);
             PreviewText.Text = (sub.Length > 0 ? sub + "\\" : string.Empty) + name + ".dxf";
         }
 

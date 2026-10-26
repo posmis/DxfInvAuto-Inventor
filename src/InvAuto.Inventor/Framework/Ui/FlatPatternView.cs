@@ -9,7 +9,7 @@ namespace InvAuto.Framework.Ui
 {
     /// <summary>
     /// Рисует развертку линиями постоянной толщины 1 px при любом масштабе:
-    /// контур — тёмным, линии гиба — пунктиром акцентного цвета, вспомогательные — серым.
+    /// контур — тёмным, линии гиба — акцентным цветом, вспомогательные — серым.
     /// </summary>
     public sealed class FlatPatternView : FrameworkElement
     {
@@ -80,13 +80,14 @@ namespace InvAuto.Framework.Ui
                 offsetY + (drawing.MaxY - p.Y) * scale);
 
             DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.Auxiliary), Map, Pen(AuxiliaryBrush, null));
-            DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.Bend), Map, Pen(BendBrush, new DashStyle(new[] { 4.0, 3.0 }, 0)));
+            // Линии гиба — сплошные: в превью уже реальные участки, которые прорежет лазер.
+            DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.Bend), Map, Pen(BendBrush, null, 1.5));
             DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.Profile), Map, Pen(ProfileBrush, null));
         }
 
-        private static Pen Pen(Brush brush, DashStyle dash)
+        private static Pen Pen(Brush brush, DashStyle dash, double thickness = 1)
         {
-            var pen = new Pen(brush, 1) { LineJoin = PenLineJoin.Round };
+            var pen = new Pen(brush, thickness) { LineJoin = PenLineJoin.Round };
             if (dash != null)
                 pen.DashStyle = dash;
             pen.Freeze();

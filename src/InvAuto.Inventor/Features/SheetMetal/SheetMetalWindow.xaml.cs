@@ -13,6 +13,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
 using InvAuto.Core.Preview;
 using InvAuto.Framework;
@@ -28,11 +29,13 @@ namespace InvAuto.Features.SheetMetal
     {
         public const string ExportSettingsKey = "SheetMetal.Export";
         public const string ViewSettingsKey = "SheetMetal.View";
+        public const string BendSettingsKey = "SheetMetal.Bends";
 
         private readonly FeatureContext _context;
         private readonly Inventor.Document _document;
         private readonly FlatPatternExportSettings _exportSettings;
         private readonly SheetMetalViewSettings _viewSettings;
+        private readonly BendSettings _bendSettings;
 
         private readonly TreeModel _tree = new TreeModel();
         private readonly ObservableCollection<PartRow> _rows = new ObservableCollection<PartRow>();
@@ -63,6 +66,7 @@ namespace InvAuto.Features.SheetMetal
             _exportSettings = context.Settings.Load<FlatPatternExportSettings>(ExportSettingsKey);
             _viewSettings = context.Settings.Load<SheetMetalViewSettings>(ViewSettingsKey);
             _viewSettings.Normalize();
+            _bendSettings = context.Settings.Load<BendSettings>(BendSettingsKey);
 
             Title = $"Листовые детали — {AssemblyName}";
             ApplyViewSettings();
@@ -187,6 +191,7 @@ namespace InvAuto.Features.SheetMetal
             foreach (var part in node.Node.CollectSheetMetal())
             {
                 var row = new PartRow(part, ProductQuantity) { IsChecked = !_unchecked.Contains(part.FullFileName) };
+                ApplyBends(row);
                 if (_results.TryGetValue(part.FullFileName, out var result))
                     row.ApplyResult(result);
                 if (_thumbnails.TryGetValue(part.FullFileName, out var thumbnail))
@@ -357,6 +362,7 @@ namespace InvAuto.Features.SheetMetal
                 case PartColumns.Description: return TextColumn(header, nameof(PartRow.Description), Star(1.4));
                 case PartColumns.Material: return TextColumn(header, nameof(PartRow.Material), Star(1));
                 case PartColumns.FilePath: return TextColumn(header, nameof(PartRow.FilePath), Star(2));
+                case PartColumns.Bends: return TextColumn(header, nameof(PartRow.BendSummary), Star(1.1));
                 case PartColumns.Thickness: return TextColumn(header, nameof(PartRow.Thickness), 90, "0.##", right: true);
                 case PartColumns.FlatSize: return TextColumn(header, nameof(PartRow.FlatSize), 150);
                 case PartColumns.Quantity: return TextColumn(header, nameof(PartRow.Quantity), 90, right: true);
@@ -672,6 +678,104 @@ namespace InvAuto.Features.SheetMetal
 
         #endregion
 
+        #region Линии гиба
+
+        /// <summary>Слои линий гиба: стандартные слои Inventor и переименованные в параметрах выгрузки.</summary>
+        private IReadOnlyCollection<string> BendLayers =>
+            DxfBendProcessor.DefaultLayers
+                .Concat(new[] { _exportSettings.BendUpLayer, _exportSettings.BendDownLayer }.Where(l => !string.IsNullOrWhiteSpace(l)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        private void ApplyBends(PartRow row)
+        {
+            string key = row.Part.FullFileName;
+            row.ApplyBends(_bendSettings.For(key), _bendSettings.HasOverride(key), BendLayers);
+        }
+
+        private void SaveBendSettings()
+        {
+            _context.Settings.Save(BendSettingsKey, _bendSettings);
+            foreach (var row in _rows)
+                ApplyBends(row);
+            if (PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+        }
+
+        /// <summary>Пример для расчёта в диалоге: первая выбранная деталь со сформированной разверткой.</summary>
+        private (string Name, IReadOnlyList<double> Lines) BendSample(IEnumerable<PartRow> rows)
+        {
+            var list = rows.ToList();
+            var withLines = list.FirstOrDefault(r => r.BendLines.Count > 0);
+            if (withLines != null)
+                return (withLines.FileName, withLines.BendLines.Select(l => l.LineLength).ToList());
+            return (list.FirstOrDefault()?.FileName, Array.Empty<double>());
+        }
+
+        private void OnBendDefaults(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            var (name, lines) = BendSample(SelectedRows.Count > 0 ? SelectedRows : _rows.ToList());
+            var dialog = new BendSettingsWindow(_bendSettings.Default, _bendSettings.Default, personal: false, usesDefaults: false,
+                "Общие настройки — для всех деталей без персональных настроек.", name, lines) { Owner = this };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            _bendSettings.Default = dialog.Result;
+            SaveBendSettings();
+            SetStatus("Линии гиба по умолчанию: " + _bendSettings.Default.Summary);
+        }
+
+        private void OnBendSelected(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            var rows = SelectedRows;
+            if (rows.Count == 0)
+            {
+                SetStatus("Выделите детали в списке (Ctrl/Shift + щелчок), чтобы задать им свои линии гиба");
+                return;
+            }
+
+            var first = rows[0];
+            bool usesDefaults = rows.All(r => !r.BendsPersonal);
+            var (name, lines) = BendSample(rows);
+            string scope = rows.Count == 1 ? $"Деталь «{first.FileName}»." : $"Выделено деталей: {rows.Count}.";
+            var dialog = new BendSettingsWindow(first.Bends, _bendSettings.Default, personal: true, usesDefaults,
+                scope, name, lines) { Owner = this };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            foreach (var row in rows)
+            {
+                if (dialog.Result == null)
+                    _bendSettings.ClearOverride(row.Part.FullFileName);
+                else
+                    _bendSettings.SetOverride(row.Part.FullFileName, dialog.Result);
+            }
+            SaveBendSettings();
+            SetStatus(dialog.Result == null
+                ? $"Деталей на общих настройках линий гиба: {rows.Count}"
+                : $"Свои линии гиба ({dialog.Result.Summary}) для деталей: {rows.Count}");
+        }
+
+        private void OnBendReset(object sender, RoutedEventArgs e)
+        {
+            var rows = SelectedRows.Where(r => r.BendsPersonal).ToList();
+            if (rows.Count == 0)
+            {
+                SetStatus("У выделенных деталей нет своих настроек линий гиба");
+                return;
+            }
+            foreach (var row in rows)
+                _bendSettings.ClearOverride(row.Part.FullFileName);
+            SaveBendSettings();
+            SetStatus($"Возвращены общие настройки линий гиба для деталей: {rows.Count}");
+        }
+
+        #endregion
+
         #region Свойства детали
 
         private void OnPartSelectionChanged(object sender, SelectionChangedEventArgs e) =>
@@ -700,6 +804,12 @@ namespace InvAuto.Features.SheetMetal
             AddProperty("Развертка", row.HasFlatPattern ? "есть" : "нет");
             if (row.FlatPreviewError.Length > 0)
                 AddProperty("Ошибка развертки", row.FlatPreviewError);
+            AddProperty("Линии гиба", row.BendSummary);
+            for (int i = 0; i < row.BendLines.Count; i++)
+            {
+                var line = row.BendLines[i];
+                AddProperty($"  линия {i + 1}", $"{line.LineLength:0.#} мм — {line.Description}");
+            }
             if (row.Status.Length > 0)
                 AddProperty("Выгрузка", row.Status);
             foreach (var pair in row.Part.CustomProperties.OrderBy(p => p.Key, StringComparer.CurrentCultureIgnoreCase))
@@ -773,7 +883,12 @@ namespace InvAuto.Features.SheetMetal
             }
 
             string folder = OutputFolder;
-            var exporter = new FlatPatternExporter(_exportSettings, folder, AssemblyName, writer);
+            var exporter = new FlatPatternExporter(_exportSettings, folder, AssemblyName, writer)
+            {
+                BendOptions = part => _bendSettings.For(part.FullFileName),
+                BendLayers = BendLayers,
+                RawDxfWritten = (collected, raw) => RememberRawFlat(collected.Info.FullFileName, raw)
+            };
             var results = new List<ExportResult>(parts.Count);
             bool flatsCreated = false;
 
@@ -804,8 +919,6 @@ namespace InvAuto.Features.SheetMetal
 
                     var row = _rows.FirstOrDefault(r => string.Equals(r.Part.FullFileName, part.FullFileName, StringComparison.OrdinalIgnoreCase));
                     row?.ApplyResult(result);
-                    if (result.Status == ExportStatus.Exported)
-                        RememberExportedFlat(part.FullFileName, result.FilePath, row);
                     Progress.Value++;
                 }
             }
@@ -828,22 +941,28 @@ namespace InvAuto.Features.SheetMetal
                 Process.Start("explorer.exe", $"\"{folder}\"");
         }
 
-        /// <summary>Выгруженный DXF — это и есть развертка: кладём его в кэш, чтобы она сразу была видна в окне.</summary>
-        private void RememberExportedFlat(string key, string dxfPath, PartRow row)
+        /// <summary>
+        /// DXF, записанный транслятором при выгрузке, — это и есть развертка (до обработки линий гиба):
+        /// кладём его в кэш, чтобы она сразу была видна в окне.
+        /// </summary>
+        private void RememberRawFlat(string key, string rawPath)
         {
             try
             {
-                var preview = FlatService?.StoreExported(_structure.SheetMetalDocuments[key], dxfPath);
+                var preview = FlatService?.StoreRaw(_structure.SheetMetalDocuments[key], rawPath);
                 if (preview == null)
                     return;
                 _flatPreviews[key] = preview;
-                row?.ApplyPreview(preview);
+                RowFor(key)?.ApplyPreview(preview);
             }
             catch (Exception ex)
             {
                 _context.Log.Warn($"Развертка {key} не сохранена в кэш: {ex.Message}");
             }
         }
+
+        private PartRow RowFor(string key) =>
+            _rows.FirstOrDefault(r => string.Equals(r.Part.FullFileName, key, StringComparison.OrdinalIgnoreCase));
 
         private string WriteReport(List<ExportResult> results, string folder)
         {
@@ -934,6 +1053,8 @@ namespace InvAuto.Features.SheetMetal
                 return;
 
             _context.Settings.Save(ExportSettingsKey, _exportSettings);
+            foreach (var row in _rows)
+                ApplyBends(row);
             ResetFlatPreviews();
         }
 

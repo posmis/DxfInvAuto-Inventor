@@ -191,6 +191,19 @@
                                 ToolTip="Сформировать развертки отмеченных деталей для просмотра перед выгрузкой.&#x0a;DXF создаётся тем же способом, что и при выгрузке, и хранится во временной папке.">Сформировать развертки</Button>
                     </HeaderedContentControl>
 
+                    <HeaderedContentControl Header="Линии гиба" Style="{StaticResource RibbonGroup}">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLines}" Click="OnBendSelected"
+                                    ToolTip="Свои параметры линий гиба для выделенных деталей">Для выделенных</Button>
+                            <StackPanel Margin="2,0,0,0">
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings}" Click="OnBendDefaults"
+                                        ToolTip="Параметры линий гиба для всех деталей без своих настроек">По умолчанию</Button>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh}" Click="OnBendReset"
+                                        ToolTip="Вернуть выделенным деталям общие параметры">Сбросить к общим</Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </HeaderedContentControl>
+
                     <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
                         <StackPanel Orientation="Horizontal">
                             <Button Style="{StaticResource RibbonPrimaryButton}" Tag="{StaticResource Icon.Export}" Click="OnExportChecked"

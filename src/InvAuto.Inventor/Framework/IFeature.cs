@@ -15,7 +15,7 @@ namespace InvAuto.Framework
     }
 
     /// <summary>
-    /// Одна функция плагина = одна кнопка на вкладке InvAuto.
+    /// Одна функция плагина = одна кнопка на панели InvAuto (вкладка «Среды»).
     /// Чтобы добавить функцию, достаточно создать класс, унаследованный от FeatureBase:
     /// RibbonBuilder найдёт его автоматически (см. README).
     /// </summary>
@@ -27,12 +27,12 @@ namespace InvAuto.Framework
         string DisplayName { get; }
         string Description { get; }
 
-        /// <summary>Панель на вкладке InvAuto, в которую попадёт кнопка.</summary>
-        string Panel { get; }
+        /// <summary>Большая кнопка (основная команда) или маленькая (служебная).</summary>
+        bool LargeButton { get; }
 
         RibbonTargets Targets { get; }
 
-        /// <summary>Порядок кнопки внутри панели.</summary>
+        /// <summary>Порядок кнопки на панели.</summary>
         int Order { get; }
 
         void Execute(FeatureContext context);
@@ -44,7 +44,7 @@ namespace InvAuto.Framework
         public abstract string Id { get; }
         public abstract string DisplayName { get; }
         public virtual string Description => DisplayName;
-        public virtual string Panel => "Общее";
+        public virtual bool LargeButton => true;
         public virtual RibbonTargets Targets => RibbonTargets.Part | RibbonTargets.Assembly;
         public virtual int Order => 100;
         public abstract void Execute(FeatureContext context);

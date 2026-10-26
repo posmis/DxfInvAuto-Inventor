@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Media;
+using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
@@ -128,13 +131,59 @@ namespace InvAuto.Features.SheetMetal
         /// <summary>Кэш разверток для строки уже проверен.</summary>
         public bool FlatCacheChecked { get; set; }
 
+        /// <summary>Исходная (до обработки линий гиба) развертка.</summary>
+        public FlatPreview Preview { get; private set; } = FlatPreview.NotGenerated;
+
+        /// <summary>Линии гиба развертки и что с ними будет сделано при выгрузке.</summary>
+        public IReadOnlyList<BendLineLayout> BendLines { get; private set; } = Array.Empty<BendLineLayout>();
+
+        private BendLineOptions _bends = new BendLineOptions();
+        private bool _bendsPersonal;
+        private IReadOnlyCollection<string> _bendLayers = DxfBendProcessor.DefaultLayers;
+
+        public BendLineOptions Bends => _bends;
+
+        /// <summary>Для колонки «Линии гиба»: режим и пометка о персональной настройке.</summary>
+        public string BendSummary => (_bendsPersonal ? "своя: " : string.Empty) + _bends.Summary;
+
+        public bool BendsPersonal => _bendsPersonal;
+
         public void ApplyPreview(FlatPreview preview)
         {
-            Flat = preview.Drawing;
+            Preview = preview;
             FlatDxfPath = preview.DxfPath;
             FlatPreviewError = preview.Error;
             FlatPreviewState = preview.State;
             FlatCacheChecked = true;
+            Render();
+        }
+
+        /// <summary>Параметры линий гиба изменились — перерисовываем развертку (без обращения к Inventor).</summary>
+        public void ApplyBends(BendLineOptions options, bool personal, IReadOnlyCollection<string> bendLayers)
+        {
+            _bends = options;
+            _bendsPersonal = personal;
+            _bendLayers = bendLayers;
+            OnPropertyChanged(nameof(BendSummary));
+            OnPropertyChanged(nameof(BendsPersonal));
+            Render();
+        }
+
+        private void Render()
+        {
+            try
+            {
+                var (drawing, lines) = Preview.Render(_bends, _bendLayers);
+                Flat = drawing;
+                BendLines = lines;
+            }
+            catch (Exception ex)
+            {
+                Flat = null;
+                BendLines = Array.Empty<BendLineLayout>();
+                FlatPreviewError = "не удалось показать развертку: " + ex.Message;
+                FlatPreviewState = FlatPreviewState.Failed;
+            }
         }
 
         public string Property(string name) =>
