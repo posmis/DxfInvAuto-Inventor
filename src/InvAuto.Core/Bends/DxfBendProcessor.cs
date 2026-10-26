@@ -70,7 +70,11 @@ namespace InvAuto.Core.Bends
                     {
                         changed = true;
                         foreach (var segment in layout.Segments)
-                            output.AddRange(Segment(entity, start, finish, length, segment, handles));
+                        {
+                            output.AddRange(layout.SlotHalfWidth > 0 && length > 0
+                                ? Slot(entity, start, finish, length, segment, layout.SlotHalfWidth, handles)
+                                : Segment(entity, start, finish, length, segment, handles));
+                        }
                     }
                 }
                 else
@@ -147,22 +151,50 @@ namespace InvAuto.Core.Bends
 
         #endregion
 
-        /// <summary>Копия исходного отрезка с новыми концами и новым handle.</summary>
+        /// <summary>Участок линии гиба отрезком: копия исходного LINE с новыми концами и новым handle.</summary>
         private static IEnumerable<Pair> Segment(List<Pair> entity, double[] start, double[] end, double length,
-            BendSegment segment, HandleAllocator handles)
-        {
-            double[] Point(double distance)
-            {
-                double t = length > 0 ? distance / length : 0;
-                return new[]
-                {
-                    start[0] + (end[0] - start[0]) * t,
-                    start[1] + (end[1] - start[1]) * t,
-                    start[2] + (end[2] - start[2]) * t
-                };
-            }
+            BendSegment segment, HandleAllocator handles) =>
+            Line(entity, Along(start, end, length, segment.Start), Along(start, end, length, segment.End), handles);
 
-            double[] a = Point(segment.Start), b = Point(segment.End);
+        /// <summary>
+        /// Участок линии гиба прямоугольным вырезом: стороны смещены от линии на halfWidth в обе стороны.
+        /// В DXF R13+ — замкнутая LWPOLYLINE (программы раскроя видят один контур), в R12 — четыре LINE.
+        /// </summary>
+        private static IEnumerable<Pair> Slot(List<Pair> entity, double[] start, double[] end, double length,
+            BendSegment segment, double halfWidth, HandleAllocator handles)
+        {
+            double[] a = Along(start, end, length, segment.Start), b = Along(start, end, length, segment.End);
+            double nx = -(end[1] - start[1]) / length * halfWidth;
+            double ny = (end[0] - start[0]) / length * halfWidth;
+            var corners = new[]
+            {
+                new[] { a[0] + nx, a[1] + ny, a[2] },
+                new[] { b[0] + nx, b[1] + ny, b[2] },
+                new[] { b[0] - nx, b[1] - ny, b[2] },
+                new[] { a[0] - nx, a[1] - ny, a[2] }
+            };
+
+            bool hasSubclasses = entity.Any(p => p.Code == 100 && p.Value.Trim() == "AcDbLine");
+            if (hasSubclasses)
+                return Polyline(entity, corners, handles);
+
+            return Enumerable.Range(0, 4).SelectMany(k => Line(entity, corners[k], corners[(k + 1) % 4], handles));
+        }
+
+        private static double[] Along(double[] start, double[] end, double length, double distance)
+        {
+            double t = length > 0 ? distance / length : 0;
+            return new[]
+            {
+                start[0] + (end[0] - start[0]) * t,
+                start[1] + (end[1] - start[1]) * t,
+                start[2] + (end[2] - start[2]) * t
+            };
+        }
+
+        /// <summary>Копия исходного LINE с заданными концами и новым handle.</summary>
+        private static IEnumerable<Pair> Line(List<Pair> entity, double[] a, double[] b, HandleAllocator handles)
+        {
             string handle = null;
             foreach (var pair in entity)
             {
@@ -177,6 +209,40 @@ namespace InvAuto.Core.Bends
                     case 31: yield return pair.With(Format(b[2])); break;
                     default: yield return pair; break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Замкнутая LWPOLYLINE на месте исходного LINE: общие свойства объекта (слой, цвет, тип линии)
+        /// берутся из LINE, геометрия — новая.
+        /// </summary>
+        private static IEnumerable<Pair> Polyline(List<Pair> entity, double[][] corners, HandleAllocator handles)
+        {
+            int width = entity[0].CodeText.Length; // сохраняем оформление кодов файла («  0», « 10»)
+            Pair New(int code, string value) => new Pair(code.ToString(CultureInfo.InvariantCulture).PadLeft(width), value);
+
+            foreach (var pair in entity)
+            {
+                if (pair.Code == 100 && pair.Value.Trim() == "AcDbLine")
+                    break;
+                if (pair.Code == 0)
+                    yield return pair.With("LWPOLYLINE");
+                else if (pair.Code == 5)
+                    yield return pair.With(handles.Next());
+                else
+                    yield return pair;
+            }
+
+            yield return New(100, "AcDbPolyline");
+            yield return New(90, corners.Length.ToString(CultureInfo.InvariantCulture));
+            yield return New(70, "1"); // замкнутая
+            yield return New(43, "0.0");
+            if (Math.Abs(corners[0][2]) > 1e-12)
+                yield return New(38, Format(corners[0][2]));
+            foreach (var corner in corners)
+            {
+                yield return New(10, Format(corner[0]));
+                yield return New(20, Format(corner[1]));
             }
         }
 

@@ -22,12 +22,19 @@ namespace InvAuto.Core.Bends
     /// <summary>Результат расчёта для одной линии гиба.</summary>
     public sealed class BendLineLayout
     {
-        public BendLineLayout(double lineLength, IReadOnlyList<BendSegment> segments, string description)
+        public BendLineLayout(double lineLength, IReadOnlyList<BendSegment> segments, string description, double slotHalfWidth = 0)
         {
             LineLength = lineLength;
             Segments = segments;
             Description = description;
+            SlotHalfWidth = slotHalfWidth;
         }
+
+        /// <summary>
+        /// 0 — участки остаются отрезками на линии гиба; больше нуля — каждый участок становится
+        /// прямоугольным вырезом с этим смещением сторон от линии.
+        /// </summary>
+        public double SlotHalfWidth { get; }
 
         public double LineLength { get; }
         public IReadOnlyList<BendSegment> Segments { get; }
@@ -60,7 +67,8 @@ namespace InvAuto.Core.Bends
             new KeepStrategy(),
             new RemoveStrategy(),
             new EdgeCutsStrategy(),
-            new DashedStrategy()
+            new DashedStrategy(),
+            new RectSlotsStrategy()
         };
 
         public static IBendLineStrategy For(BendLineMode mode) =>
@@ -184,6 +192,29 @@ namespace InvAuto.Core.Bends
             string ends = cutEnds ? "у краёв прорези" : "у краёв перемычки";
             return new BendLineLayout(length, segments,
                 $"{count} × {BendLineStrategies.Mm(cut)} мм, перемычки {BendLineStrategies.Mm(bridge)} мм, {ends}");
+        }
+    }
+
+    /// <summary>
+    /// Прямоугольные вырезы: участки по всей длине или с перемычками (раскладка прерывистой линии),
+    /// каждый участок вырезается прямоугольником шириной 2 × смещение, по центру линии гиба.
+    /// </summary>
+    internal sealed class RectSlotsStrategy : IBendLineStrategy
+    {
+        public BendLineMode Mode => BendLineMode.RectSlots;
+        public string Title => "Прямоугольные вырезы";
+
+        public BendLineLayout Layout(double length, BendLineOptions o)
+        {
+            var layout = o.SlotPattern == SlotPattern.Full
+                ? BendLineLayout.Whole(length, "один вырез во всю длину")
+                : new DashedStrategy().Layout(length, o);
+
+            if (o.SlotOffset <= 0)
+                return new BendLineLayout(length, layout.Segments, layout.Description + " (смещение 0 — отрезками)");
+
+            string width = BendLineStrategies.Mm(2 * o.SlotOffset);
+            return new BendLineLayout(length, layout.Segments, $"{layout.Description}; вырезы шириной {width} мм", o.SlotOffset);
         }
     }
 }

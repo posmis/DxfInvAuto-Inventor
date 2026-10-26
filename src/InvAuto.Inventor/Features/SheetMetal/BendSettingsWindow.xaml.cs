@@ -17,7 +17,6 @@ namespace InvAuto.Features.SheetMetal
         private readonly BendLineOptions _defaults;
         private readonly bool _personal;
         private readonly IReadOnlyList<double> _sampleLines;
-        private readonly List<RadioButton> _modeButtons = new List<RadioButton>();
         private bool _loading = true;
 
         /// <param name="initial">С чего начать редактирование.</param>
@@ -41,13 +40,14 @@ namespace InvAuto.Features.SheetMetal
             UseDefaultBox.Visibility = personal ? Visibility.Visible : Visibility.Collapsed;
             UseDefaultBox.IsChecked = personal && usesDefaults;
 
-            foreach (var strategy in BendLineStrategies.All)
+            ModeBox.ItemsSource = BendLineStrategies.All;
+            SlotPatternBox.ItemsSource = new[]
             {
-                var button = new RadioButton { Content = strategy.Title, Tag = strategy.Mode, GroupName = "Mode" };
-                button.Checked += OnChanged;
-                _modeButtons.Add(button);
-                ModesPanel.Children.Add(button);
-            }
+                new KeyValuePair<SlotPattern, string>(SlotPattern.Dashed, "прерывисто, с перемычками"),
+                new KeyValuePair<SlotPattern, string>(SlotPattern.Full, "один вырез по всей длине")
+            };
+            SlotPatternBox.DisplayMemberPath = "Value";
+            SlotPatternBox.SelectedValuePath = "Key";
 
             FitBox.ItemsSource = new[]
             {
@@ -76,8 +76,9 @@ namespace InvAuto.Features.SheetMetal
 
         private void Display(BendLineOptions o)
         {
-            foreach (var button in _modeButtons)
-                button.IsChecked = (BendLineMode)button.Tag == o.Mode;
+            ModeBox.SelectedItem = BendLineStrategies.For(o.Mode);
+            SlotOffsetBox.Text = Format(o.SlotOffset);
+            SlotPatternBox.SelectedValue = o.SlotPattern;
             EdgeCutBox.Text = Format(o.EdgeCutLength);
             DashBox.Text = Format(o.DashLength);
             BridgeBox.Text = Format(o.BridgeLength);
@@ -98,8 +99,13 @@ namespace InvAuto.Features.SheetMetal
             OptionsPanel.IsEnabled = !useDefaults;
 
             var options = useDefaults ? _defaults : Read(out _);
+            // Параметры раскладки (прорезь/перемычка) нужны прерывистой линии и прерывистым вырезам.
+            bool dashedLayout = options.Mode == BendLineMode.Dashed ||
+                                (options.Mode == BendLineMode.RectSlots && options.SlotPattern == SlotPattern.Dashed);
             EdgeCutsPanel.Visibility = options.Mode == BendLineMode.EdgeCuts ? Visibility.Visible : Visibility.Collapsed;
-            DashedPanel.Visibility = options.Mode == BendLineMode.Dashed ? Visibility.Visible : Visibility.Collapsed;
+            SlotsPanel.Visibility = options.Mode == BendLineMode.RectSlots ? Visibility.Visible : Visibility.Collapsed;
+            DashedPanel.Visibility = dashedLayout ? Visibility.Visible : Visibility.Collapsed;
+            SlotWidthText.Text = $"мм (ширина выреза {Format(2 * options.SlotOffset)} мм)";
 
             Read(out string error);
             ErrorText.Text = useDefaults ? string.Empty : error;
@@ -122,7 +128,8 @@ namespace InvAuto.Features.SheetMetal
             error = string.Empty;
             var o = new BendLineOptions
             {
-                Mode = _modeButtons.Where(b => b.IsChecked == true).Select(b => (BendLineMode)b.Tag).DefaultIfEmpty(BendLineMode.Keep).First(),
+                Mode = (ModeBox.SelectedItem as IBendLineStrategy)?.Mode ?? BendLineMode.Keep,
+                SlotPattern = SlotPatternBox.SelectedValue is SlotPattern pattern ? pattern : SlotPattern.Dashed,
                 Ends = EndsBridge.IsChecked == true ? DashEnds.Bridge : DashEnds.Cut,
                 Fit = FitBox.SelectedValue is DashFit fit ? fit : DashFit.Proportional
             };
@@ -130,6 +137,7 @@ namespace InvAuto.Features.SheetMetal
             o.EdgeCutLength = Positive(EdgeCutBox.Text, _defaults.EdgeCutLength, "длина прорези у края", ref error);
             o.DashLength = Positive(DashBox.Text, _defaults.DashLength, "длина прорези", ref error);
             o.BridgeLength = Positive(BridgeBox.Text, _defaults.BridgeLength, "длина перемычки", ref error);
+            o.SlotOffset = Positive(SlotOffsetBox.Text, _defaults.SlotOffset, "смещение выреза", ref error);
             return o;
         }
 

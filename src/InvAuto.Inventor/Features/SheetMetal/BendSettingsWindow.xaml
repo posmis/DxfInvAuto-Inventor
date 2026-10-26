@@ -51,7 +51,29 @@
             <StackPanel x:Name="OptionsPanel">
                 <TextBlock Text="Что сделать с линиями гиба" Style="{StaticResource Section}" />
                 <!-- Способы заполняются из BendLineStrategies.All -->
-                <StackPanel x:Name="ModesPanel" />
+                <ComboBox x:Name="ModeBox" Width="300" Height="24" HorizontalAlignment="Left"
+                          DisplayMemberPath="Title" SelectionChanged="OnChanged" />
+
+                <!-- Параметры: прямоугольные вырезы -->
+                <Grid x:Name="SlotsPanel" Margin="20,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Смещение в каждую сторону" Style="{StaticResource Label}" />
+                    <TextBox x:Name="SlotOffsetBox" Grid.Column="1" Style="{StaticResource Number}" TextChanged="OnChanged" />
+                    <TextBlock x:Name="SlotWidthText" Grid.Column="2" Style="{StaticResource Label}" Margin="6,0,0,0" />
+
+                    <TextBlock Grid.Row="1" Text="Расположение" Style="{StaticResource Label}" Margin="0,8,10,0" />
+                    <ComboBox x:Name="SlotPatternBox" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Width="260" Height="24"
+                              HorizontalAlignment="Left" Margin="0,8,0,0" SelectionChanged="OnChanged" />
+                </Grid>
 
                 <!-- Параметры: прорези по краям -->
                 <StackPanel x:Name="EdgeCutsPanel" Orientation="Horizontal" Margin="20,8,0,0">

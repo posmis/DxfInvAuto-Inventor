@@ -186,6 +186,74 @@ namespace InvAuto.Core.Tests
         }
     }
 
+    public class RectSlotTests
+    {
+        private static string Dxf(string bend) =>
+            "  0\r\nSECTION\r\n  2\r\nHEADER\r\n  9\r\n$HANDSEED\r\n  5\r\n30\r\n  0\r\nENDSEC\r\n" +
+            "  0\r\nSECTION\r\n  2\r\nENTITIES\r\n" + bend + "  0\r\nENDSEC\r\n  0\r\nEOF\r\n";
+
+        private const string ModernLine =
+            "  0\r\nLINE\r\n  5\r\n2B\r\n330\r\n1F\r\n100\r\nAcDbEntity\r\n  8\r\nIV_BEND\r\n 62\r\n2\r\n100\r\nAcDbLine\r\n" +
+            " 10\r\n0.0\r\n 20\r\n50.0\r\n 30\r\n0.0\r\n 11\r\n200.0\r\n 21\r\n50.0\r\n 31\r\n0.0\r\n";
+
+        private const string R12Line =
+            "  0\r\nLINE\r\n  8\r\nIV_BEND\r\n 10\r\n0.0\r\n 20\r\n50.0\r\n 30\r\n0.0\r\n 11\r\n200.0\r\n 21\r\n50.0\r\n 31\r\n0.0\r\n";
+
+        private static BendLineOptions Slots(SlotPattern pattern) => new BendLineOptions
+        {
+            Mode = BendLineMode.RectSlots, SlotOffset = 1, SlotPattern = pattern, DashLength = 20, BridgeLength = 10
+        };
+
+        [Fact]
+        public void Dashed_Slots_AreClosedRectangles_AroundBendLine()
+        {
+            var result = DxfBendProcessor.Process(Dxf(ModernLine), DxfBendProcessor.DefaultLayers, Slots(SlotPattern.Dashed));
+            var slots = DxfReader.Read(new StringReader(result.Text)).Polylines;
+
+            Assert.Equal(7, slots.Count);
+            Assert.All(slots, p =>
+            {
+                Assert.True(p.Closed);
+                Assert.Equal("IV_BEND", p.Layer);
+                Assert.Equal(4, p.Points.Count);
+                Assert.Equal(49, p.Points.Min(q => q.Y), 6);
+                Assert.Equal(51, p.Points.Max(q => q.Y), 6);
+                Assert.Equal(20, p.Points.Max(q => q.X) - p.Points.Min(q => q.X), 6);
+            });
+            Assert.Contains("\r\n 62\r\n2\r\n", result.Text); // цвет исходной линии сохранён
+            Assert.DoesNotContain("AcDbLine", result.Text);
+        }
+
+        [Fact]
+        public void Full_Slot_IsOneRectangleAlongWholeLine()
+        {
+            var result = DxfBendProcessor.Process(Dxf(ModernLine), DxfBendProcessor.DefaultLayers, Slots(SlotPattern.Full));
+            var slot = DxfReader.Read(new StringReader(result.Text)).Polylines.Single();
+
+            Assert.Equal(0, slot.Points.Min(q => q.X), 6);
+            Assert.Equal(200, slot.Points.Max(q => q.X), 6);
+            Assert.Equal(2, slot.Points.Max(q => q.Y) - slot.Points.Min(q => q.Y), 6);
+        }
+
+        [Fact]
+        public void R12_Slot_IsFourLines()
+        {
+            var result = DxfBendProcessor.Process(Dxf(R12Line), DxfBendProcessor.DefaultLayers, Slots(SlotPattern.Full));
+            var lines = DxfReader.Read(new StringReader(result.Text)).Polylines;
+
+            Assert.Equal(4, lines.Count);
+            Assert.DoesNotContain("LWPOLYLINE", result.Text);
+        }
+
+        [Fact]
+        public void Layout_ReportsSlotWidth()
+        {
+            var layout = BendLineStrategies.Layout(200, Slots(SlotPattern.Dashed));
+            Assert.Equal(1, layout.SlotHalfWidth);
+            Assert.Contains("шириной 2 мм", layout.Description);
+        }
+    }
+
     public class BendSettingsTests
     {
         [Fact]

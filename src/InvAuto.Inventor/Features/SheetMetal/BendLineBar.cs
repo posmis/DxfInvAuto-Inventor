@@ -22,7 +22,7 @@ namespace InvAuto.Features.SheetMetal
 
         public BendLineBar()
         {
-            Height = 12;
+            Height = 14;
             SnapsToDevicePixels = true;
         }
 
@@ -35,11 +35,12 @@ namespace InvAuto.Features.SheetMetal
 
             dc.DrawLine(BasePen, new Point(0, middle + 0.5), new Point(width, middle + 0.5));
             double scale = width / layout.LineLength;
+            double height = layout.SlotHalfWidth > 0 ? 9 : 5; // прямоугольные вырезы — заметно шире прорезей
             foreach (var segment in layout.Segments)
             {
                 double x = segment.Start * scale;
                 double w = System.Math.Max(1, segment.Length * scale);
-                dc.DrawRectangle(CutBrush, null, new Rect(x, middle - 2, w, 5));
+                dc.DrawRectangle(CutBrush, null, new Rect(x, middle - height / 2 + 0.5, w, height));
             }
         }
 
