@@ -108,6 +108,23 @@
                        RenderOptions.BitmapScalingMode="HighQuality" />
             </DataTemplate>
 
+            <DataTemplate x:Key="LibraryMaterialCell">
+                <TextBlock x:Name="Text" Text="{Binding LibraryMaterialText}" ToolTip="{Binding LibraryMaterialHint}"
+                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding MaterialManual}" Value="True">
+                        <Setter TargetName="Text" Property="FontWeight" Value="SemiBold" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding MaterialMissing}" Value="True">
+                        <Setter TargetName="Text" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                        <Setter TargetName="Text" Property="FontStyle" Value="Italic" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding MaterialMismatch}" Value="True">
+                        <Setter TargetName="Text" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
             <DataTemplate x:Key="FlatStateCell">
                 <TextBlock x:Name="Text" Text="{Binding FlatState}" Foreground="{StaticResource OkBrush}" />
                 <DataTemplate.Triggers>
@@ -262,6 +279,25 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="Производство">
+                <ScrollViewer Style="{StaticResource RibbonScroll}">
+                    <StackPanel Orientation="Horizontal">
+                        <HeaderedContentControl Header="Материал" Style="{StaticResource RibbonGroup}">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.MaterialLibrary}" Click="OnMaterialLibrary"
+                                        ToolTip="Материалы листа: наименование, толщина, плотность, материал по умолчанию для толщины.&#x0a;Импорт и экспорт в Excel (CSV) или XML.">Библиотека материалов</Button>
+                                <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.MaterialAssign}" Click="OnAssignMaterial"
+                                        ToolTip="Назначить выделенным деталям материал из библиотеки вручную">Назначить материал</Button>
+                                <StackPanel Margin="2,0,0,0">
+                                    <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh.Small}" Click="OnMaterialByThickness"
+                                            ToolTip="Снять ручное назначение: выделенные детали получат материал по умолчанию для своей толщины">По толщине</Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </HeaderedContentControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="Вид">
                 <ScrollViewer Style="{StaticResource RibbonScroll}">
                     <StackPanel Orientation="Horizontal">
@@ -407,6 +443,8 @@
                                 <MenuItem Header="Просмотр развертки" Click="OnOpenViewer" FontWeight="SemiBold" />
                                 <MenuItem Header="Сформировать развертку заново" Click="OnRegenerateSelected" />
                                 <MenuItem Header="Линии гиба по отдельности…" Click="OnBendLines" />
+                                <MenuItem Header="Назначить материал…" Click="OnAssignMaterial" />
+                                <MenuItem Header="Материал по толщине" Click="OnMaterialByThickness" />
                                 <Separator />
                                 <MenuItem Header="Показать DXF в проводнике" Click="OnRevealDxf" />
                             </ContextMenu>

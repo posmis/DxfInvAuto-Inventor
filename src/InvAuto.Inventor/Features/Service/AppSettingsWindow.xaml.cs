@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using InvAuto.Core.Maintenance;
+using InvAuto.Core.Materials;
 using InvAuto.Core.Settings;
 using InvAuto.Core.Structure;
 using InvAuto.Features.SheetMetal;
@@ -35,7 +36,8 @@ namespace InvAuto.Features.Service
             (SheetMetalWindow.BendSettingsKey, "Линии гиба", "общие параметры, параметры деталей и отдельных линий"),
             (SheetMetalWindow.ViewSettingsKey, "Вид окна «Листовые детали»", "колонки, размеры окна и панелей"),
             (AppSettings.Key, "Настройки приложения", "сроки хранения кэша и журнала, запоминание списков"),
-            (SavedPartLists.Key, "Сохранённые списки деталей", "списки окна «Листовые детали» по сборкам")
+            (SavedPartLists.Key, "Сохранённые списки деталей", "списки окна «Листовые детали» по сборкам"),
+            (MaterialAssignments.Key, "Назначенные материалы", "материалы, назначенные деталям вручную (библиотека материалов не затрагивается)")
         };
 
         public AppSettingsWindow(FeatureContext context)
@@ -227,6 +229,7 @@ namespace InvAuto.Features.Service
             Add("Настройки", _context.Settings.Folder);
             Add("Журнал", _context.LogFolder);
             Add("Кэш разверток", _cacheFolder);
+            Add("Библиотека материалов", new MaterialLibraryStore(_context.Settings.Folder, _context.Log).FilePath);
 
             void Add(string name, string value)
             {

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Windows.Media;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Materials;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
 using InvAuto.InventorApi;
@@ -65,7 +66,11 @@ namespace InvAuto.Features.SheetMetal
         public int Total
         {
             get => _total;
-            set => Set(ref _total, value);
+            set
+            {
+                if (Set(ref _total, value))
+                    OnPropertyChanged(nameof(TotalMass));
+            }
         }
 
         public string Status
@@ -194,7 +199,91 @@ namespace InvAuto.Features.SheetMetal
                 FlatPreviewError = "не удалось показать развертку: " + ex.Message;
                 FlatPreviewState = FlatPreviewState.Failed;
             }
+            UpdateMetrics();
         }
+
+        #region Материал из библиотеки и показатели развертки
+
+        private ResolvedMaterial _libraryMaterial;
+        private FlatMetrics _metrics;
+
+        public ResolvedMaterial LibraryMaterial => _libraryMaterial;
+
+        /// <summary>Площадь, длина реза, врезки — по сформированной развертке (null — развертки нет).</summary>
+        public FlatMetrics Metrics => _metrics;
+
+        public string LibraryMaterialText => _libraryMaterial.Material?.Name ?? "не задан";
+
+        public bool MaterialManual => _libraryMaterial.Source == MaterialSource.Manual;
+        public bool MaterialMissing => _libraryMaterial.Source == MaterialSource.None;
+        public bool MaterialMismatch => _libraryMaterial.ThicknessMismatch;
+
+        /// <summary>Подсказка к материалу: откуда он и что не так.</summary>
+        public string LibraryMaterialHint
+        {
+            get
+            {
+                var m = _libraryMaterial.Material;
+                switch (_libraryMaterial.Source)
+                {
+                    case MaterialSource.None:
+                        return string.Format(CultureInfo.CurrentCulture,
+                            "В библиотеке нет материала толщиной {0:0.##} мм — добавьте его или назначьте вручную", Thickness);
+                    case MaterialSource.Manual:
+                        return string.Format(CultureInfo.CurrentCulture, "Назначен вручную: {0}, {1:0.##} мм, {2:0.#} кг/м³", m.Name, m.Thickness, m.Density) +
+                               (MaterialMismatch
+                                   ? string.Format(CultureInfo.CurrentCulture, "\nТолщина материала не совпадает с толщиной детали ({0:0.##} мм); масса считается по толщине детали", Thickness)
+                                   : string.Empty);
+                    default:
+                        return string.Format(CultureInfo.CurrentCulture, "По толщине детали: {0}, {1:0.#} кг/м³", m.Name, m.Density);
+                }
+            }
+        }
+
+        private bool HasMetrics => _metrics != null && _metrics.Pierces > 0;
+
+        /// <summary>Площадь детали без отверстий, м².</summary>
+        public double? AreaM2 => HasMetrics ? _metrics.Area * 1e-6 : (double?)null;
+
+        /// <summary>Масса одной детали, кг: площадь × толщина детали × плотность материала.</summary>
+        public double? Mass => HasMetrics && _libraryMaterial.Material != null
+            ? _metrics.Mass(Thickness, _libraryMaterial.Material.Density)
+            : (double?)null;
+
+        /// <summary>Масса с учётом количества на изделия, кг.</summary>
+        public double? TotalMass => Mass * Total;
+
+        /// <summary>Длина реза одной детали, м.</summary>
+        public double? CutLengthM => HasMetrics ? _metrics.CutLength / 1000 : (double?)null;
+
+        /// <summary>Число врезок на одну деталь.</summary>
+        public int? Pierces => HasMetrics ? _metrics.Pierces : (int?)null;
+
+        public void ApplyMaterial(ResolvedMaterial material)
+        {
+            _libraryMaterial = material;
+            OnPropertyChanged(nameof(LibraryMaterial));
+            OnPropertyChanged(nameof(LibraryMaterialText));
+            OnPropertyChanged(nameof(LibraryMaterialHint));
+            OnPropertyChanged(nameof(MaterialManual));
+            OnPropertyChanged(nameof(MaterialMissing));
+            OnPropertyChanged(nameof(MaterialMismatch));
+            OnPropertyChanged(nameof(Mass));
+            OnPropertyChanged(nameof(TotalMass));
+        }
+
+        private void UpdateMetrics()
+        {
+            _metrics = Flat == null ? null : FlatMetrics.Compute(Flat);
+            OnPropertyChanged(nameof(Metrics));
+            OnPropertyChanged(nameof(AreaM2));
+            OnPropertyChanged(nameof(Mass));
+            OnPropertyChanged(nameof(TotalMass));
+            OnPropertyChanged(nameof(CutLengthM));
+            OnPropertyChanged(nameof(Pierces));
+        }
+
+        #endregion
 
         public string Property(string name) =>
             Part.CustomProperties.TryGetValue(name, out var value) ? value : string.Empty;

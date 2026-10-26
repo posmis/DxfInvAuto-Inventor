@@ -434,6 +434,38 @@ write('bend-numbers', 16, [
 write('measure-clear', 16, [line([(1.5, 2), (1.5, 8)], INK2, 1), line([(11.5, 2), (11.5, 8)], INK2, 1),
                             line([(1.5, 5), (11.5, 5)], BLUE, 1.2)] + badge(11, 11, 3.8, 'x', 1.5))
 
+# ---------- материалы: стопка листов разных материалов / лист с отметкой ----------
+def plate(cx, top, s, h, faces, ink, w):
+    # тонкие боковые грани дают острые углы — со «скосом» на стыках нет торчащих иголок
+    return [p.replace('stroke-linejoin="miter"', 'stroke-linejoin="bevel"') for p in cube(cx, top, s, h, faces, ink, w)]
+
+def plate_stack(size):
+    if size == 32:
+        s, h, step, top, w = 12.5, 2.4, 5.2, 3.5, 1
+    else:
+        s, h, step, top, w = 6.4, 1.3, 2.6, 1.4, 0.8
+    c = size / 2
+    body = []
+    layers = [((A_TOP, A_LEFT, A_RIGHT), A_INK), ((P_TOP, P_LEFT, P_RIGHT), INK), ((S_TOP, S_LEFT, S_RIGHT), S_INK)]
+    for i, (faces, ink) in enumerate(layers):
+        body += plate(c, top + step * (2 - i), s, h, faces, ink, w)
+    return body
+write('material-library', 32, plate_stack(32), snap=False)
+write('material-library', 16, plate_stack(16), snap=False)
+
+def assign_icon(size):
+    if size == 32:
+        body = plate(13, 4, 12, 3, (S_TOP, S_LEFT, S_RIGHT), S_INK, 1)
+        cx, cy, r, w = 23, 23, 7, 2.4
+    else:
+        body = plate(6.5, 1.5, 6, 1.5, (S_TOP, S_LEFT, S_RIGHT), S_INK, 0.8)
+        cx, cy, r, w = 11, 11, 3.8, 1.5
+    body.append(f'<circle cx="{f(cx)}" cy="{f(cy)}" r="{f(r)}" fill="#FFFFFF" stroke="none"/>')
+    body.append(line([(cx - r * 0.55, cy + r * 0.02), (cx - r * 0.12, cy + r * 0.45), (cx + r * 0.58, cy - r * 0.4)], GREEN, w))
+    return body
+write('material-assign', 32, assign_icon(32), snap=False)
+write('material-assign', 16, assign_icon(16), snap=False)
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')

@@ -19,6 +19,12 @@ namespace InvAuto.Core.SheetMetal
         public const string Status = "Status";
         public const string FilePath = "FilePath";
         public const string Bends = "Bends";
+        public const string LibraryMaterial = "LibraryMaterial";
+        public const string Area = "Area";
+        public const string Mass = "Mass";
+        public const string TotalMass = "TotalMass";
+        public const string CutLength = "CutLength";
+        public const string Pierces = "Pierces";
 
         /// <summary>Колонка флажка: в список колонок не входит, но по ней можно сортировать.</summary>
         public const string Checked = "Checked";
@@ -41,6 +47,12 @@ namespace InvAuto.Core.SheetMetal
             (FlatState, "Наличие развертки"),
             (Total, "Итого на изделия"),
             (Status, "Статус выгрузки"),
+            (LibraryMaterial, "Материал (библиотека)"),
+            (Area, "Площадь, м²"),
+            (Mass, "Масса, кг"),
+            (TotalMass, "Масса на изделия, кг"),
+            (CutLength, "Длина реза, м"),
+            (Pierces, "Врезки"),
             (FilePath, "Путь к файлу")
         };
 

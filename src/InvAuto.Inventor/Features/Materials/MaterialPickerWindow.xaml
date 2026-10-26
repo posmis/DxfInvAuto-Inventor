@@ -1,0 +1,51 @@
+<Window x:Class="InvAuto.Features.Materials.MaterialPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Материал деталей"
+        Width="480" Height="520" MinWidth="400" MinHeight="360"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBrush}"
+        FontFamily="Segoe UI" FontSize="12"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <DataTemplate x:Key="ChoiceTemplate">
+                <StackPanel Margin="4,5">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Details}" Style="{StaticResource MutedText}" />
+                </StackPanel>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource StatusBar}" Padding="12,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="OkButton" Style="{StaticResource DialogButton}" IsDefault="True" Click="OnOk">Назначить</Button>
+                    <Button Style="{StaticResource DialogButton}" IsCancel="True">Отмена</Button>
+                </StackPanel>
+                <TextBlock x:Name="WarningText" Foreground="{StaticResource WarningBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Top" Style="{StaticResource PanelHeader}" Padding="16,10">
+            <StackPanel>
+                <TextBlock x:Name="ScopeTitle" FontWeight="SemiBold" FontSize="13" />
+                <TextBlock x:Name="ScopeText" Style="{StaticResource Hint}" />
+            </StackPanel>
+        </Border>
+
+        <CheckBox x:Name="SameThicknessBox" DockPanel.Dock="Top" Margin="16,10,16,6" IsChecked="True"
+                  Checked="OnFilterChanged" Unchecked="OnFilterChanged" />
+
+        <ListBox x:Name="Choices" Margin="16,0,16,12" ItemTemplate="{StaticResource ChoiceTemplate}"
+                 BorderBrush="{StaticResource BorderBrush}" SelectionChanged="OnSelectionChanged"
+                 MouseDoubleClick="OnChoiceDoubleClick" />
+    </DockPanel>
+</Window>

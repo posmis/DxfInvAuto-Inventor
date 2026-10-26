@@ -15,11 +15,13 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Materials;
 using InvAuto.Core.Preview;
 using InvAuto.Core.Settings;
 using InvAuto.Core.SheetMetal;
 using InvAuto.Core.Sorting;
 using InvAuto.Core.Structure;
+using InvAuto.Features.Materials;
 using InvAuto.Features.Service;
 using InvAuto.Framework;
 using InvAuto.InventorApi;
@@ -66,6 +68,12 @@ namespace InvAuto.Features.SheetMetal
 
         private DataGridColumn _checkColumn;
         private AppSettings _appSettings;
+
+        // Библиотека материалов (отдельный файл, не очищается) и материалы, назначенные деталям вручную.
+        private readonly MaterialLibraryStore _materialStore;
+        private MaterialLibrary _library = new MaterialLibrary();
+        private string _libraryError;
+        private MaterialAssignments _assignments;
         private int _previewGeneration;
         private bool _busy;
         private bool _cancelRequested;
@@ -94,6 +102,8 @@ namespace InvAuto.Features.SheetMetal
 
             BuildPartColumns();
             _appSettings = LoadAppSettings();
+            _materialStore = new MaterialLibraryStore(context.Settings.Folder, context.Log);
+            LoadMaterials();
             CleanupFlatCache();
             LoadStructure(structure);
             RestoreSavedList();
@@ -206,6 +216,7 @@ namespace InvAuto.Features.SheetMetal
         {
             var row = new PartRow(part, ProductQuantity) { IsChecked = _checked.Contains(part.FullFileName) };
             ApplyBends(row);
+            ApplyMaterial(row);
             if (_results.TryGetValue(part.FullFileName, out var result))
                 row.ApplyResult(result);
             if (_thumbnails.TryGetValue(part.FullFileName, out var thumbnail))
@@ -553,6 +564,12 @@ namespace InvAuto.Features.SheetMetal
                 case PartColumns.Material: return TextColumn(header, nameof(PartRow.Material), Star(1));
                 case PartColumns.FilePath: return TextColumn(header, nameof(PartRow.FilePath), Star(2));
                 case PartColumns.Bends: return TextColumn(header, nameof(PartRow.BendSummary), Star(1.1));
+                case PartColumns.LibraryMaterial: return TemplateColumn(header, "LibraryMaterialCell", Star(1.2), nameof(PartRow.LibraryMaterialText));
+                case PartColumns.Area: return TextColumn(header, nameof(PartRow.AreaM2), 100, "0.####", right: true);
+                case PartColumns.Mass: return TextColumn(header, nameof(PartRow.Mass), 90, "0.###", right: true);
+                case PartColumns.TotalMass: return TextColumn(header, nameof(PartRow.TotalMass), 130, "0.##", right: true);
+                case PartColumns.CutLength: return TextColumn(header, nameof(PartRow.CutLengthM), 110, "0.##", right: true);
+                case PartColumns.Pierces: return TextColumn(header, nameof(PartRow.Pierces), 80, right: true);
                 case PartColumns.Thickness: return TextColumn(header, nameof(PartRow.Thickness), 90, "0.##", right: true);
                 case PartColumns.FlatSize: return TextColumn(header, nameof(PartRow.FlatSize), 150);
                 case PartColumns.Quantity: return TextColumn(header, nameof(PartRow.Quantity), 90, right: true);
@@ -615,6 +632,12 @@ namespace InvAuto.Features.SheetMetal
                 case PartColumns.Material: return r => r.Material;
                 case PartColumns.FilePath: return r => r.FilePath;
                 case PartColumns.Bends: return r => r.BendSummary;
+                case PartColumns.LibraryMaterial: return r => r.MaterialMissing ? null : r.LibraryMaterialText;
+                case PartColumns.Area: return r => r.AreaM2;
+                case PartColumns.Mass: return r => r.Mass;
+                case PartColumns.TotalMass: return r => r.TotalMass;
+                case PartColumns.CutLength: return r => r.CutLengthM;
+                case PartColumns.Pierces: return r => r.Pierces;
                 case PartColumns.Status: return r => r.Status;
                 case PartColumns.Thickness: return r => r.Thickness;
                 case PartColumns.Quantity: return r => r.Quantity;
@@ -1242,6 +1265,23 @@ namespace InvAuto.Features.SheetMetal
             AddProperty("Развертка", row.HasFlatPattern ? "есть" : "нет");
             if (row.FlatPreviewError.Length > 0)
                 AddProperty("Ошибка развертки", row.FlatPreviewError);
+            AddProperty("Материал (библиотека)", row.LibraryMaterialHint);
+            if (row.Metrics != null && row.Metrics.Pierces > 0)
+            {
+                var m = row.Metrics;
+                AddProperty("Площадь", string.Format(CultureInfo.CurrentCulture, "{0:0.####} м² (по контуру {1:0.####} м²)", m.Area * 1e-6, m.OuterArea * 1e-6));
+                if (row.Mass is double mass)
+                    AddProperty("Масса", string.Format(CultureInfo.CurrentCulture, "{0:0.###} кг", mass) +
+                                         (row.Total > 1 ? string.Format(CultureInfo.CurrentCulture, " · на изделия {0:0.##} кг", row.TotalMass) : string.Empty));
+                AddProperty("Длина реза", string.Format(CultureInfo.CurrentCulture, "{0:0.##} м", m.CutLength / 1000) +
+                                          (m.BendLength > 0 ? string.Format(CultureInfo.CurrentCulture, " · линии гиба {0:0.##} м", m.BendLength / 1000) : string.Empty));
+                AddProperty("Врезки", m.Pierces.ToString(CultureInfo.CurrentCulture) +
+                                      (m.OpenChains > 0 ? $" · незамкнутых контуров: {m.OpenChains} (проверьте развертку)" : string.Empty));
+            }
+            else if (row.HasFlatPattern)
+            {
+                AddProperty("Площадь и масса", "после «Сформировать развертки»");
+            }
             AddProperty("Линии гиба", row.BendSummary);
             foreach (var item in row.BendLines)
             {
@@ -1506,6 +1546,11 @@ namespace InvAuto.Features.SheetMetal
             _appSettings = LoadAppSettings();
 
             var reset = dialog.ResetKeys;
+            if (reset.Contains(MaterialAssignments.Key))
+            {
+                _assignments = _context.Settings.Load<MaterialAssignments>(MaterialAssignments.Key);
+                ApplyMaterials();
+            }
             if (reset.Contains(ExportSettingsKey))
             {
                 _exportSettings = _context.Settings.Load<FlatPatternExportSettings>(ExportSettingsKey);
@@ -1538,6 +1583,115 @@ namespace InvAuto.Features.SheetMetal
             else if (reset.Count > 0)
                 SetStatus("Настройки сброшены к значениям по умолчанию");
         }
+
+        #region Материалы
+
+        private void LoadMaterials()
+        {
+            _assignments = _context.Settings.Load<MaterialAssignments>(MaterialAssignments.Key);
+            try
+            {
+                _library = _materialStore.Load();
+                _libraryError = null;
+            }
+            catch (Exception ex)
+            {
+                // Повреждённый файл не перезаписываем: работаем без библиотеки и сообщаем пользователю.
+                _context.Log.Error("Библиотека материалов недоступна", ex);
+                _library = new MaterialLibrary();
+                _libraryError = ex.Message;
+                Dispatcher.BeginInvoke(new Action(() => ShowError(ex.Message)), DispatcherPriority.Background);
+            }
+        }
+
+        private void ApplyMaterial(PartRow row) =>
+            row.ApplyMaterial(ResolvedMaterial.Resolve(_library, _assignments, row.Part.FullFileName, row.Thickness));
+
+        private void ApplyMaterials()
+        {
+            foreach (var row in _rows)
+                ApplyMaterial(row);
+            if (PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+        }
+
+        private void OnMaterialLibrary(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            if (_libraryError != null)
+            {
+                ShowError(_libraryError);
+                return;
+            }
+            var dialog = new MaterialLibraryWindow(_library, _materialStore, _context.Log) { Owner = this };
+            if (dialog.ShowDialog() != true || dialog.Result == null)
+                return;
+            _library = dialog.Result;
+            ApplyMaterials();
+            SetStatus($"Библиотека материалов сохранена: {_library.Materials.Count}");
+        }
+
+        private void OnAssignMaterial(object sender, RoutedEventArgs e)
+        {
+            var rows = SelectedRows;
+            if (_busy || rows.Count == 0)
+            {
+                SetStatus("Выделите детали в списке, чтобы назначить им материал");
+                return;
+            }
+            if (_libraryError != null)
+            {
+                ShowError(_libraryError);
+                return;
+            }
+
+            var ids = rows.Select(r => _assignments.For(r.Part.FullFileName)).Distinct().ToList();
+            var dialog = new MaterialPickerWindow(_library, rows.Select(r => r.Thickness).ToList(), rows.Count, ids.Count == 1 ? ids[0] : null)
+            {
+                Owner = this
+            };
+            if (dialog.ShowDialog() != true)
+                return;
+            SetMaterial(rows, dialog.SelectedId);
+        }
+
+        private void OnMaterialByThickness(object sender, RoutedEventArgs e)
+        {
+            var rows = SelectedRows;
+            if (_busy || rows.Count == 0)
+            {
+                SetStatus("Выделите детали в списке");
+                return;
+            }
+            SetMaterial(rows, null);
+        }
+
+        private void SetMaterial(IReadOnlyList<PartRow> rows, string materialId)
+        {
+            foreach (var row in rows)
+                _assignments.Set(row.Part.FullFileName, materialId);
+            try
+            {
+                _context.Settings.Save(MaterialAssignments.Key, _assignments);
+            }
+            catch (Exception ex)
+            {
+                _context.Log.Error("Не удалось сохранить материалы деталей", ex);
+                ShowError("Не удалось сохранить материалы деталей: " + ex.Message);
+            }
+            foreach (var row in rows)
+                ApplyMaterial(row);
+            if (PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+
+            var material = _library.Find(materialId);
+            SetStatus(material == null
+                ? $"Материал по толщине: {rows.Count} дет."
+                : $"Назначен материал «{material.Name}»: {rows.Count} дет.");
+        }
+
+        #endregion
 
         private void SetBusy(bool busy, int steps)
         {
