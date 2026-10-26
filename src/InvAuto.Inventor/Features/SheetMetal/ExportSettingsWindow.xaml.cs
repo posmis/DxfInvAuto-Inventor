@@ -31,9 +31,6 @@ namespace InvAuto.Features.SheetMetal
             Load();
         }
 
-        /// <summary>Изменился способ записи DXF или ini — превью разверток нужно перестроить.</summary>
-        public bool DxfMethodChanged { get; private set; }
-
         private void Load()
         {
             FolderBox.Text = _settings.OutputFolder;
@@ -75,8 +72,6 @@ namespace InvAuto.Features.SheetMetal
                 }
             }
 
-            var before = (_settings.Method, _settings.IniFilePath, DxfFormatString.Build(_settings));
-
             _settings.OutputFolder = FolderBox.Text.Trim();
             _settings.FileNameTemplate = NameBox.Text.Trim().Length > 0 ? NameBox.Text.Trim() : new FlatPatternExportSettings().FileNameTemplate;
             _settings.SubfolderTemplate = SubfolderBox.Text.Trim();
@@ -93,7 +88,6 @@ namespace InvAuto.Features.SheetMetal
             _settings.WriteCsvReport = CsvBox.IsChecked == true;
             _settings.OpenFolderAfterExport = OpenFolderBox.IsChecked == true;
 
-            DxfMethodChanged = before != (_settings.Method, _settings.IniFilePath, DxfFormatString.Build(_settings));
             DialogResult = true;
         }
 

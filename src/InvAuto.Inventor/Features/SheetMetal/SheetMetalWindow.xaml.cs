@@ -48,7 +48,6 @@ namespace InvAuto.Features.SheetMetal
         private AssemblyStructure _structure;
         private Dictionary<string, SheetMetalPart> _originals;
         private TreeRow _currentNode;
-        private IFlatPatternWriter _previewWriter;
         private int _previewGeneration;
         private bool _busy;
         private string _lastOutputFolder;
@@ -61,6 +60,7 @@ namespace InvAuto.Features.SheetMetal
             _document = document;
             _exportSettings = context.Settings.Load<FlatPatternExportSettings>(ExportSettingsKey);
             _viewSettings = context.Settings.Load<SheetMetalViewSettings>(ViewSettingsKey);
+            _viewSettings.Normalize();
 
             Title = $"Листовые детали — {AssemblyName}";
             ApplyViewSettings();
@@ -106,7 +106,7 @@ namespace InvAuto.Features.SheetMetal
                 .GroupBy(n => n.FullFileName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First().SheetMetal, StringComparer.OrdinalIgnoreCase);
 
-            _tree.Load(structure.Root, expandLevels: 2);
+            _tree.Load(structure.Root, expandLevels: 1);
             TreeGrid.SelectedItem = _tree.Root;
             if (_currentNode != _tree.Root)
                 ShowNode(_tree.Root);
@@ -426,7 +426,7 @@ namespace InvAuto.Features.SheetMetal
             var reset = new MenuItem { Header = "Колонки по умолчанию" };
             reset.Click += (s, a) =>
             {
-                _viewSettings.Columns = new SheetMetalViewSettings().Columns;
+                _viewSettings.ResetColumns();
                 ColumnsChanged();
             };
             menu.Items.Add(reset);
@@ -445,7 +445,7 @@ namespace InvAuto.Features.SheetMetal
             };
             item.Click += (s, a) =>
             {
-                if (item.IsChecked)
+                if (item.IsChecked && !_viewSettings.Columns.Contains(id))
                     _viewSettings.Columns.Add(id);
                 else
                     _viewSettings.Columns.Remove(id);
@@ -467,26 +467,6 @@ namespace InvAuto.Features.SheetMetal
 
         private bool PreviewsNeeded =>
             _viewSettings.Columns.Any(PartColumns.IsImage) || _viewSettings.ShowDetails;
-
-        private IFlatPatternWriter PreviewWriter
-        {
-            get
-            {
-                if (_previewWriter != null)
-                    return _previewWriter;
-                try
-                {
-                    _previewWriter = FlatPatternWriters.Create(_context.App, _exportSettings);
-                }
-                catch (Exception ex)
-                {
-                    // Например, не найден ini — превью всё равно покажем через DataIO.
-                    _context.Log.Warn("Превью разверток строится через DataIO: " + ex.Message);
-                    _previewWriter = new DataIoWriter(DxfFormatString.Build(_exportSettings));
-                }
-                return _previewWriter;
-            }
-        }
 
         /// <summary>
         /// Превью загружаются по одному в фоне диспетчера: окно остаётся отзывчивым,
@@ -523,7 +503,7 @@ namespace InvAuto.Features.SheetMetal
             {
                 var document = _structure.SheetMetalDocuments[key];
                 var thumbnail = PreviewService.Thumbnail((Inventor.Document)document);
-                var flat = row.HasFlatPattern ? PreviewService.FlatPattern(document, PreviewWriter) : null;
+                var flat = row.HasFlatPattern ? PreviewService.FlatPattern(document) : null;
                 preview = (thumbnail, flat);
                 _previews[key] = preview;
             }
@@ -531,15 +511,6 @@ namespace InvAuto.Features.SheetMetal
             row.Thumbnail = preview.Thumbnail;
             row.Flat = preview.Flat;
             row.PreviewLoaded = true;
-        }
-
-        private void ResetPreviews()
-        {
-            _previewWriter = null;
-            _previews.Clear();
-            foreach (var row in _rows)
-                row.PreviewLoaded = false;
-            StartPreviewLoading();
         }
 
         #endregion
@@ -783,8 +754,6 @@ namespace InvAuto.Features.SheetMetal
                 return;
 
             _context.Settings.Save(ExportSettingsKey, _exportSettings);
-            if (dialog.DxfMethodChanged)
-                ResetPreviews();
         }
 
         private void SetBusy(bool busy, int steps)

@@ -24,16 +24,16 @@ namespace InvAuto.Features.SheetMetal
 
         public static readonly IReadOnlyList<(string Id, string Header)> All = new[]
         {
+            (FileName, "Имя файла"),
+            (Thickness, "Толщина, мм"),
+            (FlatSize, "Габариты, мм"),
+            (Quantity, "Количество"),
             (Flat, "Развертка"),
             (Thumbnail, "Миниатюра"),
-            (FileName, "Имя файла"),
             (PartNumber, "Обозначение"),
             (Description, "Наименование"),
             (Material, "Материал"),
-            (Thickness, "Толщина, мм"),
-            (FlatSize, "Габариты развертки, мм"),
             (FlatState, "Наличие развертки"),
-            (Quantity, "Количество"),
             (Total, "Итого на изделия"),
             (Status, "Статус выгрузки"),
             (FilePath, "Путь к файлу")

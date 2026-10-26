@@ -31,10 +31,6 @@ namespace InvAuto.Features.SheetMetal
         public bool IsSheetMetal => Node.Kind == NodeKind.SheetMetal;
         public Thickness Indent => new Thickness(Level * 16, 0, 0, 0);
 
-        public string Icon => Node.Kind == NodeKind.Assembly ? Icons.Assembly
-            : Node.Kind == NodeKind.SheetMetal ? Icons.SheetMetal
-            : Icons.Part;
-
         public string ToolTip => $"{Node.Name}\n{Node.FullFileName}";
 
         public bool IsExpanded

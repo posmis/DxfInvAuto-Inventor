@@ -1,4 +1,3 @@
-using System;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Media;
@@ -50,30 +49,19 @@ namespace InvAuto.InventorApi
         }
 
         /// <summary>
-        /// Превью развертки: DXF записывается тем же способом, что и при выгрузке (writer),
-        /// во временный файл и читается обратно. Так превью совпадает с файлом, который уйдёт в резку.
+        /// Превью развертки из геометрии Inventor. Файлы не создаются — DXF пишется только по кнопке выгрузки.
         /// </summary>
-        public static FlatDrawing FlatPattern(Inventor.PartDocument part, IFlatPatternWriter writer)
+        public static FlatDrawing FlatPattern(Inventor.PartDocument part)
         {
-            var definition = part.ComponentDefinition as Inventor.SheetMetalComponentDefinition;
-            if (definition == null || !definition.HasFlatPattern)
-                return null;
-
-            string folder = Path.Combine(Path.GetTempPath(), "InvAuto");
-            string path = Path.Combine(folder, Guid.NewGuid().ToString("N") + ".dxf");
             try
             {
-                Directory.CreateDirectory(folder);
-                writer.Write(definition, path);
-                return DxfReader.ReadFile(path);
+                return part.ComponentDefinition is Inventor.SheetMetalComponentDefinition definition
+                    ? FlatPatternGeometry.Read(definition)
+                    : null;
             }
             catch
             {
                 return null;
-            }
-            finally
-            {
-                try { File.Delete(path); } catch { /* временный файл */ }
             }
         }
 
