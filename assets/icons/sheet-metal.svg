@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <path d="M11 5 H21 V11 H27 V21 H21 V27 H11 V21 H5 V11 H11 Z" fill="#CFE6F7" stroke="#2E78B0" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M11 11 H21 V21 H11 Z" fill="none" stroke="#1C7CC4" stroke-width="2" stroke-dasharray="2 2"/>
+  <path d="M13.5 4.79 L29.61 14.1 L20.21 19.52 L4.1 10.22 Z" fill="#E1EDF8" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M4.1 10.22 L20.21 19.52 L20.21 21.23 L4.1 11.93 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M29.61 14.1 L20.21 19.52 L20.21 21.23 L29.61 15.8 Z" fill="#8FB0CE" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M13.5 4.79 L29.61 14.1 L29.61 3.4 L13.5 -5.9 Z" fill="#B9D0E5" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M14.98 -6.75 L31.08 2.55 L29.61 3.4 L13.5 -5.9 Z" fill="#E1EDF8" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
+  <path d="M31.08 2.55 L29.61 3.4 L29.61 14.1 L31.08 14.95 L31.08 2.55 Z" fill="#8FB0CE" stroke="#2B587F" stroke-width="1" stroke-linejoin="miter"/>
 </svg>

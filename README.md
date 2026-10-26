@@ -126,22 +126,23 @@ public sealed class MyFeature : FeatureBase
 
 ## Иконки
 
-Исходники — SVG в `assets/icons/` (сетка 32×32, линии толщиной 2 по нечётным координатам, чтобы
-иконка оставалась резкой и в 16 px). Из них скрипт делает:
+Стиль — как у Inventor 2025: тонкий контур 1 px, детали в изометрии с тремя оттенками граней,
+спокойная серо-голубая гамма, цвет только как акцент. Мелкий размер рисуется отдельно, а не уменьшается.
 
-- `src/InvAuto.Inventor/Framework/Ui/Icons.xaml` — векторные иконки для окон (`{StaticResource Icon.Refresh}`);
-- `src/InvAuto.Inventor/Resources/Icons/*.png` — 16 и 32 px для кнопок на ленте Inventor;
-- `assets/icons/preview.png` — обзорный лист.
-
-Новая иконка: положите `имя.svg` в `assets/icons/` и выполните из корня репозитория
+- `assets/icons/имя.svg` — рисунок 32×32 (большие кнопки), `assets/icons/имя.16.svg` — рисунок 16×16
+  (маленькие кнопки, дерево, PNG 16 px). Если варианта нет, берётся другой.
+- `tools/icons/make_icons.py` — генератор этих SVG (геометрия и палитра в одном месте).
+- `tools/icons/build-icons.mjs` — сборка: `Framework/Ui/Icons.xaml` (ключи `Icon.Имя` и `Icon.Имя.Small`),
+  PNG для ленты Inventor в `Resources/Icons`, обзорный лист `assets/icons/preview.png`.
 
 ```
+python tools/icons/make_icons.py
 npm install playwright && npx playwright install chromium
 node tools/icons/build-icons.mjs
 ```
 
-Для кнопки на ленте Inventor добавьте соответствие «имя SVG → Id функции» в `RIBBON` в начале скрипта.
-Сгенерированные файлы хранятся в репозитории, так что для сборки плагина Node.js не нужен.
+Для кнопки на ленте Inventor добавьте соответствие «имя SVG → Id функции» в `RIBBON` в начале build-icons.mjs.
+Сгенерированные файлы хранятся в репозитории, так что для сборки плагина Python и Node.js не нужны.
 
 ## Тесты
 

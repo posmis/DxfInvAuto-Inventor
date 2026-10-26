@@ -50,18 +50,18 @@
             <DataTemplate x:Key="TreeTitleCell">
                 <StackPanel Orientation="Horizontal" Margin="{Binding Indent}" ToolTip="{Binding ToolTip}">
                     <ToggleButton Style="{StaticResource ExpanderToggle}" IsChecked="{Binding IsExpanded, Mode=OneWay}" Click="OnTreeToggle" />
-                    <Image x:Name="Icon" Width="16" Height="16" Margin="3,0,6,0" Source="{StaticResource Icon.Part}" />
+                    <Image x:Name="Icon" Width="16" Height="16" Margin="3,0,6,0" Source="{StaticResource Icon.Part.Small}" />
                     <TextBlock x:Name="Title" Text="{Binding Title}" VerticalAlignment="Center" />
                 </StackPanel>
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding IsSheetMetal}" Value="True">
-                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.SheetMetalPart}" />
+                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.SheetMetalPart.Small}" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsStandard}" Value="True">
-                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.StandardPart}" />
+                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.StandardPart.Small}" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsAssembly}" Value="True">
-                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.Assembly}" />
+                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.Assembly.Small}" />
                         <Setter TargetName="Title" Property="FontWeight" Value="SemiBold" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
@@ -180,14 +180,14 @@
                             <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.Refresh}" Click="OnRefresh"
                                     ToolTip="Заново прочитать состав активной сборки">Обновить</Button>
                             <StackPanel>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ExpandAll}" Click="OnExpandAll">Развернуть всё</Button>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CollapseAll}" Click="OnCollapseAll">Свернуть всё</Button>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.ExpandAll.Small}" Click="OnExpandAll">Развернуть всё</Button>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CollapseAll.Small}" Click="OnCollapseAll">Свернуть всё</Button>
                             </StackPanel>
                         </StackPanel>
                     </HeaderedContentControl>
 
                     <HeaderedContentControl Header="Развертки" Style="{StaticResource RibbonGroup}">
-                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.SheetMetal}" Click="OnGenerateFlats"
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.FlatPattern}" Click="OnGenerateFlats"
                                 ToolTip="Сформировать развертки отмеченных деталей для просмотра перед выгрузкой.&#x0a;DXF создаётся тем же способом, что и при выгрузке, и хранится во временной папке.">Сформировать развертки</Button>
                     </HeaderedContentControl>
 
@@ -196,9 +196,9 @@
                             <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLines}" Click="OnBendSelected"
                                     ToolTip="Свои параметры линий гиба для выделенных деталей">Для выделенных</Button>
                             <StackPanel Margin="2,0,0,0">
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings}" Click="OnBendDefaults"
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings.Small}" Click="OnBendDefaults"
                                         ToolTip="Параметры линий гиба для всех деталей без своих настроек">По умолчанию</Button>
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh}" Click="OnBendReset"
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh.Small}" Click="OnBendReset"
                                         ToolTip="Вернуть выделенным деталям общие параметры">Сбросить к общим</Button>
                             </StackPanel>
                         </StackPanel>
@@ -211,7 +211,7 @@
                             <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.ExportAll}" Click="OnExportAll"
                                     ToolTip="Выгрузить все листовые детали изделия, независимо от выбора">Выгрузить всё</Button>
                             <StackPanel Margin="2,0,0,0">
-                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.OpenFolder}" Click="OnOpenFolder">Открыть папку</Button>
+                                <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.OpenFolder.Small}" Click="OnOpenFolder">Открыть папку</Button>
                                 <StackPanel Orientation="Horizontal" Margin="6,3,4,0" ToolTip="Количество каждой детали умножается на это число">
                                     <TextBlock Text="Изделий:" VerticalAlignment="Center" Margin="0,0,6,0" />
                                     <TextBox x:Name="ProductQuantityBox" Width="46" Text="1" HorizontalContentAlignment="Right"
@@ -223,9 +223,9 @@
 
                     <HeaderedContentControl Header="Отметка" Style="{StaticResource RibbonGroup}">
                         <StackPanel>
-                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckAll}" Click="OnCheckAll">Отметить все</Button>
-                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckNone}" Click="OnCheckNone">Снять все</Button>
-                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckSelected}" Click="OnCheckSelected"
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckAll.Small}" Click="OnCheckAll">Отметить все</Button>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckNone.Small}" Click="OnCheckNone">Снять все</Button>
+                            <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.CheckSelected.Small}" Click="OnCheckSelected"
                                     ToolTip="Отметить только выделенные строки (выделение — Ctrl/Shift + щелчок)">Только выделенные</Button>
                         </StackPanel>
                     </HeaderedContentControl>
