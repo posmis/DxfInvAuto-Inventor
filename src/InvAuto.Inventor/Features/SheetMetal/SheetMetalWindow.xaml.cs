@@ -48,7 +48,8 @@ namespace InvAuto.Features.SheetMetal
         private readonly Dictionary<DataGridColumn, string> _columnIds = new Dictionary<DataGridColumn, string>();
 
         // Состояние, которое должно переживать переключение узлов дерева.
-        private readonly HashSet<string> _unchecked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // По умолчанию детали не отмечены: помним только отмеченные пользователем.
+        private readonly HashSet<string> _checked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, ExportResult> _results = new Dictionary<string, ExportResult>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, ImageSource> _thumbnails = new Dictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, FlatPreview> _flatPreviews = new Dictionary<string, FlatPreview>(StringComparer.OrdinalIgnoreCase);
@@ -200,7 +201,7 @@ namespace InvAuto.Features.SheetMetal
 
             foreach (var part in node.Node.CollectSheetMetal())
             {
-                var row = new PartRow(part, ProductQuantity) { IsChecked = !_unchecked.Contains(part.FullFileName) };
+                var row = new PartRow(part, ProductQuantity) { IsChecked = _checked.Contains(part.FullFileName) };
                 ApplyBends(row);
                 if (_results.TryGetValue(part.FullFileName, out var result))
                     row.ApplyResult(result);
@@ -228,9 +229,9 @@ namespace InvAuto.Features.SheetMetal
                 return;
             var row = (PartRow)sender;
             if (row.IsChecked)
-                _unchecked.Remove(row.Part.FullFileName);
+                _checked.Add(row.Part.FullFileName);
             else
-                _unchecked.Add(row.Part.FullFileName);
+                _checked.Remove(row.Part.FullFileName);
             UpdateCounter();
         }
 
@@ -587,7 +588,7 @@ namespace InvAuto.Features.SheetMetal
             var rows = _rows.Where(r => r.IsChecked).ToList();
             if (rows.Count == 0)
             {
-                SetStatus("Нет отмеченных деталей");
+                SetStatus("Нет отмеченных деталей — отметьте нужные галочкой или кнопками группы «Отметка»");
                 return;
             }
             await GenerateFlatsAsync(rows, force: false);
@@ -969,7 +970,7 @@ namespace InvAuto.Features.SheetMetal
             var parts = _rows.Where(r => r.IsChecked).Select(r => r.Part).ToList();
             if (parts.Count == 0)
             {
-                SetStatus("Нет отмеченных деталей");
+                SetStatus("Нет отмеченных деталей — отметьте нужные галочкой или кнопками группы «Отметка»");
                 return;
             }
             await ExportAsync(parts);

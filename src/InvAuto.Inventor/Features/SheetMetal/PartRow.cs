@@ -21,7 +21,7 @@ namespace InvAuto.Features.SheetMetal
     /// <summary>Строка списка листовых деталей.</summary>
     public sealed class PartRow : ObservableObject
     {
-        private bool _isChecked = true;
+        private bool _isChecked;
         private int _total;
         private string _status = string.Empty;
         private RowStatus _statusKind;
