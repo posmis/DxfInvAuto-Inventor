@@ -65,7 +65,21 @@ namespace InvAuto.InventorApi
                     throw new InvalidOperationException("Откройте сборку или деталь.");
             }
 
+            root.SortChildren();
             return new AssemblyStructure(root, scan.SheetMetalDocuments);
+        }
+
+        /// <summary>Стандартное изделие из Библиотеки компонентов (Content Center).</summary>
+        private static bool IsContentMember(Document doc)
+        {
+            try
+            {
+                return doc is PartDocument part && part.ComponentDefinition.IsContentMember;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static bool IsSheetMetal(Document doc) =>
@@ -110,17 +124,19 @@ namespace InvAuto.InventorApi
 
                 foreach (var (doc, list) in groups)
                 {
-                    var node = CreateNode(doc, parent, list.Count);
+                    bool purchased = list[0].BOMStructure == BOMStructureEnum.kPurchasedBOMStructure;
+                    var node = CreateNode(doc, parent, list.Count, purchased);
                     parent.Children.Add(node);
                     if (node.Kind == NodeKind.Assembly)
                         AddChildren(node, list[0].SubOccurrences);
                 }
             }
 
-            public AssemblyNode CreateNode(Document doc, AssemblyNode parent, int quantity)
+            public AssemblyNode CreateNode(Document doc, AssemblyNode parent, int quantity, bool purchased = false)
             {
                 NodeKind kind = doc.DocumentType == DocumentTypeEnum.kAssemblyDocumentObject ? NodeKind.Assembly
                     : IsSheetMetal(doc) ? NodeKind.SheetMetal
+                    : purchased || IsContentMember(doc) ? NodeKind.Standard
                     : NodeKind.Part;
 
                 var node = new AssemblyNode(doc.FullFileName, kind, quantity, parent)

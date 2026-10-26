@@ -29,6 +29,7 @@ namespace InvAuto.Features.SheetMetal
         public bool HasChildren => Node.Children.Count > 0;
         public bool IsAssembly => Node.Kind == NodeKind.Assembly;
         public bool IsSheetMetal => Node.Kind == NodeKind.SheetMetal;
+        public bool IsStandard => Node.Kind == NodeKind.Standard;
         public Thickness Indent => new Thickness(Level * 16, 0, 0, 0);
 
         public string ToolTip => $"{Node.Name}\n{Node.FullFileName}";

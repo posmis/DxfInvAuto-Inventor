@@ -3,6 +3,7 @@ using System.Windows.Media;
 using InvAuto.Core.Export;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
+using InvAuto.InventorApi;
 
 namespace InvAuto.Features.SheetMetal
 {
@@ -23,11 +24,14 @@ namespace InvAuto.Features.SheetMetal
         private RowStatus _statusKind;
         private ImageSource _thumbnail;
         private FlatDrawing _flat;
+        private FlatPreviewState _flatPreviewState;
+        private string _flatPreviewError = string.Empty;
 
         public PartRow(SheetMetalPart part, int productQuantity)
         {
             Part = part;
             _total = part.Quantity * productQuantity;
+            _flatPreviewState = part.HasFlatPattern ? FlatPreviewState.NotGenerated : FlatPreviewState.NoFlatPattern;
         }
 
         public SheetMetalPart Part { get; }
@@ -85,7 +89,53 @@ namespace InvAuto.Features.SheetMetal
             set => Set(ref _flat, value);
         }
 
-        public bool PreviewLoaded { get; set; }
+        public FlatPreviewState FlatPreviewState
+        {
+            get => _flatPreviewState;
+            private set
+            {
+                if (Set(ref _flatPreviewState, value))
+                    OnPropertyChanged(nameof(FlatPreviewText));
+            }
+        }
+
+        /// <summary>Подпись в ячейке развертки, когда картинки нет.</summary>
+        public string FlatPreviewText
+        {
+            get
+            {
+                switch (FlatPreviewState)
+                {
+                    case FlatPreviewState.NotGenerated: return "не сформирована";
+                    case FlatPreviewState.NoFlatPattern: return "нет развертки";
+                    case FlatPreviewState.Failed: return "ошибка";
+                    default: return string.Empty;
+                }
+            }
+        }
+
+        public string FlatPreviewError
+        {
+            get => _flatPreviewError;
+            private set => Set(ref _flatPreviewError, value ?? string.Empty);
+        }
+
+        /// <summary>DXF развертки в кэше — для будущего окна просмотра.</summary>
+        public string FlatDxfPath { get; private set; }
+
+        public bool ThumbnailLoaded { get; set; }
+
+        /// <summary>Кэш разверток для строки уже проверен.</summary>
+        public bool FlatCacheChecked { get; set; }
+
+        public void ApplyPreview(FlatPreview preview)
+        {
+            Flat = preview.Drawing;
+            FlatDxfPath = preview.DxfPath;
+            FlatPreviewError = preview.Error;
+            FlatPreviewState = preview.State;
+            FlatCacheChecked = true;
+        }
 
         public string Property(string name) =>
             Part.CustomProperties.TryGetValue(name, out var value) ? value : string.Empty;

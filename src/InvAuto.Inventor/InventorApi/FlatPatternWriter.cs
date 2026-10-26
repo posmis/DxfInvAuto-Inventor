@@ -8,6 +8,9 @@ namespace InvAuto.InventorApi
     /// <summary>Записывает развертку в DXF-файл. Одним и тем же объектом пользуются выгрузка и превью.</summary>
     public interface IFlatPatternWriter
     {
+        /// <summary>Всё, от чего зависит содержимое DXF. Входит в ключ кэша разверток.</summary>
+        string Signature { get; }
+
         void Write(SheetMetalComponentDefinition definition, string path);
     }
 
@@ -50,7 +53,11 @@ namespace InvAuto.InventorApi
                 ?? throw new InvalidOperationException("DXF-транслятор Inventor не найден.");
             if (!_translator.Activated)
                 _translator.Activate();
+
+            Signature = "ini|" + IO.Path.GetFullPath(iniPath).ToUpperInvariant() + "|" + IO.File.GetLastWriteTimeUtc(iniPath).Ticks;
         }
+
+        public string Signature { get; }
 
         public void Write(SheetMetalComponentDefinition definition, string path)
         {
@@ -73,6 +80,8 @@ namespace InvAuto.InventorApi
         private readonly string _format;
 
         public DataIoWriter(string format) => _format = format;
+
+        public string Signature => "dataio|" + _format;
 
         public void Write(SheetMetalComponentDefinition definition, string path) =>
             definition.DataIO.WriteDataToFile(_format, path);

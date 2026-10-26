@@ -57,6 +57,9 @@
                     <DataTrigger Binding="{Binding IsSheetMetal}" Value="True">
                         <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.SheetMetalPart}" />
                     </DataTrigger>
+                    <DataTrigger Binding="{Binding IsStandard}" Value="True">
+                        <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.StandardPart}" />
+                    </DataTrigger>
                     <DataTrigger Binding="{Binding IsAssembly}" Value="True">
                         <Setter TargetName="Icon" Property="Source" Value="{StaticResource Icon.Assembly}" />
                         <Setter TargetName="Title" Property="FontWeight" Value="SemiBold" />
@@ -77,12 +80,19 @@
                                         ProfileBrush="{StaticResource FlatProfileBrush}"
                                         BendBrush="{StaticResource FlatBendBrush}"
                                         AuxiliaryBrush="{StaticResource FlatAuxBrush}" />
-                    <TextBlock x:Name="NoFlat" Text="нет развертки" Style="{StaticResource MutedText}" FontSize="11"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+                    <TextBlock x:Name="NoFlat" Text="{Binding FlatPreviewText}" ToolTip="{Binding FlatPreviewError}"
+                               Style="{StaticResource MutedText}" FontSize="11"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Grid>
                 <DataTemplate.Triggers>
-                    <DataTrigger Binding="{Binding HasFlatPattern}" Value="False">
-                        <Setter TargetName="NoFlat" Property="Visibility" Value="Visible" />
+                    <DataTrigger Binding="{Binding FlatPreviewState}" Value="Ready">
+                        <Setter TargetName="NoFlat" Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding FlatPreviewState}" Value="Failed">
+                        <Setter TargetName="NoFlat" Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding FlatPreviewState}" Value="NoFlatPattern">
+                        <Setter TargetName="NoFlat" Property="Foreground" Value="{StaticResource WarningBrush}" />
                     </DataTrigger>
                 </DataTemplate.Triggers>
             </DataTemplate>
@@ -176,6 +186,11 @@
                         </StackPanel>
                     </HeaderedContentControl>
 
+                    <HeaderedContentControl Header="Развертки" Style="{StaticResource RibbonGroup}">
+                        <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.SheetMetal}" Click="OnGenerateFlats"
+                                ToolTip="Сформировать развертки отмеченных деталей для просмотра перед выгрузкой.&#x0a;DXF создаётся тем же способом, что и при выгрузке, и хранится во временной папке.">Сформировать развертки</Button>
+                    </HeaderedContentControl>
+
                     <HeaderedContentControl Header="Выгрузка DXF" Style="{StaticResource RibbonGroup}">
                         <StackPanel Orientation="Horizontal">
                             <Button Style="{StaticResource RibbonPrimaryButton}" Tag="{StaticResource Icon.Export}" Click="OnExportChecked"
@@ -222,6 +237,8 @@
         <!-- ===================== Строка состояния ===================== -->
         <Border DockPanel.Dock="Bottom" Style="{StaticResource StatusBar}">
             <DockPanel>
+                <Button x:Name="CancelButton" DockPanel.Dock="Right" Content="Остановить" Style="{StaticResource DialogButton}"
+                        Height="22" Margin="8,0,0,0" Visibility="Collapsed" Click="OnCancel" />
                 <ProgressBar x:Name="Progress" DockPanel.Dock="Right" Width="220" Height="12" Visibility="Collapsed" />
                 <TextBlock x:Name="StatusText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
             </DockPanel>
@@ -275,6 +292,8 @@
                                 <MenuItem Header="Снять отметку с выделенных" Click="OnUncheckSelectedRows" />
                                 <Separator />
                                 <MenuItem Header="Показать файл детали в проводнике" Click="OnRevealPart" />
+                                <MenuItem Header="Сформировать развертку заново" Click="OnRegenerateSelected" />
+                                <Separator />
                                 <MenuItem Header="Показать DXF в проводнике" Click="OnRevealDxf" />
                             </ContextMenu>
                         </DataGrid.ContextMenu>
@@ -305,13 +324,16 @@
                                                         ProfileBrush="{StaticResource FlatProfileBrush}"
                                                         BendBrush="{StaticResource FlatBendBrush}"
                                                         AuxiliaryBrush="{StaticResource FlatAuxBrush}" />
-                                    <TextBlock Text="Нет развертки" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding FlatPreviewText}" ToolTip="{Binding FlatPreviewError}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                                                <Setter Property="Visibility" Value="Collapsed" />
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding HasFlatPattern}" Value="False">
-                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    <DataTrigger Binding="{Binding FlatPreviewState}" Value="Ready">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding FlatPreviewState}" Value="Failed">
+                                                        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>

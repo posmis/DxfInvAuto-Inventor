@@ -48,23 +48,6 @@ namespace InvAuto.InventorApi
             }
         }
 
-        /// <summary>
-        /// Превью развертки из геометрии Inventor. Файлы не создаются — DXF пишется только по кнопке выгрузки.
-        /// </summary>
-        public static FlatDrawing FlatPattern(Inventor.PartDocument part)
-        {
-            try
-            {
-                return part.ComponentDefinition is Inventor.SheetMetalComponentDefinition definition
-                    ? FlatPatternGeometry.Read(definition)
-                    : null;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         private sealed class PictureConverter : System.Windows.Forms.AxHost
         {
             private PictureConverter() : base(string.Empty) { }

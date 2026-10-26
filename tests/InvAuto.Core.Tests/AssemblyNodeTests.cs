@@ -55,5 +55,26 @@ namespace InvAuto.Core.Tests
             Assert.Equal(1, node.SheetMetal.Quantity);
             Assert.Empty(node.SheetMetal.CustomProperties);
         }
+
+        [Fact]
+        public void SortChildren_GroupsByKind_ThenByPartNumber_Recursively()
+        {
+            var root = Assembly(null, "Рама.iam", 1);
+            root.Children.Add(new AssemblyNode("Болт.ipt", NodeKind.Standard, 8, root) { PartNumber = "Болт М10" });
+            root.Children.Add(new AssemblyNode("Б.ipt", NodeKind.Part, 1, root) { PartNumber = "ЕЛГ.002" });
+            Sheet(root, "Пластина.ipt", 1).PartNumber = "ЕЛГ.005";
+            var sub = Assembly(root, "Стойка.iam", 1);
+            sub.PartNumber = "ЕЛГ.010";
+            Sheet(root, "Косынка.ipt", 1).PartNumber = "ЕЛГ.003";
+            root.Children.Add(new AssemblyNode("А.ipt", NodeKind.Part, 1, root) { Name = "А" });
+            Sheet(sub, "Z.ipt", 1).PartNumber = "Б";
+            sub.Children.Insert(0, new AssemblyNode("Шайба.ipt", NodeKind.Standard, 4, sub));
+
+            root.SortChildren();
+
+            Assert.Equal(new[] { "Стойка.iam", "Косынка.ipt", "Пластина.ipt", "А.ipt", "Б.ipt", "Болт.ipt" },
+                root.Children.Select(c => c.FullFileName));
+            Assert.Equal(new[] { "Z.ipt", "Шайба.ipt" }, sub.Children.Select(c => c.FullFileName));
+        }
     }
 }

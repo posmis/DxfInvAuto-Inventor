@@ -5,11 +5,15 @@ using InvAuto.Core.Export;
 
 namespace InvAuto.Core.Structure
 {
+    /// <summary>Вид компонента. Порядок значений — порядок групп в дереве состава.</summary>
     public enum NodeKind
     {
         Assembly,
         SheetMetal,
-        Part
+        Part,
+
+        /// <summary>Прочие изделия: стандартные (Библиотека компонентов) и покупные.</summary>
+        Standard
     }
 
     /// <summary>
@@ -55,6 +59,23 @@ namespace InvAuto.Core.Structure
                     yield return d;
             }
         }
+
+        /// <summary>
+        /// Сортирует дерево как спецификацию: сборки, листовые детали, детали, прочие изделия;
+        /// внутри группы — по обозначению (если его нет — по имени файла).
+        /// </summary>
+        public void SortChildren()
+        {
+            Children.Sort((a, b) =>
+            {
+                int byKind = a.Kind.CompareTo(b.Kind);
+                return byKind != 0 ? byKind : StringComparer.CurrentCultureIgnoreCase.Compare(a.SortTitle, b.SortTitle);
+            });
+            foreach (var child in Children)
+                child.SortChildren();
+        }
+
+        private string SortTitle => PartNumber.Length > 0 ? PartNumber : Name;
 
         /// <summary>
         /// Все листовые детали этого узла и его подсборок. Количество — на всё изделие:

@@ -42,14 +42,16 @@ namespace InvAuto.Features.SheetMetal
         // Состояние, которое должно переживать переключение узлов дерева.
         private readonly HashSet<string> _unchecked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, ExportResult> _results = new Dictionary<string, ExportResult>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, (ImageSource Thumbnail, FlatDrawing Flat)> _previews =
-            new Dictionary<string, (ImageSource, FlatDrawing)>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ImageSource> _thumbnails = new Dictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, FlatPreview> _flatPreviews = new Dictionary<string, FlatPreview>(StringComparer.OrdinalIgnoreCase);
 
         private AssemblyStructure _structure;
         private Dictionary<string, SheetMetalPart> _originals;
         private TreeRow _currentNode;
         private int _previewGeneration;
         private bool _busy;
+        private bool _cancelRequested;
+        private FlatPreviewService _flatService;
         private string _lastOutputFolder;
 
         public SheetMetalWindow(FeatureContext context, Inventor.Document document, AssemblyStructure structure)
@@ -72,6 +74,7 @@ namespace InvAuto.Features.SheetMetal
             ProductQuantityBox.Text = Math.Max(1, _exportSettings.QuantityMultiplier).ToString(CultureInfo.InvariantCulture);
 
             BuildPartColumns();
+            CleanupFlatCache();
             LoadStructure(structure);
             Closing += OnWindowClosing;
         }
@@ -153,7 +156,8 @@ namespace InvAuto.Features.SheetMetal
             try
             {
                 Mouse.OverrideCursor = Cursors.Wait;
-                _previews.Clear();
+                _thumbnails.Clear();
+                _flatPreviews.Clear();
                 _currentNode = null;
                 LoadStructure(AssemblyScanner.Scan(_document));
             }
@@ -185,12 +189,13 @@ namespace InvAuto.Features.SheetMetal
                 var row = new PartRow(part, ProductQuantity) { IsChecked = !_unchecked.Contains(part.FullFileName) };
                 if (_results.TryGetValue(part.FullFileName, out var result))
                     row.ApplyResult(result);
-                if (_previews.TryGetValue(part.FullFileName, out var preview))
+                if (_thumbnails.TryGetValue(part.FullFileName, out var thumbnail))
                 {
-                    row.Thumbnail = preview.Thumbnail;
-                    row.Flat = preview.Flat;
-                    row.PreviewLoaded = true;
+                    row.Thumbnail = thumbnail;
+                    row.ThumbnailLoaded = true;
                 }
+                if (_flatPreviews.TryGetValue(part.FullFileName, out var preview))
+                    row.ApplyPreview(preview);
                 row.PropertyChanged += OnRowPropertyChanged;
                 _rows.Add(row);
             }
@@ -458,59 +463,211 @@ namespace InvAuto.Features.SheetMetal
         {
             BuildPartColumns();
             SaveViewSettings();
-            StartPreviewLoading();
         }
 
         #endregion
 
-        #region Превью
-
-        private bool PreviewsNeeded =>
-            _viewSettings.Columns.Any(PartColumns.IsImage) || _viewSettings.ShowDetails;
+        #region Превью и развертки
 
         /// <summary>
-        /// Превью загружаются по одному в фоне диспетчера: окно остаётся отзывчивым,
-        /// а все обращения к Inventor идут из основного потока, как требует его API.
+        /// Сервис разверток для просмотра. Создаётся по текущим настройкам выгрузки,
+        /// чтобы развертка в окне совпадала с будущим DXF. null — если способ выгрузки не настроен.
+        /// </summary>
+        private FlatPreviewService FlatService
+        {
+            get
+            {
+                if (_flatService != null)
+                    return _flatService;
+                try
+                {
+                    var writer = FlatPatternWriters.Create(_context.App, _exportSettings);
+                    _flatService = new FlatPreviewService(writer, new FlatPreviewCache(FlatPreviewService.DefaultCacheFolder));
+                }
+                catch (Exception ex)
+                {
+                    _context.Log.Error("Развертки недоступны", ex);
+                    SetStatus("Развертки недоступны: " + ex.Message);
+                }
+                return _flatService;
+            }
+        }
+
+        private void CleanupFlatCache()
+        {
+            try
+            {
+                int removed = new FlatPreviewCache(FlatPreviewService.DefaultCacheFolder).Cleanup(TimeSpan.FromDays(30));
+                if (removed > 0)
+                    _context.Log.Info($"Удалено старых разверток из кэша: {removed}");
+            }
+            catch (Exception ex)
+            {
+                _context.Log.Warn("Не удалось очистить кэш разверток: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Фоном подгружает миниатюры и уже сформированные развертки из кэша.
+        /// Новые DXF здесь не создаются — только по кнопке «Сформировать развертки».
         /// </summary>
         private async void StartPreviewLoading()
         {
             int generation = ++_previewGeneration;
-            if (!PreviewsNeeded)
-                return;
-
-            var pending = _rows.Where(r => !r.PreviewLoaded).ToList();
-            for (int i = 0; i < pending.Count; i++)
+            var pending = _rows.Where(r => !r.ThumbnailLoaded || !r.FlatCacheChecked).ToList();
+            foreach (var row in pending)
             {
                 await Dispatcher.Yield(DispatcherPriority.Background);
                 if (generation != _previewGeneration)
                     return;
-
-                SetStatus($"Загрузка превью: {i + 1} из {pending.Count}");
-                LoadPreview(pending[i]);
+                LoadCachedPreview(row);
             }
-
-            if (pending.Count > 0)
-                SetStatus(DefaultStatus());
         }
 
-        private void LoadPreview(PartRow row)
+        private void LoadCachedPreview(PartRow row)
         {
-            if (row.PreviewLoaded)
-                return;
-
             string key = row.Part.FullFileName;
-            if (!_previews.TryGetValue(key, out var preview))
+            var document = _structure.SheetMetalDocuments[key];
+
+            if (!row.ThumbnailLoaded)
             {
-                var document = _structure.SheetMetalDocuments[key];
-                var thumbnail = PreviewService.Thumbnail((Inventor.Document)document);
-                var flat = row.HasFlatPattern ? PreviewService.FlatPattern(document) : null;
-                preview = (thumbnail, flat);
-                _previews[key] = preview;
+                if (!_thumbnails.TryGetValue(key, out var thumbnail))
+                {
+                    thumbnail = PreviewService.Thumbnail((Inventor.Document)document);
+                    _thumbnails[key] = thumbnail;
+                }
+                row.Thumbnail = thumbnail;
+                row.ThumbnailLoaded = true;
             }
 
-            row.Thumbnail = preview.Thumbnail;
-            row.Flat = preview.Flat;
-            row.PreviewLoaded = true;
+            if (row.FlatCacheChecked)
+                return;
+
+            if (_flatPreviews.TryGetValue(key, out var preview))
+            {
+                row.ApplyPreview(preview);
+            }
+            else if (!row.HasFlatPattern)
+            {
+                row.ApplyPreview(FlatPreview.NoFlatPattern);
+            }
+            else if (FlatService is FlatPreviewService service)
+            {
+                preview = service.FromCache(document);
+                if (preview.State == FlatPreviewState.Ready)
+                    _flatPreviews[key] = preview;
+                row.ApplyPreview(preview);
+            }
+            else
+            {
+                row.FlatCacheChecked = true;
+            }
+        }
+
+        private async void OnGenerateFlats(object sender, RoutedEventArgs e)
+        {
+            var rows = _rows.Where(r => r.IsChecked).ToList();
+            if (rows.Count == 0)
+            {
+                SetStatus("Нет отмеченных деталей");
+                return;
+            }
+            await GenerateFlatsAsync(rows, force: false);
+        }
+
+        private async void OnRegenerateSelected(object sender, RoutedEventArgs e) =>
+            await GenerateFlatsAsync(SelectedRows, force: true);
+
+        /// <summary>Формирует развертки (DXF в кэш) тем же способом, что и выгрузка, и показывает их.</summary>
+        private async Task GenerateFlatsAsync(List<PartRow> rows, bool force)
+        {
+            if (_busy)
+                return;
+
+            var service = FlatService;
+            if (service == null)
+            {
+                ShowError("Не удалось подготовить формирование разверток. Проверьте способ выгрузки в «Параметрах выгрузки».");
+                return;
+            }
+
+            var todo = rows.Where(r => r.HasFlatPattern && (force || r.FlatPreviewState != FlatPreviewState.Ready)).ToList();
+            foreach (var row in rows.Where(r => !r.HasFlatPattern))
+                row.ApplyPreview(FlatPreview.NoFlatPattern);
+            if (todo.Count == 0)
+            {
+                SetStatus("Развертки отмеченных деталей уже сформированы");
+                return;
+            }
+
+            _previewGeneration++; // фоновая подгрузка не должна вклиниваться
+            SetBusy(true, todo.Count);
+            int ok = 0, failed = 0;
+            bool screenUpdating = _context.App.ScreenUpdating;
+            try
+            {
+                _context.App.ScreenUpdating = false;
+                for (int i = 0; i < todo.Count && !_cancelRequested; i++)
+                {
+                    var row = todo[i];
+                    SetStatus($"Формирование разверток {i + 1} из {todo.Count}: {row.FileName}");
+                    await Dispatcher.Yield(DispatcherPriority.Background);
+
+                    string key = row.Part.FullFileName;
+                    FlatPreview preview;
+                    try
+                    {
+                        preview = service.Generate(_structure.SheetMetalDocuments[key]);
+                    }
+                    catch (Exception ex)
+                    {
+                        _context.Log.Error($"Развертка {row.FileName}", ex);
+                        preview = FlatPreview.Failed(ex.Message);
+                    }
+
+                    if (preview.State == FlatPreviewState.Ready)
+                    {
+                        _flatPreviews[key] = preview;
+                        ok++;
+                    }
+                    else
+                    {
+                        _flatPreviews.Remove(key);
+                        if (preview.State == FlatPreviewState.Failed)
+                            failed++;
+                    }
+                    row.ApplyPreview(preview);
+                    Progress.Value++;
+                }
+            }
+            finally
+            {
+                _context.App.ScreenUpdating = screenUpdating;
+                SetBusy(false, 0);
+            }
+
+            SetStatus($"Сформировано разверток: {ok}" +
+                      (failed > 0 ? $", ошибок: {failed} (причина — в подсказке ячейки и в логе)" : string.Empty) +
+                      (_cancelRequested ? " · остановлено" : string.Empty));
+            if (PartsGrid.SelectedItem is PartRow selected)
+                ShowDetails(selected);
+            StartPreviewLoading();
+        }
+
+        /// <summary>Настройки выгрузки изменились — развертки в окне больше не соответствуют будущему DXF.</summary>
+        private void ResetFlatPreviews()
+        {
+            _flatService = null;
+            _flatPreviews.Clear();
+            foreach (var row in _rows)
+                row.FlatCacheChecked = false;
+            StartPreviewLoading();
+        }
+
+        private void OnCancel(object sender, RoutedEventArgs e)
+        {
+            _cancelRequested = true;
+            SetStatus("Останавливаю…");
         }
 
         #endregion
@@ -531,7 +688,7 @@ namespace InvAuto.Features.SheetMetal
                 return;
 
             if (_viewSettings.ShowDetails && !_busy)
-                LoadPreview(row);
+                LoadCachedPreview(row);
 
             AddProperty("Обозначение", row.PartNumber);
             AddProperty("Наименование", row.Description);
@@ -541,6 +698,8 @@ namespace InvAuto.Features.SheetMetal
             if (ProductQuantity > 1)
                 AddProperty("На изделия", row.Total.ToString(CultureInfo.CurrentCulture));
             AddProperty("Развертка", row.HasFlatPattern ? "есть" : "нет");
+            if (row.FlatPreviewError.Length > 0)
+                AddProperty("Ошибка развертки", row.FlatPreviewError);
             if (row.Status.Length > 0)
                 AddProperty("Выгрузка", row.Status);
             foreach (var pair in row.Part.CustomProperties.OrderBy(p => p.Key, StringComparer.CurrentCultureIgnoreCase))
@@ -626,6 +785,8 @@ namespace InvAuto.Features.SheetMetal
                 _context.App.ScreenUpdating = false;
                 foreach (var part in parts)
                 {
+                    if (_cancelRequested)
+                        break;
                     SetStatus($"Выгрузка {results.Count + 1} из {parts.Count}: {part.Name}");
                     await Dispatcher.Yield(DispatcherPriority.Background);
 
@@ -637,12 +798,14 @@ namespace InvAuto.Features.SheetMetal
                     if (result.Part.HasFlatPattern && _originals.TryGetValue(part.FullFileName, out var original) && !original.HasFlatPattern)
                     {
                         original.HasFlatPattern = true;
-                        _previews.Remove(part.FullFileName);
+                        _flatPreviews.Remove(part.FullFileName);
                         flatsCreated = true;
                     }
 
-                    _rows.FirstOrDefault(r => string.Equals(r.Part.FullFileName, part.FullFileName, StringComparison.OrdinalIgnoreCase))
-                        ?.ApplyResult(result);
+                    var row = _rows.FirstOrDefault(r => string.Equals(r.Part.FullFileName, part.FullFileName, StringComparison.OrdinalIgnoreCase));
+                    row?.ApplyResult(result);
+                    if (result.Status == ExportStatus.Exported)
+                        RememberExportedFlat(part.FullFileName, result.FilePath, row);
                     Progress.Value++;
                 }
             }
@@ -663,6 +826,23 @@ namespace InvAuto.Features.SheetMetal
 
             if (_exportSettings.OpenFolderAfterExport && Directory.Exists(folder))
                 Process.Start("explorer.exe", $"\"{folder}\"");
+        }
+
+        /// <summary>Выгруженный DXF — это и есть развертка: кладём его в кэш, чтобы она сразу была видна в окне.</summary>
+        private void RememberExportedFlat(string key, string dxfPath, PartRow row)
+        {
+            try
+            {
+                var preview = FlatService?.StoreExported(_structure.SheetMetalDocuments[key], dxfPath);
+                if (preview == null)
+                    return;
+                _flatPreviews[key] = preview;
+                row?.ApplyPreview(preview);
+            }
+            catch (Exception ex)
+            {
+                _context.Log.Warn($"Развертка {key} не сохранена в кэш: {ex.Message}");
+            }
         }
 
         private string WriteReport(List<ExportResult> results, string folder)
@@ -754,11 +934,14 @@ namespace InvAuto.Features.SheetMetal
                 return;
 
             _context.Settings.Save(ExportSettingsKey, _exportSettings);
+            ResetFlatPreviews();
         }
 
         private void SetBusy(bool busy, int steps)
         {
             _busy = busy;
+            _cancelRequested = false;
+            CancelButton.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
             Mouse.OverrideCursor = busy ? Cursors.Wait : null;
             Body.IsEnabled = !busy;
             Progress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
