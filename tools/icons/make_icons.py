@@ -313,6 +313,25 @@ def bolt(k, w):
 write('standard-part', 16, bolt(1, 1), snap=False)
 write('standard-part', 32, bolt(2, 1), snap=False)
 
+# ---------- линии гиба по отдельности: пластина, одна линия подсвечена ----------
+HILITE = '#F0A030'
+def bend_each(size):
+    if size == 32:
+        plate = [(2.5, 6.5), (29.5, 6.5), (29.5, 25.5), (2.5, 25.5)]
+        xs, y0, y1, band = (9.5, 16.5, 23.5), 6.5, 25.5, 2.5
+    else:
+        plate = [(1.5, 3.5), (14.5, 3.5), (14.5, 12.5), (1.5, 12.5)]
+        xs, y0, y1, band = (4.5, 8, 11.5), 3.5, 12.5, 1.5
+    body = [poly(plate, S_TOP, S_INK)]
+    mid = xs[1]
+    body.append(poly([(mid - band, y0 + 0.5), (mid + band, y0 + 0.5), (mid + band, y1 - 0.5), (mid - band, y1 - 0.5)], HILITE, None))
+    dash = ' stroke-dasharray="2 1.5"' if size == 32 else ' stroke-dasharray="1.5 1"'
+    for x in xs:
+        body.append(line([(x, y0), (x, y1)], BLUE, 1, dash))
+    return body
+write('bend-lines-each', 32, bend_each(32))
+write('bend-lines-each', 16, bend_each(16))
+
 if ERRORS:
     raise SystemExit('\n'.join(ERRORS))
 print('ok')

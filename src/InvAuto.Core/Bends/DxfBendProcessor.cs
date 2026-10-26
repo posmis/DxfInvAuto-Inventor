@@ -6,19 +6,86 @@ using System.Text;
 
 namespace InvAuto.Core.Bends
 {
-    public sealed class BendProcessResult
+    /// <summary>Линия гиба в DXF: где лежит и как её узнать при следующей выгрузке.</summary>
+    public sealed class BendLineInfo
     {
-        public BendProcessResult(string text, IReadOnlyList<BendLineLayout> lines)
+        public BendLineInfo(int index, string layer, double x1, double y1, double x2, double y2)
         {
-            Text = text;
-            Lines = lines;
+            Index = index;
+            Layer = layer;
+            X1 = x1; Y1 = y1; X2 = x2; Y2 = y2;
+            Length = Math.Sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+            Key = MakeKey(layer, x1, y1, x2, y2);
         }
 
-        /// <summary>DXF после обработки.</summary>
+        /// <summary>Номер линии гиба в файле (с 1) — для подписи на развертке.</summary>
+        public int Index { get; }
+
+        public string Layer { get; }
+        public double X1 { get; }
+        public double Y1 { get; }
+        public double X2 { get; }
+        public double Y2 { get; }
+        public double Length { get; }
+
+        /// <summary>Линия гиба вниз (слой IV_BEND_DOWN или переименованный «…DOWN»).</summary>
+        public bool IsDown => Layer.IndexOf("DOWN", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>
+        /// Ключ для персональной настройки линии: слой и концы с точностью 0,01 мм, без учёта направления.
+        /// Пока геометрия детали не меняется, ключ тот же; сдвинулась линия — настройка перестаёт действовать.
+        /// </summary>
+        public string Key { get; }
+
+        private static string MakeKey(string layer, double x1, double y1, double x2, double y2)
+        {
+            string a = Point(x1, y1), b = Point(x2, y2);
+            if (string.CompareOrdinal(a, b) > 0)
+            {
+                string t = a;
+                a = b;
+                b = t;
+            }
+            return layer.ToUpperInvariant() + "|" + a + "|" + b;
+        }
+
+        private static string Point(double x, double y) =>
+            Round(x).ToString("0.00", CultureInfo.InvariantCulture) + ";" + Round(y).ToString("0.00", CultureInfo.InvariantCulture);
+
+        // −0,00 и 0,00 — один и тот же ключ
+        private static double Round(double v) => Math.Round(v, 2) + 0.0;
+    }
+
+    /// <summary>Линия гиба после обработки: какие параметры применены и что получилось.</summary>
+    public sealed class ProcessedBendLine
+    {
+        public ProcessedBendLine(BendLineInfo line, BendLineOptions options, BendLineLayout layout)
+        {
+            Line = line;
+            Options = options;
+            Layout = layout;
+        }
+
+        public BendLineInfo Line { get; }
+        public BendLineOptions Options { get; }
+        public BendLineLayout Layout { get; }
+    }
+
+    public sealed class BendProcessResult
+    {
+        public BendProcessResult(string text, IReadOnlyList<ProcessedBendLine> items)
+        {
+            Text = text;
+            Items = items;
+        }
+
+        /// <summary>DXF после обработки. Тот же экземпляр строки, если ничего не менялось.</summary>
         public string Text { get; }
 
-        /// <summary>Найденные линии гиба и что с каждой сделано.</summary>
-        public IReadOnlyList<BendLineLayout> Lines { get; }
+        /// <summary>Найденные линии гиба в порядке файла и что с каждой сделано.</summary>
+        public IReadOnlyList<ProcessedBendLine> Items { get; }
+
+        public IReadOnlyList<BendLineLayout> Lines => Items.Select(i => i.Layout).ToList();
     }
 
     /// <summary>
@@ -38,12 +105,24 @@ namespace InvAuto.Core.Bends
         /// </summary>
         public static Encoding FileEncoding { get; } = Encoding.GetEncoding("iso-8859-1");
 
-        public static BendProcessResult Process(string dxf, IEnumerable<string> bendLayers, BendLineOptions options)
+        /// <summary>Одни параметры для всех линий гиба.</summary>
+        public static BendProcessResult Process(string dxf, IEnumerable<string> bendLayers, BendLineOptions options) =>
+            Process(dxf, bendLayers, _ => options);
+
+        /// <summary>Линии гиба файла без изменений — для списка линий и подписей на развертке.</summary>
+        public static IReadOnlyList<BendLineInfo> FindBendLines(string dxf, IEnumerable<string> bendLayers) =>
+            Process(dxf, bendLayers, new BendLineOptions()).Items.Select(i => i.Line).ToList();
+
+        /// <summary>
+        /// Свои параметры для каждой линии: resolve получает линию (слой, координаты, ключ) и возвращает параметры;
+        /// null — оставить линию как есть.
+        /// </summary>
+        public static BendProcessResult Process(string dxf, IEnumerable<string> bendLayers, Func<BendLineInfo, BendLineOptions> resolve)
         {
             var layers = new HashSet<string>(bendLayers, StringComparer.OrdinalIgnoreCase);
             string newline = dxf.Contains("\r\n") ? "\r\n" : "\n";
             var pairs = Parse(dxf);
-            var layouts = new List<BendLineLayout>();
+            var items = new List<ProcessedBendLine>();
             var output = new List<Pair>(pairs.Count);
             var handles = new HandleAllocator(pairs);
             bool changed = false;
@@ -56,11 +135,13 @@ namespace InvAuto.Core.Bends
                     end++;
 
                 var entity = pairs.GetRange(i, end - i);
-                if (IsBendLine(entity, layers, out var start, out var finish))
+                if (IsBendLine(entity, layers, out var start, out var finish, out string layer))
                 {
                     double length = Distance(start, finish);
+                    var info = new BendLineInfo(items.Count + 1, layer, start[0], start[1], finish[0], finish[1]);
+                    var options = resolve(info) ?? new BendLineOptions();
                     var layout = BendLineStrategies.Layout(length, options);
-                    layouts.Add(layout);
+                    items.Add(new ProcessedBendLine(info, options, layout));
 
                     if (options.Mode == BendLineMode.Keep)
                     {
@@ -85,13 +166,13 @@ namespace InvAuto.Core.Bends
             }
 
             if (!changed)
-                return new BendProcessResult(dxf, layouts);
+                return new BendProcessResult(dxf, items);
 
             handles.UpdateSeed(output);
             var text = new StringBuilder(dxf.Length);
             foreach (var pair in output)
                 text.Append(pair.CodeText).Append(newline).Append(pair.Value).Append(newline);
-            return new BendProcessResult(text.ToString(), layouts);
+            return new BendProcessResult(text.ToString(), items);
         }
 
         #region Разбор
@@ -121,12 +202,13 @@ namespace InvAuto.Core.Bends
             return pairs;
         }
 
-        private static bool IsBendLine(List<Pair> entity, HashSet<string> layers, out double[] start, out double[] end)
+        private static bool IsBendLine(List<Pair> entity, HashSet<string> layers, out double[] start, out double[] end, out string layer)
         {
             start = end = null;
+            layer = null;
             if (entity[0].Code != 0 || entity[0].Value.Trim() != "LINE")
                 return false;
-            string layer = entity.FirstOrDefault(p => p.Code == 8).Value?.Trim();
+            layer = entity.FirstOrDefault(p => p.Code == 8).Value?.Trim();
             if (layer == null || !layers.Contains(layer))
                 return false;
 

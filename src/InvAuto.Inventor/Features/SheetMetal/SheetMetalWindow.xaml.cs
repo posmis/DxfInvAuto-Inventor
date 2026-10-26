@@ -697,7 +697,8 @@ namespace InvAuto.Features.SheetMetal
         private void ApplyBends(PartRow row)
         {
             string key = row.Part.FullFileName;
-            row.ApplyBends(_bendSettings.For(key), _bendSettings.HasOverride(key), BendLayers);
+            row.ApplyBends(_bendSettings.Resolver(key), _bendSettings.For(key), _bendSettings.HasOverride(key),
+                _bendSettings.LineOverrideCount(key), BendLayers);
         }
 
         private void SaveBendSettings()
@@ -715,7 +716,7 @@ namespace InvAuto.Features.SheetMetal
             var list = rows.ToList();
             var withLines = list.FirstOrDefault(r => r.BendLines.Count > 0);
             if (withLines != null)
-                return (withLines.FileName, withLines.BendLines.Select(l => l.LineLength).ToList());
+                return (withLines.FileName, withLines.BendLines.Select(l => l.Line.Length).ToList());
             return (list.FirstOrDefault()?.FileName, Array.Empty<double>());
         }
 
@@ -749,6 +750,9 @@ namespace InvAuto.Features.SheetMetal
             bool usesDefaults = rows.All(r => !r.BendsPersonal);
             var (name, lines) = BendSample(rows);
             string scope = rows.Count == 1 ? $"Деталь «{first.FileName}»." : $"Выделено деталей: {rows.Count}.";
+            int ownLines = rows.Sum(r => r.PersonalLineCount);
+            if (ownLines > 0)
+                scope += $" Линий со своими параметрами: {ownLines} — они остаются как есть (кнопка «По линиям»).";
             var dialog = new BendSettingsWindow(first.Bends, _bendSettings.Default, personal: true, usesDefaults,
                 scope, name, lines) { Owner = this };
             if (dialog.ShowDialog() != true)
@@ -767,16 +771,60 @@ namespace InvAuto.Features.SheetMetal
                 : $"Свои линии гиба ({dialog.Result.Summary}) для деталей: {rows.Count}");
         }
 
+        /// <summary>Индивидуальная настройка линий гиба выделенной детали.</summary>
+        private async void OnBendLines(object sender, RoutedEventArgs e)
+        {
+            if (_busy)
+                return;
+            if (!(PartsGrid.SelectedItem is PartRow row))
+            {
+                SetStatus("Выделите деталь в списке, чтобы настроить её линии гиба по отдельности");
+                return;
+            }
+            if (!row.HasFlatPattern)
+            {
+                SetStatus($"У детали «{row.FileName}» нет развертки");
+                return;
+            }
+
+            // Линии берутся из сформированной развертки — если её ещё нет, формируем.
+            if (row.FlatPreviewState != FlatPreviewState.Ready)
+            {
+                await GenerateFlatsAsync(new List<PartRow> { row }, force: false);
+                if (row.FlatPreviewState != FlatPreviewState.Ready)
+                {
+                    ShowError($"Не удалось сформировать развертку «{row.FileName}»: {row.FlatPreviewError}");
+                    return;
+                }
+            }
+
+            string key = row.Part.FullFileName;
+            string partSummary = (_bendSettings.HasOverride(key) ? "своя — " : "общие — ") + _bendSettings.For(key).Summary;
+            var dialog = new BendLinesWindow(row.FileName, row.Preview, _bendSettings.For(key), partSummary,
+                _bendSettings.LineOverrides(key), BendLayers) { Owner = this };
+            if (dialog.ShowDialog() != true)
+                return;
+
+            _bendSettings.SetLineOverrides(key, dialog.Result);
+            SaveBendSettings();
+            SetStatus(dialog.Result.Count == 0
+                ? $"Все линии гиба «{row.FileName}» — как у детали"
+                : $"Своих линий гиба у «{row.FileName}»: {dialog.Result.Count}");
+        }
+
         private void OnBendReset(object sender, RoutedEventArgs e)
         {
-            var rows = SelectedRows.Where(r => r.BendsPersonal).ToList();
+            var rows = SelectedRows.Where(r => r.BendsPersonal || r.PersonalLineCount > 0).ToList();
             if (rows.Count == 0)
             {
                 SetStatus("У выделенных деталей нет своих настроек линий гиба");
                 return;
             }
             foreach (var row in rows)
+            {
                 _bendSettings.ClearOverride(row.Part.FullFileName);
+                _bendSettings.ClearLineOverrides(row.Part.FullFileName);
+            }
             SaveBendSettings();
             SetStatus($"Возвращены общие настройки линий гиба для деталей: {rows.Count}");
         }
@@ -812,10 +860,11 @@ namespace InvAuto.Features.SheetMetal
             if (row.FlatPreviewError.Length > 0)
                 AddProperty("Ошибка развертки", row.FlatPreviewError);
             AddProperty("Линии гиба", row.BendSummary);
-            for (int i = 0; i < row.BendLines.Count; i++)
+            foreach (var item in row.BendLines)
             {
-                var line = row.BendLines[i];
-                AddProperty($"  линия {i + 1}", $"{line.LineLength:0.#} мм — {line.Description}");
+                bool own = _bendSettings.HasLineOverride(row.Part.FullFileName, item.Line.Key);
+                AddProperty($"  линия {item.Line.Index} ({(item.Line.IsDown ? "вниз" : "вверх")})",
+                    $"{item.Line.Length:0.#} мм — {item.Layout.Description}" + (own ? " (своя)" : string.Empty));
             }
             if (row.Status.Length > 0)
                 AddProperty("Выгрузка", row.Status);
@@ -892,7 +941,7 @@ namespace InvAuto.Features.SheetMetal
             string folder = OutputFolder;
             var exporter = new FlatPatternExporter(_exportSettings, folder, AssemblyName, writer)
             {
-                BendOptions = part => _bendSettings.For(part.FullFileName),
+                BendOptions = part => _bendSettings.Resolver(part.FullFileName),
                 BendLayers = BendLayers,
                 RawDxfWritten = (collected, raw) => RememberRawFlat(collected.Info.FullFileName, raw)
             };

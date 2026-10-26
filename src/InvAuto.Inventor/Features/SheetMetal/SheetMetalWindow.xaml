@@ -194,12 +194,14 @@
                     <HeaderedContentControl Header="Линии гиба" Style="{StaticResource RibbonGroup}">
                         <StackPanel Orientation="Horizontal">
                             <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLines}" Click="OnBendSelected"
-                                    ToolTip="Свои параметры линий гиба для выделенных деталей">Для выделенных</Button>
+                                    ToolTip="Свои параметры линий гиба для выделенных деталей (все линии детали)">Для выделенных</Button>
+                            <Button Style="{StaticResource RibbonButton}" Tag="{StaticResource Icon.BendLinesEach}" Click="OnBendLines"
+                                    ToolTip="Настроить линии гиба выделенной детали по отдельности">По линиям</Button>
                             <StackPanel Margin="2,0,0,0">
                                 <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings.Small}" Click="OnBendDefaults"
                                         ToolTip="Параметры линий гиба для всех деталей без своих настроек">По умолчанию</Button>
                                 <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh.Small}" Click="OnBendReset"
-                                        ToolTip="Вернуть выделенным деталям общие параметры">Сбросить к общим</Button>
+                                        ToolTip="Вернуть выделенным деталям общие параметры (и для всей детали, и для отдельных линий)">Сбросить к общим</Button>
                             </StackPanel>
                         </StackPanel>
                     </HeaderedContentControl>
@@ -306,6 +308,7 @@
                                 <Separator />
                                 <MenuItem Header="Показать файл детали в проводнике" Click="OnRevealPart" />
                                 <MenuItem Header="Сформировать развертку заново" Click="OnRegenerateSelected" />
+                                <MenuItem Header="Линии гиба по отдельности…" Click="OnBendLines" />
                                 <Separator />
                                 <MenuItem Header="Показать DXF в проводнике" Click="OnRevealDxf" />
                             </ContextMenu>

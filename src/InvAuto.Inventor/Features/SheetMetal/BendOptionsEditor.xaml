@@ -1,0 +1,154 @@
+<UserControl x:Class="InvAuto.Features.SheetMetal.BendOptionsEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Форма параметров линий гиба: способ и только его поля. Общая для настроек детали и отдельных линий. -->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/InvAuto;component/Framework/Ui/Theme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="FieldLabel" TargetType="TextBlock">
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            </Style>
+            <Style x:Key="Unit" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Margin" Value="6,0,0,0" />
+            </Style>
+            <Style x:Key="Field" TargetType="Grid">
+                <Setter Property="Margin" Value="0,0,0,8" />
+            </Style>
+            <Style x:Key="Number" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Setter Property="Width" Value="80" />
+                <Setter Property="Height" Value="24" />
+                <Setter Property="HorizontalContentAlignment" Value="Right" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+            </Style>
+            <Style x:Key="Choice" TargetType="ComboBox">
+                <Setter Property="Height" Value="24" />
+                <Setter Property="MinWidth" Value="220" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel Grid.IsSharedSizeScope="True">
+        <Grid Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Способ" Style="{StaticResource FieldLabel}" />
+            <ComboBox x:Name="ModeBox" Grid.Column="2" Style="{StaticResource Choice}"
+                      DisplayMemberPath="Title" SelectionChanged="OnChanged" />
+        </Grid>
+
+        <TextBlock x:Name="ModeHint" Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+        <!-- Прямоугольные вырезы -->
+        <Grid x:Name="SlotWidthRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Ширина выреза" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="SlotWidthBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged" />
+            <TextBlock Grid.Column="3" Text="мм" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <Grid x:Name="SlotPatternRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Расположение" Style="{StaticResource FieldLabel}" />
+            <ComboBox x:Name="SlotPatternBox" Grid.Column="2" Style="{StaticResource Choice}" SelectionChanged="OnChanged" />
+        </Grid>
+
+        <!-- Прорези по краям -->
+        <Grid x:Name="EdgeCutRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Длина прорези у края" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="EdgeCutBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged" />
+            <TextBlock Grid.Column="3" Text="мм" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <!-- Прерывистая раскладка (прерывистая линия и прерывистые вырезы) -->
+        <Grid x:Name="SpecRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Задать" Style="{StaticResource FieldLabel}" />
+            <ComboBox x:Name="SpecBox" Grid.Column="2" Style="{StaticResource Choice}" SelectionChanged="OnChanged" />
+        </Grid>
+
+        <Grid x:Name="DashRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="DashLabel" Text="Длина прорези" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="DashBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged" />
+            <TextBlock Grid.Column="3" Text="мм" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <Grid x:Name="BridgeRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Длина перемычки" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="BridgeBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged" />
+            <TextBlock Grid.Column="3" Text="мм" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <Grid x:Name="CountRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="CountLabel" Text="Количество" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="CountBox" Grid.Column="2" Style="{StaticResource Number}" TextChanged="OnChanged" />
+            <TextBlock Grid.Column="3" Text="шт" Style="{StaticResource Unit}" />
+        </Grid>
+
+        <Grid x:Name="EndsRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="У краёв линии" Style="{StaticResource FieldLabel}" />
+            <ComboBox x:Name="EndsBox" Grid.Column="2" Style="{StaticResource Choice}" SelectionChanged="OnChanged" />
+        </Grid>
+
+        <Grid x:Name="FitRow" Style="{StaticResource Field}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Подгонка под длину" Style="{StaticResource FieldLabel}" />
+            <ComboBox x:Name="FitBox" Grid.Column="2" Style="{StaticResource Choice}" SelectionChanged="OnChanged" />
+        </Grid>
+    </StackPanel>
+</UserControl>

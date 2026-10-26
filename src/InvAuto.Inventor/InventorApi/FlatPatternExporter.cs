@@ -24,8 +24,11 @@ namespace InvAuto.InventorApi
             _writer = writer;
         }
 
-        /// <summary>Параметры линий гиба для детали. null — линии гиба не обрабатываются.</summary>
-        public Func<SheetMetalPart, BendLineOptions> BendOptions { get; set; }
+        /// <summary>
+        /// Параметры линий гиба детали: функция «линия → параметры» (с учётом настроек линии, детали и общих).
+        /// null — линии гиба не обрабатываются.
+        /// </summary>
+        public Func<SheetMetalPart, Func<BendLineInfo, BendLineOptions>> BendOptions { get; set; }
 
         /// <summary>Слои, отрезки на которых считаются линиями гиба.</summary>
         public IReadOnlyCollection<string> BendLayers { get; set; } = DxfBendProcessor.DefaultLayers;

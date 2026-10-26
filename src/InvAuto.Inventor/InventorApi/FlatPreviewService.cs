@@ -44,14 +44,18 @@ namespace InvAuto.InventorApi
         public static FlatPreview Load(string path) =>
             new FlatPreview(FlatPreviewState.Ready, IO.File.ReadAllText(path, DxfBendProcessor.FileEncoding), path, null);
 
-        /// <summary>Развертка для показа: линии гиба обработаны так же, как будут при выгрузке.</summary>
-        public (FlatDrawing Drawing, IReadOnlyList<BendLineLayout> BendLines) Render(BendLineOptions bends, IEnumerable<string> bendLayers)
+        /// <summary>
+        /// Развертка для показа: линии гиба обработаны так же, как будут при выгрузке
+        /// (resolve — параметры каждой линии с учётом настроек линии, детали и общих).
+        /// </summary>
+        public (FlatDrawing Drawing, IReadOnlyList<ProcessedBendLine> BendLines) Render(
+            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers)
         {
             if (State != FlatPreviewState.Ready)
-                return (null, Array.Empty<BendLineLayout>());
+                return (null, Array.Empty<ProcessedBendLine>());
 
-            var processed = DxfBendProcessor.Process(RawText, bendLayers, bends);
-            return (DxfReader.Read(new IO.StringReader(processed.Text)), processed.Lines);
+            var processed = DxfBendProcessor.Process(RawText, bendLayers, resolve);
+            return (DxfReader.Read(new IO.StringReader(processed.Text)), processed.Items);
         }
     }
 

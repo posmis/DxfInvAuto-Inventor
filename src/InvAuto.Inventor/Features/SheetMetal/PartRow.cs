@@ -135,18 +135,25 @@ namespace InvAuto.Features.SheetMetal
         public FlatPreview Preview { get; private set; } = FlatPreview.NotGenerated;
 
         /// <summary>Линии гиба развертки и что с ними будет сделано при выгрузке.</summary>
-        public IReadOnlyList<BendLineLayout> BendLines { get; private set; } = Array.Empty<BendLineLayout>();
+        public IReadOnlyList<ProcessedBendLine> BendLines { get; private set; } = Array.Empty<ProcessedBendLine>();
 
         private BendLineOptions _bends = new BendLineOptions();
+        private Func<BendLineInfo, BendLineOptions> _resolve = _ => null;
         private bool _bendsPersonal;
+        private int _personalLines;
         private IReadOnlyCollection<string> _bendLayers = DxfBendProcessor.DefaultLayers;
 
+        /// <summary>Параметры линий гиба на уровне детали (без своих настроек отдельных линий).</summary>
         public BendLineOptions Bends => _bends;
 
-        /// <summary>Для колонки «Линии гиба»: режим и пометка о персональной настройке.</summary>
-        public string BendSummary => (_bendsPersonal ? "своя: " : string.Empty) + _bends.Summary;
+        /// <summary>Для колонки «Линии гиба»: режим, пометка о персональной настройке и число линий со своими.</summary>
+        public string BendSummary =>
+            (_bendsPersonal ? "своя: " : string.Empty) + _bends.Summary +
+            (_personalLines > 0 ? $" · своих линий: {_personalLines}" : string.Empty);
 
         public bool BendsPersonal => _bendsPersonal;
+
+        public int PersonalLineCount => _personalLines;
 
         public void ApplyPreview(FlatPreview preview)
         {
@@ -159,10 +166,13 @@ namespace InvAuto.Features.SheetMetal
         }
 
         /// <summary>Параметры линий гиба изменились — перерисовываем развертку (без обращения к Inventor).</summary>
-        public void ApplyBends(BendLineOptions options, bool personal, IReadOnlyCollection<string> bendLayers)
+        public void ApplyBends(Func<BendLineInfo, BendLineOptions> resolve, BendLineOptions partOptions, bool personal,
+            int personalLines, IReadOnlyCollection<string> bendLayers)
         {
-            _bends = options;
+            _resolve = resolve;
+            _bends = partOptions;
             _bendsPersonal = personal;
+            _personalLines = personalLines;
             _bendLayers = bendLayers;
             OnPropertyChanged(nameof(BendSummary));
             OnPropertyChanged(nameof(BendsPersonal));
@@ -173,14 +183,14 @@ namespace InvAuto.Features.SheetMetal
         {
             try
             {
-                var (drawing, lines) = Preview.Render(_bends, _bendLayers);
+                var (drawing, lines) = Preview.Render(_resolve, _bendLayers);
                 Flat = drawing;
                 BendLines = lines;
             }
             catch (Exception ex)
             {
                 Flat = null;
-                BendLines = Array.Empty<BendLineLayout>();
+                BendLines = Array.Empty<ProcessedBendLine>();
                 FlatPreviewError = "не удалось показать развертку: " + ex.Message;
                 FlatPreviewState = FlatPreviewState.Failed;
             }

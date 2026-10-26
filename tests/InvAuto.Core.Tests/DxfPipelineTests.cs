@@ -143,7 +143,7 @@ namespace InvAuto.Core.Tests
 
             Assert.False(File.Exists(raw));
             Assert.Equal(bytes, File.ReadAllBytes(final));
-            Assert.Empty(lines);
+            Assert.Equal(2, lines.Count); // линии найдены, но файл не тронут
         }
 
         [Fact]
