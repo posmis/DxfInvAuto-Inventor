@@ -74,7 +74,7 @@
         <Border DockPanel.Dock="Bottom" Style="{StaticResource StatusBar}" Padding="12,8">
             <DockPanel>
                 <TextBlock Style="{StaticResource MutedText}" VerticalAlignment="Center"
-                           Text="Очистка и сброс выполняются сразу, после подтверждения. Сроки хранения — по кнопке ОК." />
+                           Text="Параметры сохраняются кнопкой ОК; очистка и сброс выполняются сразу, после подтверждения." />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource DialogButton}" IsDefault="True" Click="OnOk">ОК</Button>
                     <Button Style="{StaticResource DialogButton}" IsCancel="True">Отмена</Button>
@@ -87,6 +87,7 @@
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
             <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0" Margin="0,8,0,0"
                      ItemContainerStyle="{StaticResource NavItem}" SelectionChanged="OnSectionChanged">
+                <ListBoxItem Tag="GeneralPage">Общие</ListBoxItem>
                 <ListBoxItem Tag="CachePage">Кэш разверток</ListBoxItem>
                 <ListBoxItem Tag="LogPage">Журнал</ListBoxItem>
                 <ListBoxItem Tag="ResetPage">Сброс настроек</ListBoxItem>
@@ -98,7 +99,21 @@
             <Grid Margin="20,16,20,16">
 
                 <!-- ============ Кэш разверток ============ -->
-                <StackPanel x:Name="CachePage">
+                <!-- ============ Общие ============ -->
+                <StackPanel x:Name="GeneralPage">
+                    <TextBlock Text="Общие" Style="{StaticResource PageTitle}" />
+
+                    <TextBlock Text="Список деталей" Style="{StaticResource FormSection}" />
+                    <CheckBox x:Name="RememberListsBox">Запоминать список деталей для каждой сборки</CheckBox>
+                    <TextBlock Style="{StaticResource Hint}" Margin="20,3,0,0">
+                        Включено — при следующем открытии окна «Листовые детали» для той же сборки список восстанавливается
+                        (только детали, которые ещё есть в сборке; отметки галочками не запоминаются).
+                        Выключено — окно каждый раз открывается с пустым списком.
+                        Сохранённые списки можно удалить в разделе «Сброс настроек».
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel x:Name="CachePage" Visibility="Collapsed">
                     <TextBlock Text="Кэш разверток" Style="{StaticResource PageTitle}" />
                     <TextBlock Style="{StaticResource Hint}">
                         DXF, сформированные кнопкой «Сформировать развертки», хранятся здесь, чтобы окно «Листовые детали»

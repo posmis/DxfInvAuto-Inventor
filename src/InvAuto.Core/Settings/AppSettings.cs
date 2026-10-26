@@ -11,6 +11,12 @@ namespace InvAuto.Core.Settings
         /// <summary>Файлы журнала старше удаляются при запуске Inventor, дней.</summary>
         public int LogMaxAgeDays { get; set; } = 60;
 
+        /// <summary>
+        /// Запоминать список деталей окна «Листовые детали» для каждой сборки и восстанавливать при следующем открытии.
+        /// По умолчанию выключено: окно открывается с пустым списком.
+        /// </summary>
+        public bool RememberPartLists { get; set; }
+
         /// <summary>Значения в разумных пределах (на случай ручной правки файла).</summary>
         public void Normalize()
         {

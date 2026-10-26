@@ -81,6 +81,61 @@ namespace InvAuto.Core.Tests
         }
 
         [Fact]
+        public void SavedLists_ArePerAssembly_AndEmptyListIsForgotten()
+        {
+            var lists = new SavedPartLists();
+            var t = new System.DateTime(2026, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+            lists.Set(@"C:\Сборка.iam", new[] { "A", "B", "a" }, t);
+            lists.Set(@"C:\Другая.iam", new[] { "C" }, t);
+
+            Assert.Equal(new[] { "A", "B" }, lists.Get(@"c:\сборка.IAM"));
+            Assert.Equal(new[] { "C" }, lists.Get(@"C:\Другая.iam"));
+            Assert.Empty(lists.Get(@"C:\Нет.iam"));
+            Assert.Empty(lists.Get(null));
+
+            lists.Set(@"C:\Сборка.iam", new[] { "D" }, t.AddMinutes(1)); // замена, а не вторая запись
+            Assert.Equal(new[] { "D" }, lists.Get(@"C:\Сборка.iam"));
+            Assert.Equal(2, lists.Lists.Count);
+
+            lists.Set(@"C:\Сборка.iam", new string[0], t.AddMinutes(2));
+            Assert.Single(lists.Lists);
+            lists.Set("", new[] { "X" }, t); // несохранённая сборка — не запоминаем
+            Assert.Single(lists.Lists);
+        }
+
+        [Fact]
+        public void SavedLists_KeepNewest_AndSurviveXml()
+        {
+            var lists = new SavedPartLists();
+            var t = new System.DateTime(2026, 1, 1, 0, 0, 0, System.DateTimeKind.Utc);
+            for (int i = 0; i < SavedPartLists.MaxAssemblies + 5; i++)
+                lists.Set($@"C:\{i}.iam", new[] { "P" + i }, t.AddMinutes(i));
+
+            Assert.Equal(SavedPartLists.MaxAssemblies, lists.Lists.Count);
+            Assert.Empty(lists.Get(@"C:\0.iam"));     // самые старые забыты
+            Assert.NotEmpty(lists.Get($@"C:\{SavedPartLists.MaxAssemblies + 4}.iam"));
+
+            string dir = Path.Combine(Path.GetTempPath(), "InvAutoLists_" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var store = new XmlSettingsStore(dir, new FileLogger(dir));
+                store.Save(SavedPartLists.Key, lists);
+                var loaded = store.Load<SavedPartLists>(SavedPartLists.Key);
+                store.Save(SavedPartLists.Key, loaded);
+                loaded = store.Load<SavedPartLists>(SavedPartLists.Key);
+                Assert.Equal(SavedPartLists.MaxAssemblies, loaded.Lists.Count); // без задвоения при чтении
+                Assert.Equal(new[] { "P10" }, loaded.Get(@"C:\10.iam"));
+
+                Assert.False(store.Load<AppSettings>(AppSettings.Key).RememberPartLists); // по умолчанию выключено
+            }
+            finally
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+        }
+
+        [Fact]
         public void ViewSettings_OldWindowSizeGrowsOnce_ForWiderRibbon()
         {
             var old = new SheetMetalViewSettings { WindowWidth = 1400, WindowHeight = 800, LayoutVersion = 0 };

@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using InvAuto.Core.Maintenance;
 using InvAuto.Core.Settings;
+using InvAuto.Core.Structure;
 using InvAuto.Features.SheetMetal;
 using InvAuto.Framework;
 using InvAuto.InventorApi;
@@ -33,7 +34,8 @@ namespace InvAuto.Features.Service
             (SheetMetalWindow.ExportSettingsKey, "Параметры выгрузки DXF", "папка, шаблоны имён, ini-файл, раскладка по толщине"),
             (SheetMetalWindow.BendSettingsKey, "Линии гиба", "общие параметры, параметры деталей и отдельных линий"),
             (SheetMetalWindow.ViewSettingsKey, "Вид окна «Листовые детали»", "колонки, размеры окна и панелей"),
-            (AppSettings.Key, "Настройки приложения", "сроки хранения кэша и журнала")
+            (AppSettings.Key, "Настройки приложения", "сроки хранения кэша и журнала, запоминание списков"),
+            (SavedPartLists.Key, "Сохранённые списки деталей", "списки окна «Листовые детали» по сборкам")
         };
 
         public AppSettingsWindow(FeatureContext context)
@@ -64,12 +66,13 @@ namespace InvAuto.Features.Service
         {
             CacheDaysBox.Text = _settings.CacheMaxAgeDays.ToString(CultureInfo.InvariantCulture);
             LogDaysBox.Text = _settings.LogMaxAgeDays.ToString(CultureInfo.InvariantCulture);
+            RememberListsBox.IsChecked = _settings.RememberPartLists;
         }
 
         private void OnSectionChanged(object sender, SelectionChangedEventArgs e)
         {
             string page = (NavList.SelectedItem as ListBoxItem)?.Tag as string;
-            foreach (var panel in new FrameworkElement[] { CachePage, LogPage, ResetPage, AboutPage })
+            foreach (var panel in new FrameworkElement[] { GeneralPage, CachePage, LogPage, ResetPage, AboutPage })
                 panel.Visibility = panel.Name == page ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -196,6 +199,7 @@ namespace InvAuto.Features.Service
                     var defaults = new AppSettings();
                     _settings.CacheMaxAgeDays = defaults.CacheMaxAgeDays;
                     _settings.LogMaxAgeDays = defaults.LogMaxAgeDays;
+                    _settings.RememberPartLists = defaults.RememberPartLists;
                     ShowDays();
                 }
                 BuildResetRows();
@@ -296,10 +300,12 @@ namespace InvAuto.Features.Service
             if (!ReadDays(CacheDaysBox, "кэша", out int cacheDays) || !ReadDays(LogDaysBox, "журнала", out int logDays))
                 return;
 
-            if (cacheDays != _settings.CacheMaxAgeDays || logDays != _settings.LogMaxAgeDays)
+            bool remember = RememberListsBox.IsChecked == true;
+            if (cacheDays != _settings.CacheMaxAgeDays || logDays != _settings.LogMaxAgeDays || remember != _settings.RememberPartLists)
             {
                 _settings.CacheMaxAgeDays = cacheDays;
                 _settings.LogMaxAgeDays = logDays;
+                _settings.RememberPartLists = remember;
                 _context.Settings.Save(AppSettings.Key, _settings);
             }
             DialogResult = true;

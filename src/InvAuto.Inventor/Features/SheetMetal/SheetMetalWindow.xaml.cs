@@ -65,6 +65,7 @@ namespace InvAuto.Features.SheetMetal
         private readonly WorkList _list = new WorkList();
 
         private DataGridColumn _checkColumn;
+        private AppSettings _appSettings;
         private int _previewGeneration;
         private bool _busy;
         private bool _cancelRequested;
@@ -92,8 +93,10 @@ namespace InvAuto.Features.SheetMetal
             ProductQuantityBox.Text = Math.Max(1, _exportSettings.QuantityMultiplier).ToString(CultureInfo.InvariantCulture);
 
             BuildPartColumns();
+            _appSettings = LoadAppSettings();
             CleanupFlatCache();
             LoadStructure(structure);
+            RestoreSavedList();
             Closing += OnWindowClosing;
 
             // Необработанное исключение в обработчике окна ушло бы в диспетчер Inventor и могло уронить его.
@@ -363,6 +366,23 @@ namespace InvAuto.Features.SheetMetal
                 OnAddAll(sender, e);
                 e.Handled = true;
             }
+            // Ctrl+F — к поиску в списке, как в проводнике.
+            else if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+                e.Handled = true;
+            }
+        }
+
+        /// <summary>Esc в поиске — очистить фильтр и вернуться к списку.</summary>
+        private void OnSearchKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Escape)
+                return;
+            SearchBox.Clear();
+            PartsGrid.Focus();
+            e.Handled = true;
         }
 
         private void OnRowPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -811,13 +831,18 @@ namespace InvAuto.Features.SheetMetal
             }
         }
 
+        private AppSettings LoadAppSettings()
+        {
+            var settings = _context.Settings.Load<AppSettings>(AppSettings.Key);
+            settings.Normalize();
+            return settings;
+        }
+
         private void CleanupFlatCache()
         {
             try
             {
-                var app = _context.Settings.Load<AppSettings>(AppSettings.Key);
-                app.Normalize();
-                int removed = new FlatPreviewCache(FlatPreviewService.DefaultCacheFolder).Cleanup(TimeSpan.FromDays(app.CacheMaxAgeDays));
+                int removed = new FlatPreviewCache(FlatPreviewService.DefaultCacheFolder).Cleanup(TimeSpan.FromDays(_appSettings.CacheMaxAgeDays));
                 if (removed > 0)
                     _context.Log.Info($"Удалено старых разверток из кэша: {removed}");
             }
@@ -1478,6 +1503,7 @@ namespace InvAuto.Features.SheetMetal
                 return;
             var dialog = new AppSettingsWindow(_context) { Owner = this };
             dialog.ShowDialog();
+            _appSettings = LoadAppSettings();
 
             var reset = dialog.ResetKeys;
             if (reset.Contains(ExportSettingsKey))
@@ -1532,6 +1558,8 @@ namespace InvAuto.Features.SheetMetal
 
         private void ApplyViewSettings()
         {
+            RibbonTabs.SelectedIndex = Math.Max(0, Math.Min(RibbonTabs.Items.Count - 1, _viewSettings.RibbonTab));
+
             // Не больше рабочей области экрана: на ноутбуке окно не должно уходить за край.
             var area = SystemParameters.WorkArea;
             Width = Math.Max(MinWidth, Math.Min(area.Width, _viewSettings.WindowWidth));
@@ -1572,8 +1600,55 @@ namespace InvAuto.Features.SheetMetal
             _viewSettings.TreeWidth = TreeColumn.ActualWidth;
             if (_viewSettings.ShowDetails)
                 _viewSettings.DetailsWidth = DetailsColumn.ActualWidth;
+            _viewSettings.RibbonTab = RibbonTabs.SelectedIndex;
             SaveViewSettings();
+            SaveList();
         }
+
+        #region Сохранение списка (настройка «Запоминать список деталей»)
+
+        private string AssemblyPath => _document.FullFileName ?? string.Empty;
+
+        /// <summary>Восстанавливает список этой сборки, если включено запоминание.</summary>
+        private void RestoreSavedList()
+        {
+            if (!_appSettings.RememberPartLists || AssemblyPath.Length == 0)
+                return;
+            try
+            {
+                var saved = _context.Settings.Load<SavedPartLists>(SavedPartLists.Key).Get(AssemblyPath);
+                var present = saved.Where(_productParts.ContainsKey).ToList();
+                if (present.Count == 0)
+                    return;
+                _list.Add(present);
+                RebuildRows();
+                int missing = saved.Count - present.Count;
+                SetStatus($"Восстановлен сохранённый список: {present.Count} дет." +
+                          (missing > 0 ? $" Больше нет в сборке: {missing}." : string.Empty));
+            }
+            catch (Exception ex)
+            {
+                _context.Log.Warn("Не удалось восстановить список деталей: " + ex.Message);
+            }
+        }
+
+        private void SaveList()
+        {
+            if (!_appSettings.RememberPartLists || AssemblyPath.Length == 0)
+                return;
+            try
+            {
+                var lists = _context.Settings.Load<SavedPartLists>(SavedPartLists.Key);
+                lists.Set(AssemblyPath, _list.Items, DateTime.UtcNow);
+                _context.Settings.Save(SavedPartLists.Key, lists);
+            }
+            catch (Exception ex)
+            {
+                _context.Log.Warn("Не удалось сохранить список деталей: " + ex.Message);
+            }
+        }
+
+        #endregion
 
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
         {

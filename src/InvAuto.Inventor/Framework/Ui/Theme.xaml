@@ -78,6 +78,58 @@
         <Setter Property="Padding" Value="4,4,4,2" />
     </Style>
 
+    <!--
+      Лента со вкладками, как в Inventor и Office: строка вкладок сверху, под ней панель команд выбранной вкладки.
+      Использование: <TabControl Style="{StaticResource RibbonTabs}"> с <TabItem Header="Главная">группы</TabItem>.
+      Высота панели одинакова на всех вкладках, чтобы окно не «прыгало» при переключении.
+    -->
+    <Style x:Key="RibbonTab" TargetType="TabItem">
+        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+        <Setter Property="Padding" Value="14,5" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="1,1,1,0"
+                            CornerRadius="3,3,0,0" Padding="{TemplateBinding Padding}" Margin="0,0,2,0">
+                        <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource RibbonBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+                            <!-- Выбранная вкладка перекрывает линию под собой и сливается с панелью команд -->
+                            <Setter TargetName="Bd" Property="Margin" Value="0,0,2,-1" />
+                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                            <Setter Property="Panel.ZIndex" Value="1" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="RibbonTabs" TargetType="TabControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="ItemContainerStyle" Value="{StaticResource RibbonTab}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <DockPanel Background="{StaticResource WindowBrush}">
+                        <TabPanel DockPanel.Dock="Top" IsItemsHost="True" Margin="6,4,6,0" Panel.ZIndex="1" KeyboardNavigation.TabIndex="1" />
+                        <Border Background="{StaticResource RibbonBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,1"
+                                Padding="4,4,4,2" MinHeight="102">
+                            <ContentPresenter ContentSource="SelectedContent" />
+                        </Border>
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Группа команд: содержимое сверху, подпись снизу, разделитель справа -->
     <Style x:Key="RibbonGroup" TargetType="HeaderedContentControl">
         <Setter Property="Focusable" Value="False" />

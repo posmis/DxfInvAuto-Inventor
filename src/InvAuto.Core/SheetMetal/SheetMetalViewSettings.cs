@@ -36,6 +36,9 @@ namespace InvAuto.Core.SheetMetal
         public bool SortDescending { get; set; }
 
         public bool ShowDetails { get; set; } = true;
+
+        /// <summary>Открытая вкладка ленты окна (0 — «Главная»).</summary>
+        public int RibbonTab { get; set; }
         public double TreeWidth { get; set; } = 420;
         public double DetailsWidth { get; set; } = 300;
         public double WindowWidth { get; set; } = 1600;
