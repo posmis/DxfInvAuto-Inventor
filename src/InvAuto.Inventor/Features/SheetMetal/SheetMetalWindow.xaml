@@ -170,19 +170,7 @@
                 <Setter Property="HorizontalAlignment" Value="Right" />
             </Style>
 
-            <Style x:Key="PropertyName" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                <Setter Property="Margin" Value="0,2,10,2" />
-                <Setter Property="VerticalAlignment" Value="Top" />
-            </Style>
 
-            <Style x:Key="PropertyValue" TargetType="TextBox">
-                <Setter Property="IsReadOnly" Value="True" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="Margin" Value="0,2" />
-                <Setter Property="TextWrapping" Value="Wrap" />
-            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -509,12 +497,8 @@
                             </Border>
                             <TextBlock Text="Деталь" Style="{StaticResource MutedText}" Margin="0,4,0,12" />
 
-                            <Grid x:Name="PropertiesGrid">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                            </Grid>
+                            <!-- Таблица свойств: группы «параметр | значение | единица», как Details в Ansys -->
+                            <ui:PropertyTable x:Name="PropertiesTable" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

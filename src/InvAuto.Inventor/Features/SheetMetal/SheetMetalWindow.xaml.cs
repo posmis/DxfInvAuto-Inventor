@@ -1171,7 +1171,7 @@ namespace InvAuto.Features.SheetMetal
                     return true;
                 await GenerateFlatsAsync(new List<PartRow> { row }, force: false);
                 return row.FlatPreviewState == FlatPreviewState.Ready;
-            }) { Owner = this };
+            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key)) { Owner = this };
             viewer.ShowDialog();
         }
 
@@ -1247,68 +1247,18 @@ namespace InvAuto.Features.SheetMetal
             Details.DataContext = row;
             DetailsHint.Visibility = row == null ? Visibility.Visible : Visibility.Collapsed;
             DetailsContent.Visibility = row == null ? Visibility.Collapsed : Visibility.Visible;
-            PropertiesGrid.Children.Clear();
-            PropertiesGrid.RowDefinitions.Clear();
             if (row == null)
+            {
+                PropertiesTable.Clear();
                 return;
+            }
 
             if (_viewSettings.ShowDetails && !_busy)
                 LoadCachedPreview(row);
 
-            AddProperty("Обозначение", row.PartNumber);
-            AddProperty("Наименование", row.Description);
-            AddProperty("Материал", row.Material);
-            AddProperty("Толщина", row.Thickness.ToString("0.##", CultureInfo.CurrentCulture) + " мм");
-            AddProperty("Количество", row.Quantity.ToString(CultureInfo.CurrentCulture));
-            if (ProductQuantity > 1)
-                AddProperty("На изделия", row.Total.ToString(CultureInfo.CurrentCulture));
-            AddProperty("Развертка", row.HasFlatPattern ? "есть" : "нет");
-            if (row.FlatPreviewError.Length > 0)
-                AddProperty("Ошибка развертки", row.FlatPreviewError);
-            AddProperty("Материал (библиотека)", row.LibraryMaterialHint);
-            if (row.Metrics != null && row.Metrics.Pierces > 0)
-            {
-                var m = row.Metrics;
-                AddProperty("Площадь", string.Format(CultureInfo.CurrentCulture, "{0:0.####} м² (по контуру {1:0.####} м²)", m.Area * 1e-6, m.OuterArea * 1e-6));
-                if (row.Mass is double mass)
-                    AddProperty("Масса", string.Format(CultureInfo.CurrentCulture, "{0:0.###} кг", mass) +
-                                         (row.Total > 1 ? string.Format(CultureInfo.CurrentCulture, " · на изделия {0:0.##} кг", row.TotalMass) : string.Empty));
-                AddProperty("Длина реза", string.Format(CultureInfo.CurrentCulture, "{0:0.##} м", m.CutLength / 1000) +
-                                          (m.BendLength > 0 ? string.Format(CultureInfo.CurrentCulture, " · линии гиба {0:0.##} м", m.BendLength / 1000) : string.Empty));
-                AddProperty("Врезки", m.Pierces.ToString(CultureInfo.CurrentCulture) +
-                                      (m.OpenChains > 0 ? $" · незамкнутых контуров: {m.OpenChains} (проверьте развертку)" : string.Empty));
-            }
-            else if (row.HasFlatPattern)
-            {
-                AddProperty("Площадь и масса", "после «Сформировать развертки»");
-            }
-            AddProperty("Линии гиба", row.BendSummary);
-            foreach (var item in row.BendLines)
-            {
-                bool own = _bendSettings.HasLineOverride(row.Part.FullFileName, item.Line.Key);
-                AddProperty($"  линия {item.Line.Index} ({(item.Line.IsDown ? "вниз" : "вверх")})",
-                    $"{item.Line.Length:0.#} мм — {item.Layout.Description}" + (own ? " (своя)" : string.Empty));
-            }
-            if (row.Status.Length > 0)
-                AddProperty("Выгрузка", row.Status);
-            foreach (var pair in row.Part.CustomProperties.OrderBy(p => p.Key, StringComparer.CurrentCultureIgnoreCase))
-                AddProperty(pair.Key, pair.Value);
-            AddProperty("Файл", row.FilePath);
+            PartDetails.Fill(PropertiesTable, row, key => _bendSettings.HasLineOverride(row.Part.FullFileName, key));
         }
 
-        private void AddProperty(string name, string value)
-        {
-            int index = PropertiesGrid.RowDefinitions.Count;
-            PropertiesGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-            var label = new TextBlock { Text = name, Style = (Style)FindResource("PropertyName") };
-            var text = new TextBox { Text = value ?? string.Empty, Style = (Style)FindResource("PropertyValue") };
-            Grid.SetRow(label, index);
-            Grid.SetRow(text, index);
-            Grid.SetColumn(text, 1);
-            PropertiesGrid.Children.Add(label);
-            PropertiesGrid.Children.Add(text);
-        }
 
         private void OnToggleDetails(object sender, RoutedEventArgs e)
         {
@@ -1710,8 +1660,15 @@ namespace InvAuto.Features.SheetMetal
 
         #region Окно и настройки вида
 
+        /// <summary>Свёрнутые группы таблицы свойств — общие для панели и окна просмотра.</summary>
+        private readonly HashSet<string> _collapsedDetails = new HashSet<string>(StringComparer.Ordinal);
+
         private void ApplyViewSettings()
         {
+            _collapsedDetails.Clear();
+            _collapsedDetails.UnionWith(_viewSettings.CollapsedDetails ?? new List<string>());
+            PropertiesTable.CollapsedSections = _collapsedDetails;
+
             RibbonTabs.SelectedIndex = Math.Max(0, Math.Min(RibbonTabs.Items.Count - 1, _viewSettings.RibbonTab));
 
             // Не больше рабочей области экрана: на ноутбуке окно не должно уходить за край.
@@ -1755,6 +1712,7 @@ namespace InvAuto.Features.SheetMetal
             if (_viewSettings.ShowDetails)
                 _viewSettings.DetailsWidth = DetailsColumn.ActualWidth;
             _viewSettings.RibbonTab = RibbonTabs.SelectedIndex;
+            _viewSettings.CollapsedDetails = _collapsedDetails.OrderBy(k => k, StringComparer.Ordinal).ToList();
             SaveViewSettings();
             SaveList();
         }

@@ -31,17 +31,24 @@ namespace InvAuto.Features.SheetMetal
         private readonly MeasureSession _measure = new MeasureSession();
         private readonly IReadOnlyList<PartRow> _rows;
         private readonly Func<PartRow, Task<bool>> _ensureFlat;
+        private readonly Func<PartRow, string, bool> _isOwnLine;
         private int _index;
         private int _loadToken;
 
         /// <param name="rows">Детали, которые можно листать (текущий список).</param>
         /// <param name="index">С какой начать.</param>
         /// <param name="ensureFlat">Сформировать развертку, если её ещё нет; false — не получилось.</param>
-        public FlatViewerWindow(IReadOnlyList<PartRow> rows, int index, Func<PartRow, Task<bool>> ensureFlat)
+        /// <param name="collapsedSections">Свёрнутые группы таблицы свойств — общие с окном деталей.</param>
+        /// <param name="isOwnLine">Есть ли у линии гиба детали свои параметры: (деталь, ключ линии).</param>
+        public FlatViewerWindow(IReadOnlyList<PartRow> rows, int index, Func<PartRow, Task<bool>> ensureFlat,
+            ISet<string> collapsedSections = null, Func<PartRow, string, bool> isOwnLine = null)
         {
             InitializeComponent();
             _rows = rows;
             _ensureFlat = ensureFlat;
+            _isOwnLine = isOwnLine;
+            if (collapsedSections != null)
+                PropertiesTable.CollapsedSections = collapsedSections;
             View.Overlay = new MeasureOverlay(_measure, View);
             MeasureList.ItemsSource = _measure.Results;
             _measure.Results.CollectionChanged += (s, e) => UpdateMeasureState();
@@ -94,7 +101,7 @@ namespace InvAuto.Features.SheetMetal
             View.Drawing = row.Flat;
             _measure.SetDrawing(row.Flat); // измерения относятся к одной детали
             ApplyLabels();
-            FillBends(row);
+            FillProperties(row); // после формирования появились площадь, масса, рез и линии гиба
             View.Fit();
         }
 
@@ -105,8 +112,6 @@ namespace InvAuto.Features.SheetMetal
             View.Labels = null;
             EmptyText.Text = text;
             EmptyText.Visibility = Visibility.Visible;
-            BendList.ItemsSource = null;
-            NoBendsText.Visibility = Visibility.Collapsed;
             UpdateZoomText();
         }
 
@@ -121,46 +126,9 @@ namespace InvAuto.Features.SheetMetal
                 : null;
         }
 
-        private void FillBends(PartRow row)
-        {
-            BendList.ItemsSource = row.BendLines
-                .Select(b => new
-                {
-                    Title = $"{b.Line.Index}. {(b.Line.IsDown ? "Вниз" : "Вверх")} · {b.Line.Length:0.#} мм",
-                    Description = b.Layout.Description
-                })
-                .ToList();
-            NoBendsText.Visibility = row.BendLines.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void FillProperties(PartRow row)
-        {
-            PropertiesGrid.Children.Clear();
-            PropertiesGrid.RowDefinitions.Clear();
-            Add("Обозначение", row.PartNumber);
-            Add("Наименование", row.Description);
-            Add("Материал", row.Material);
-            Add("Толщина", row.Thickness.ToString("0.##", CultureInfo.CurrentCulture) + " мм");
-            Add("Габариты", row.FlatSizeText);
-            Add("Количество", row.Quantity.ToString(CultureInfo.CurrentCulture));
-            Add("Линии гиба", row.BendSummary);
-            Add("Файл", row.FilePath);
-
-            void Add(string name, string value)
-            {
-                if (string.IsNullOrEmpty(value))
-                    return;
-                int index = PropertiesGrid.RowDefinitions.Count;
-                PropertiesGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                var label = new TextBlock { Text = name, Style = (Style)FindResource("PropertyName") };
-                var text = new TextBlock { Text = value, Style = (Style)FindResource("PropertyValue") };
-                Grid.SetRow(label, index);
-                Grid.SetRow(text, index);
-                Grid.SetColumn(text, 1);
-                PropertiesGrid.Children.Add(label);
-                PropertiesGrid.Children.Add(text);
-            }
-        }
+        /// <summary>Таблица свойств — та же, что в панели «Свойства» окна деталей.</summary>
+        private void FillProperties(PartRow row) =>
+            PartDetails.Fill(PropertiesTable, row, _isOwnLine == null ? null : (Func<string, bool>)(key => _isOwnLine(row, key)));
 
         #region Масштаб и курсор
 

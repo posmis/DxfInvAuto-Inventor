@@ -37,6 +37,9 @@ namespace InvAuto.Core.SheetMetal
 
         public bool ShowDetails { get; set; } = true;
 
+        /// <summary>Свёрнутые группы таблицы свойств детали («Линии гиба», «Свойства iProperties»…).</summary>
+        public List<string> CollapsedDetails { get; set; } = new List<string>();
+
         /// <summary>Открытая вкладка ленты окна (0 — «Главная»).</summary>
         public int RibbonTab { get; set; }
         public double TreeWidth { get; set; } = 420;

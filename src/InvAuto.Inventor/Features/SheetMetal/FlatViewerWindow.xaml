@@ -17,14 +17,6 @@
             </ResourceDictionary.MergedDictionaries>
 
             <SolidColorBrush x:Key="MeasureBrush" Color="#D9480F" />
-            <Style x:Key="PropertyName" TargetType="TextBlock" BasedOn="{StaticResource MutedText}">
-                <Setter Property="Margin" Value="0,2,10,2" />
-                <Setter Property="VerticalAlignment" Value="Top" />
-            </Style>
-            <Style x:Key="PropertyValue" TargetType="TextBlock">
-                <Setter Property="Margin" Value="0,2" />
-                <Setter Property="TextWrapping" Value="Wrap" />
-            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -75,7 +67,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="340" />
             </Grid.ColumnDefinitions>
 
             <!-- Развертка -->
@@ -115,25 +107,8 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="Деталь" Style="{StaticResource PanelTitle}" Margin="0,16,0,8" />
-                    <Grid x:Name="PropertiesGrid">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                    </Grid>
-                    <TextBlock Text="Линии гиба" Style="{StaticResource PanelTitle}" Margin="0,16,0,8" />
-                    <TextBlock x:Name="NoBendsText" Style="{StaticResource MutedText}" Text="Линий гиба нет" Visibility="Collapsed" />
-                    <ItemsControl x:Name="BendList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Margin="0,0,0,8">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding Description}" Style="{StaticResource MutedText}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <TextBlock Text="Свойства" Style="{StaticResource PanelTitle}" Margin="0,16,0,8" />
+                    <ui:PropertyTable x:Name="PropertiesTable" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>
