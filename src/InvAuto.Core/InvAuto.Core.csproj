@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Логика без зависимости от Inventor: шаблоны имён, настройки, отчёты.
+       Всё, что можно проверить юнит-тестами, живёт здесь. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>InvAuto.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

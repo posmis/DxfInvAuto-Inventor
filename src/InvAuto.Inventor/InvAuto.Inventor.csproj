@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Версия Inventor задаётся свойством InventorVersion (по умолчанию 2024):
+      dotnet build -p:InventorVersion=2023
+    Inventor 2025+ работает на .NET 8, более ранние версии — на .NET Framework 4.8,
+    поэтому целевой фреймворк выбирается автоматически.
+  -->
+  <PropertyGroup>
+    <InventorVersion Condition="'$(InventorVersion)' == ''">2024</InventorVersion>
+    <TargetFramework Condition="$(InventorVersion) &gt;= 2025">net8.0-windows</TargetFramework>
+    <TargetFramework Condition="$(InventorVersion) &lt; 2025">net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>InvAuto</AssemblyName>
+    <RootNamespace>InvAuto</RootNamespace>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+
+    <InventorInteropPath Condition="'$(InventorInteropPath)' == ''">$(ProgramW6432)\Autodesk\Inventor $(InventorVersion)\Bin\Public Assemblies\Autodesk.Inventor.Interop.dll</InventorInteropPath>
+
+    <!-- После сборки в Debug плагин копируется туда, где Inventor ищет .addin-файлы. -->
+    <DeployToInventor Condition="'$(DeployToInventor)' == '' And '$(Configuration)' == 'Debug'">true</DeployToInventor>
+    <DeployFolder>$(AppData)\Autodesk\ApplicationPlugins\InvAuto</DeployFolder>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Позволяет собирать net48 без установленного Targeting Pack. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" Condition="'$(TargetFramework)' == 'net48'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Autodesk.Inventor.Interop">
+      <HintPath>$(InventorInteropPath)</HintPath>
+      <Private>false</Private>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\InvAuto.Core\InvAuto.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Иконки кнопок: Resources\Icons\{FeatureId}.16.png и {FeatureId}.32.png -->
+    <EmbeddedResource Include="Resources\Icons\*.png" />
+    <None Update="InvAuto.addin" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CheckInventorInterop" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(InventorInteropPath)')">
+    <Error Text="Не найден Autodesk.Inventor.Interop.dll: '$(InventorInteropPath)'. Укажите версию (-p:InventorVersion=2023) или путь (-p:InventorInteropPath=...)." />
+  </Target>
+
+  <Target Name="DeployToInventor" AfterTargets="Build" Condition="'$(DeployToInventor)' == 'true'">
+    <ItemGroup>
+      <DeployFiles Include="$(TargetDir)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DeployFiles)" DestinationFolder="$(DeployFolder)\%(RecursiveDir)" SkipUnchangedFiles="true" ContinueOnError="WarnAndContinue" />
+    <Message Importance="high" Text="InvAuto скопирован в $(DeployFolder). Если Inventor был запущен, перезапустите его." />
+  </Target>
+
+</Project>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Регистрация плагина без реестра. Inventor ищет .addin-файлы в
+     %APPDATA%\Autodesk\ApplicationPlugins и C:\ProgramData\Autodesk\ApplicationPlugins. -->
+<Addin Type="Standard">
+  <ClassId>{8BE9472C-C545-4BD1-97D0-211623E9F8B1}</ClassId>
+  <ClientId>{8BE9472C-C545-4BD1-97D0-211623E9F8B1}</ClientId>
+  <DisplayName>InvAuto</DisplayName>
+  <Description>Инструменты автоматизации: экспорт разверток в DXF и другое</Description>
+  <Assembly>InvAuto.dll</Assembly>
+  <LoadOnStartUp>1</LoadOnStartUp>
+  <UserUnloadable>1</UserUnloadable>
+  <Hidden>0</Hidden>
+  <SupportedSoftwareVersionGreaterThan>23..</SupportedSoftwareVersionGreaterThan>
+  <DataVersion>1</DataVersion>
+  <UserInterfaceVersion>1</UserInterfaceVersion>
+</Addin>
