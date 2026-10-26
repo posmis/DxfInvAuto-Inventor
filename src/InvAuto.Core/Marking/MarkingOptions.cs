@@ -91,6 +91,22 @@ namespace InvAuto.Core.Marking
         public void ClearOverride(string partPath) =>
             Parts.RemoveAll(p => string.Equals(p.PartPath, partPath, StringComparison.OrdinalIgnoreCase));
 
+        /// <summary>Места маркировки, заданные вручную (пустой по умолчанию: XmlSerializer дописывает элементы).</summary>
+        public List<MarkingPosition> Positions { get; set; } = new List<MarkingPosition>();
+
+        /// <summary>Ручное место маркировки детали; null — автоматически.</summary>
+        public MarkingPosition PositionFor(string partPath) =>
+            Positions.LastOrDefault(p => string.Equals(p.PartPath, partPath, StringComparison.OrdinalIgnoreCase));
+
+        public void SetPosition(string partPath, double x, double y, bool vertical)
+        {
+            ClearPosition(partPath);
+            Positions.Add(new MarkingPosition { PartPath = partPath, X = x, Y = y, Vertical = vertical });
+        }
+
+        public void ClearPosition(string partPath) =>
+            Positions.RemoveAll(p => string.Equals(p.PartPath, partPath, StringComparison.OrdinalIgnoreCase));
+
         private PartMarkingOptions Find(string partPath) =>
             Parts.LastOrDefault(p => p.Options != null && string.Equals(p.PartPath, partPath, StringComparison.OrdinalIgnoreCase));
     }

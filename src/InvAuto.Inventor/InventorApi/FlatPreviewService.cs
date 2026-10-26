@@ -52,20 +52,21 @@ namespace InvAuto.InventorApi
         public (FlatDrawing Drawing, IReadOnlyList<ProcessedBendLine> BendLines) Render(
             Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers)
         {
-            var (drawing, lines, _) = Render(resolve, bendLayers, null, null);
+            var (drawing, lines, _) = Render(resolve, bendLayers, null, null, null);
             return (drawing, lines);
         }
 
         /// <summary>То же с маркировкой: текст ставится так же, как при выгрузке, и показывается на развертке.</summary>
         public (FlatDrawing Drawing, IReadOnlyList<ProcessedBendLine> BendLines, MarkingResult Marking) Render(
-            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers, MarkingOptions marking, string markingText)
+            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers, MarkingOptions marking, string markingText,
+            MarkingPosition position)
         {
             if (State != FlatPreviewState.Ready)
                 return (null, Array.Empty<ProcessedBendLine>(), null);
 
             var processed = DxfBendProcessor.Process(RawText, bendLayers, resolve);
             var drawing = DxfReader.Read(new IO.StringReader(processed.Text));
-            var marked = DxfMarking.Apply(processed.Text, markingText, marking, drawing);
+            var marked = DxfMarking.Apply(processed.Text, markingText, marking, drawing, position);
             // Законцовки добавляются отдельными линиями — окно рисует их красным поверх контура.
             return (drawing.WithEndFeatures(processed.EndFeatures).WithText(marked.Text), processed.Items, marked);
         }

@@ -1151,7 +1151,7 @@ namespace InvAuto.Features.SheetMetal
         private void ApplyMarking(PartRow row)
         {
             string key = row.Part.FullFileName;
-            row.ApplyMarking(_markingSettings.For(key), _markingSettings.HasOverride(key));
+            row.ApplyMarking(_markingSettings.For(key), _markingSettings.HasOverride(key), _markingSettings.PositionFor(key));
         }
 
         private void SaveMarkingSettings()
@@ -1162,6 +1162,21 @@ namespace InvAuto.Features.SheetMetal
             ScheduleChecks();
             if (PartsGrid.SelectedItem is PartRow selected)
                 ShowDetails(selected);
+        }
+
+        /// <summary>Место маркировки из окна просмотра: null — снова автоматически.</summary>
+        private void SetMarkingPosition(PartRow row, MarkingPosition position)
+        {
+            string key = row.Part.FullFileName;
+            if (position == null)
+                _markingSettings.ClearPosition(key);
+            else
+                _markingSettings.SetPosition(key, position.X, position.Y, position.Vertical);
+            _context.Settings.Save(MarkingSettings.Key, _markingSettings);
+            ApplyMarking(row);
+            ScheduleChecks();
+            if (PartsGrid.SelectedItem == row)
+                ShowDetails(row);
         }
 
         /// <summary>Пример для окна маркировки: первая из строк со сформированной разверткой.</summary>
@@ -1224,14 +1239,17 @@ namespace InvAuto.Features.SheetMetal
 
         private void OnMarkingReset(object sender, RoutedEventArgs e)
         {
-            var rows = SelectedRows.Where(r => r.MarkingPersonal).ToList();
+            var rows = SelectedRows.Where(r => r.MarkingPersonal || r.MarkingPosition != null).ToList();
             if (rows.Count == 0)
             {
                 SetStatus("У выделенных деталей нет своей маркировки");
                 return;
             }
             foreach (var row in rows)
+            {
                 _markingSettings.ClearOverride(row.Part.FullFileName);
+                _markingSettings.ClearPosition(row.Part.FullFileName); // и место, заданное вручную
+            }
             SaveMarkingSettings();
             SetStatus($"Возвращена общая маркировка для деталей: {rows.Count}");
         }
@@ -1283,7 +1301,7 @@ namespace InvAuto.Features.SheetMetal
                     return true;
                 await GenerateFlatsAsync(new List<PartRow> { row }, force: false);
                 return row.FlatPreviewState == FlatPreviewState.Ready;
-            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key)) { Owner = this };
+            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key), SetMarkingPosition) { Owner = this };
             viewer.ShowDialog();
         }
 
@@ -1433,6 +1451,7 @@ namespace InvAuto.Features.SheetMetal
             {
                 BendOptions = part => _bendSettings.Resolver(part.FullFileName),
                 Marking = part => _markingSettings.For(part.FullFileName),
+                MarkingPosition = part => _markingSettings.PositionFor(part.FullFileName),
                 BendLayers = BendLayers,
                 RawDxfWritten = (collected, raw) => RememberRawFlat(collected.Info.FullFileName, raw)
             };
@@ -1707,7 +1726,7 @@ namespace InvAuto.Features.SheetMetal
             BendLines = row.BendLines.Select(b => b.Line).ToList(),
             FlatLength = row.Part.FlatLengthMm,
             FlatWidth = row.Part.FlatWidthMm,
-            Marking = row.FlatPreviewState == FlatPreviewState.Ready && row.Marking != null ? row.Marking.Status : MarkingStatus.Off
+            Marking = row.FlatPreviewState == FlatPreviewState.Ready ? row.Marking : null
         };
 
         /// <summary>Деталь не из списка (выгрузка всего изделия): проверяется без геометрии развертки.</summary>

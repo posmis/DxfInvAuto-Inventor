@@ -38,6 +38,14 @@
                                   ToolTip="Угол между двумя отрезками (A).&#x0a;Щёлкайте по тем частям отрезков, между которыми нужен угол.">Угол</ToggleButton>
                     <Button x:Name="ClearMeasuresButton" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.MeasureClear.Small}"
                             Click="OnClearMeasures" IsEnabled="False" ToolTip="Удалить все измерения">Очистить</Button>
+                    <Border Style="{StaticResource ToolSeparator}" />
+                    <ToggleButton x:Name="MarkingTool" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.Marking.Small}"
+                                  Click="OnMarkingTool"
+                                  ToolTip="Место маркировки вручную (M): перетащите текст или щёлкните, куда его поставить.&#x0a;Место запоминается для детали и используется при выгрузке.">Маркировка</ToggleButton>
+                    <Button x:Name="MarkingRotateButton" Style="{StaticResource ToolButton}" Click="OnMarkingRotate" Visibility="Collapsed"
+                            ToolTip="Повернуть текст на 90° (R)">Повернуть</Button>
+                    <Button x:Name="MarkingAutoButton" Style="{StaticResource ToolButton}" Click="OnMarkingAuto" Visibility="Collapsed"
+                            ToolTip="Вернуть автоматическое место маркировки">Авто</Button>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <ToggleButton x:Name="NumbersToggle" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.BendNumbers.Small}"

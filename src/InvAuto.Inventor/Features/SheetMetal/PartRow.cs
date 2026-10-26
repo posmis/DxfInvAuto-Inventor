@@ -163,6 +163,10 @@ namespace InvAuto.Features.SheetMetal
 
         private MarkingOptions _markingOptions = new MarkingOptions();
         private bool _markingPersonal;
+        private MarkingPosition _markingPosition;
+
+        /// <summary>Место маркировки, заданное вручную; null — автоматически.</summary>
+        public MarkingPosition MarkingPosition => _markingPosition;
 
         /// <summary>Параметры маркировки детали (свои или общие).</summary>
         public MarkingOptions MarkingOptions => _markingOptions;
@@ -174,20 +178,22 @@ namespace InvAuto.Features.SheetMetal
 
         /// <summary>Для панели свойств: параметры и где получилось.</summary>
         public string MarkingSummary =>
-            (_markingPersonal ? "своя: " : string.Empty) + _markingOptions.Summary;
+            (_markingPersonal ? "своя: " : string.Empty) + _markingOptions.Summary +
+            (_markingOptions.Enabled && _markingPosition != null ? ", место вручную" : string.Empty);
 
         /// <summary>Развертка с другими параметрами маркировки — для примера в окне настроек.</summary>
         public (FlatDrawing Drawing, MarkingResult Marking) RenderWithMarking(MarkingOptions options)
         {
-            var (drawing, _, marking) = Preview.Render(_resolve, _bendLayers, options, PartNumber);
+            var (drawing, _, marking) = Preview.Render(_resolve, _bendLayers, options, PartNumber, _markingPosition);
             return (drawing, marking);
         }
 
         /// <summary>Маркировка изменилась — перерисовываем развертку (без обращения к Inventor).</summary>
-        public void ApplyMarking(MarkingOptions options, bool personal)
+        public void ApplyMarking(MarkingOptions options, bool personal, MarkingPosition position)
         {
             _markingOptions = options ?? new MarkingOptions();
             _markingPersonal = personal;
+            _markingPosition = position;
             OnPropertyChanged(nameof(MarkingSummary));
             Render();
         }
@@ -222,7 +228,7 @@ namespace InvAuto.Features.SheetMetal
         {
             try
             {
-                var (drawing, lines, marking) = Preview.Render(_resolve, _bendLayers, _markingOptions, PartNumber);
+                var (drawing, lines, marking) = Preview.Render(_resolve, _bendLayers, _markingOptions, PartNumber, _markingPosition);
                 Flat = drawing;
                 BendLines = lines;
                 Marking = marking;

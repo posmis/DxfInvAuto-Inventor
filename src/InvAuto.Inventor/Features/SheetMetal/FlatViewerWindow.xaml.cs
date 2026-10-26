@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using InvAuto.Core.Marking;
 using InvAuto.Core.Measuring;
 using InvAuto.Core.Preview;
 using InvAuto.Framework.Ui;
@@ -20,8 +21,11 @@ namespace InvAuto.Features.SheetMetal
     /// линиями гиба). Листает детали текущего списка, не закрывая окно.
     /// Измерения: расстояние между точками и угол между отрезками, с привязками к геометрии DXF.
     /// </summary>
-    public partial class FlatViewerWindow : Window
+    public partial class FlatViewerWindow : Window, IFlatDragHandler
     {
+        private const string MarkingHint =
+            "Перетащите текст или щёлкните, куда его поставить · R — повернуть · «Авто» — автоматическое место · Esc — выйти";
+
         /// <summary>Радиус захвата привязки, px экрана.</summary>
         private const double SnapPixels = 10;
 
@@ -33,6 +37,12 @@ namespace InvAuto.Features.SheetMetal
         private readonly IReadOnlyList<PartRow> _rows;
         private readonly Func<PartRow, Task<bool>> _ensureFlat;
         private readonly Func<PartRow, string, bool> _isOwnLine;
+        private readonly Action<PartRow, MarkingPosition> _setMarkingPosition;
+        private bool _markingMode;
+        private object _markingToolTip;
+        private MarkingArea _markingArea;
+        private FlatText _draft;
+        private double _dragDx, _dragDy;
         private int _index;
         private int _loadToken;
 
@@ -41,13 +51,18 @@ namespace InvAuto.Features.SheetMetal
         /// <param name="ensureFlat">Сформировать развертку, если её ещё нет; false — не получилось.</param>
         /// <param name="collapsedSections">Свёрнутые группы таблицы свойств — общие с окном деталей.</param>
         /// <param name="isOwnLine">Есть ли у линии гиба детали свои параметры: (деталь, ключ линии).</param>
+        /// <param name="setMarkingPosition">Сохранить место маркировки детали (null — автоматически); null — без ручной маркировки.</param>
         public FlatViewerWindow(IReadOnlyList<PartRow> rows, int index, Func<PartRow, Task<bool>> ensureFlat,
-            ISet<string> collapsedSections = null, Func<PartRow, string, bool> isOwnLine = null)
+            ISet<string> collapsedSections = null, Func<PartRow, string, bool> isOwnLine = null,
+            Action<PartRow, MarkingPosition> setMarkingPosition = null)
         {
             InitializeComponent();
             _rows = rows;
             _ensureFlat = ensureFlat;
             _isOwnLine = isOwnLine;
+            _setMarkingPosition = setMarkingPosition;
+            View.DragHandler = this;
+            _markingToolTip = MarkingTool.ToolTip;
             if (collapsedSections != null)
                 PropertiesTable.CollapsedSections = collapsedSections;
             _overlay = new MeasureOverlay(_measure, View);
@@ -72,7 +87,17 @@ namespace InvAuto.Features.SheetMetal
 
         private void OnRowChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(PartRow.Issues) || sender != Current)
+            if (sender != Current)
+                return;
+            if (e.PropertyName == nameof(PartRow.Flat) && Current.Flat != null && !Current.Flat.IsEmpty && EmptyText.Visibility != Visibility.Visible)
+            {
+                // Развертка перерисована (например, после переноса маркировки) — показываем новую, не сбрасывая вид.
+                _draft = null;
+                ShowFlat(Current);
+                FillProperties(Current);
+                return;
+            }
+            if (e.PropertyName != nameof(PartRow.Issues))
                 return;
             _overlay.Issues = Current.Issues;
             FillProperties(Current);
@@ -118,7 +143,8 @@ namespace InvAuto.Features.SheetMetal
             }
 
             EmptyText.Visibility = Visibility.Collapsed;
-            View.Drawing = row.Flat;
+            _draft = null;
+            ShowFlat(row);
             _measure.SetDrawing(row.Flat); // измерения относятся к одной детали
             _overlay.Issues = row.Issues;   // места замечаний проверки
             ApplyLabels();
@@ -126,9 +152,21 @@ namespace InvAuto.Features.SheetMetal
             View.Fit();
         }
 
+        /// <summary>Развертка строки и всё, что зависит от маркировки: подсветка конфликта, доступность инструмента.</summary>
+        private void ShowFlat(PartRow row)
+        {
+            View.Drawing = row.Flat;
+            View.MarkingConflict = row.Marking?.Conflict == true;
+            _markingArea = null;
+            UpdateMarkingTool();
+        }
+
         private void ShowMessage(string text)
         {
             View.Drawing = null;
+            View.MarkingConflict = false;
+            _markingArea = null;
+            UpdateMarkingTool();
             _measure.SetDrawing(null);
             View.Labels = null;
             EmptyText.Text = text;
@@ -210,6 +248,8 @@ namespace InvAuto.Features.SheetMetal
 
         private void SetMeasureMode(MeasureMode mode)
         {
+            if (mode != MeasureMode.None && _markingMode)
+                SetMarkingMode(false);
             _measure.SetMode(mode);
             DistanceTool.IsChecked = mode == MeasureMode.Distance;
             AngleTool.IsChecked = mode == MeasureMode.Angle;
@@ -220,6 +260,14 @@ namespace InvAuto.Features.SheetMetal
 
         private void OnModelClicked(object sender, Point2 position)
         {
+            if (_markingMode)
+            {
+                // Щелчок — поставить текст центром в эту точку.
+                var text = CurrentMarkingText();
+                if (text != null)
+                    CommitMarking(text.Vertical, position.X, position.Y);
+                return;
+            }
             if (_measure.Mode == MeasureMode.None)
                 return;
             _measure.Click(position, SnapTolerance);
@@ -268,7 +316,140 @@ namespace InvAuto.Features.SheetMetal
         }
 
         private void UpdateHint() =>
-            HintText.Text = _measure.Mode == MeasureMode.None ? NavigationHint : _measure.Prompt;
+            HintText.Text = _markingMode ? MarkingHint : _measure.Mode == MeasureMode.None ? NavigationHint : _measure.Prompt;
+
+        #endregion
+
+        #region Маркировка
+
+        /// <summary>Маркировку можно двигать: она включена у детали, есть обозначение и развертка.</summary>
+        private bool CanMoveMarking
+        {
+            get
+            {
+                var row = Current;
+                return _setMarkingPosition != null && row != null && View.Drawing != null &&
+                       row.MarkingOptions.Enabled && row.PartNumber.Trim().Length > 0 &&
+                       (row.Marking?.Status == MarkingStatus.Placed || row.Marking?.Status == MarkingStatus.NoRoom);
+            }
+        }
+
+        private void UpdateMarkingTool()
+        {
+            bool can = CanMoveMarking;
+            MarkingTool.IsEnabled = can;
+            MarkingTool.ToolTip = can || _setMarkingPosition == null
+                ? _markingToolTip
+                : "Место маркировки вручную (M). Сейчас недоступно: маркировка детали выключена или нет обозначения.";
+            if (!can && _markingMode)
+                SetMarkingMode(false);
+            MarkingAutoButton.IsEnabled = Current?.MarkingPosition != null;
+        }
+
+        private void OnMarkingTool(object sender, RoutedEventArgs e) => SetMarkingMode(MarkingTool.IsChecked == true);
+
+        private void SetMarkingMode(bool on)
+        {
+            on = on && CanMoveMarking;
+            _markingMode = on;
+            MarkingTool.IsChecked = on;
+            MarkingRotateButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            MarkingAutoButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            if (on && _measure.Mode != MeasureMode.None)
+                SetMeasureMode(MeasureMode.None);
+            View.DoubleClickFits = !on && _measure.Mode == MeasureMode.None;
+            UpdateHint();
+        }
+
+        /// <summary>Текст маркировки как он сейчас стоит (или в черновике при перетаскивании); null — не поставлен.</summary>
+        private FlatText CurrentMarkingText()
+        {
+            var row = Current;
+            if (_draft != null)
+                return _draft;
+            if (row?.Marking?.Text != null)
+                return row.Marking.Text;
+            // Не поместился автоматически — начинаем с центра детали, полной высоты.
+            if (row?.Marking?.Status == MarkingStatus.NoRoom && row.Flat != null)
+            {
+                var c = Area().Center;
+                return DxfMarking.At(row.PartNumber, c.X, c.Y, row.MarkingOptions.Normalized().Height, false);
+            }
+            return null;
+        }
+
+        private MarkingArea Area() => _markingArea ?? (_markingArea = new MarkingArea(Current?.Flat));
+
+        bool IFlatDragHandler.BeginDrag(Point2 at)
+        {
+            if (!_markingMode)
+                return false;
+            var text = CurrentMarkingText();
+            double tolerance = 4 / Math.Max(View.PixelsPerMm, 1e-9); // захват с запасом 4 px
+            if (text == null || at.X < text.MinX - tolerance || at.X > text.MaxX + tolerance ||
+                at.Y < text.MinY - tolerance || at.Y > text.MaxY + tolerance)
+                return false; // не по тексту — обычное перемещение вида
+            _dragDx = (text.MinX + text.MaxX) / 2 - at.X;
+            _dragDy = (text.MinY + text.MaxY) / 2 - at.Y;
+            return true;
+        }
+
+        void IFlatDragHandler.Drag(Point2 at)
+        {
+            var text = CurrentMarkingText();
+            if (text == null)
+                return;
+            ShowDraft(DxfMarking.At(text.Value, at.X + _dragDx, at.Y + _dragDy, text.Height, text.Vertical));
+        }
+
+        void IFlatDragHandler.EndDrag(Point2 at)
+        {
+            var text = CurrentMarkingText();
+            if (text != null)
+                CommitMarking(text.Vertical, at.X + _dragDx, at.Y + _dragDy);
+        }
+
+        /// <summary>Черновик при перетаскивании: развертка без текста + текст на новом месте, красный — если не годится.</summary>
+        private void ShowDraft(FlatText draft)
+        {
+            var row = Current;
+            if (row?.Flat == null)
+                return;
+            _draft = draft;
+            View.Drawing = new FlatDrawing(row.Flat.Polylines, row.Flat.Geometry).WithText(draft);
+            bool fits = Area().Fits(draft, row.MarkingOptions.Normalized().Margin);
+            View.MarkingConflict = !fits;
+            CursorText.Text = fits ? "Маркировка: место подходит" : "Маркировка: задевает контур или в вырезе";
+        }
+
+        /// <summary>Сохранить место (центр текста) — деталь перерисуется с текстом там же, где и при выгрузке.</summary>
+        private void CommitMarking(bool vertical, double cx, double cy)
+        {
+            var row = Current;
+            if (row == null || _setMarkingPosition == null)
+                return;
+            _setMarkingPosition(row, new MarkingPosition { PartPath = row.FilePath, X = cx, Y = cy, Vertical = vertical });
+            _draft = null;
+            UpdateMarkingTool();
+        }
+
+        private void OnMarkingRotate(object sender, RoutedEventArgs e)
+        {
+            var text = CurrentMarkingText();
+            if (!_markingMode || text == null)
+                return;
+            CommitMarking(!text.Vertical, (text.MinX + text.MaxX) / 2, (text.MinY + text.MaxY) / 2);
+        }
+
+        private void OnMarkingAuto(object sender, RoutedEventArgs e)
+        {
+            var row = Current;
+            if (row == null || _setMarkingPosition == null || row.MarkingPosition == null)
+                return;
+            _setMarkingPosition(row, null);
+            _draft = null;
+            UpdateMarkingTool();
+        }
 
         #endregion
 
@@ -313,9 +494,17 @@ namespace InvAuto.Features.SheetMetal
                 case Key.A:
                     SetMeasureMode(_measure.Mode == MeasureMode.Angle ? MeasureMode.None : MeasureMode.Angle);
                     break;
+                case Key.M:
+                    SetMarkingMode(!_markingMode);
+                    break;
+                case Key.R when _markingMode:
+                    OnMarkingRotate(sender, e);
+                    break;
                 case Key.Escape:
                     // Сначала отменяется начатое измерение, затем выключается инструмент, затем закрывается окно.
-                    if (_measure.Cancel())
+                    if (_markingMode)
+                        SetMarkingMode(false);
+                    else if (_measure.Cancel())
                     {
                         UpdateHint();
                         View.InvalidateVisual();

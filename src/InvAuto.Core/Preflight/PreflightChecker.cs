@@ -88,8 +88,8 @@ namespace InvAuto.Core.Preflight
         public double FlatLength { get; set; }
         public double FlatWidth { get; set; }
 
-        /// <summary>Маркировка на сформированной развертке (Off — выключена или развертки нет).</summary>
-        public MarkingStatus Marking { get; set; }
+        /// <summary>Маркировка на сформированной развертке (null — выключена или развертки нет).</summary>
+        public MarkingResult Marking { get; set; }
 
         public string Title => PartNumber.Length > 0 ? PartNumber : FileName;
     }
@@ -167,10 +167,7 @@ namespace InvAuto.Core.Preflight
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NoPartNumber",
                     "Нет обозначения"));
 
-            if (part.Marking == MarkingStatus.NoRoom)
-                issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingNoRoom", "Маркировка не помещается"));
-            else if (part.Marking == MarkingStatus.NoText && !issues.Any(i => i.Code == "NoPartNumber"))
-                issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingNoText", "Нет обозначения для маркировки"));
+            CheckMarking(part.Marking, issues);
 
             if (part.Material == MaterialCheck.Missing)
                 issues.Add(new PreflightIssue(IssueSeverity.Warning, "NoMaterial",
@@ -200,6 +197,32 @@ namespace InvAuto.Core.Preflight
             }
 
             return issues;
+        }
+
+        private static void CheckMarking(MarkingResult marking, List<PreflightIssue> issues)
+        {
+            if (marking == null)
+                return;
+            var at = marking.Center is Point2 c ? new[] { c } : null;
+            switch (marking.Status)
+            {
+                case MarkingStatus.NoRoom:
+                    issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingNoRoom", "Маркировка не помещается — задайте место вручную"));
+                    return;
+                case MarkingStatus.NoText:
+                    if (!issues.Any(i => i.Code == "NoPartNumber"))
+                        issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingNoText", "Нет обозначения для маркировки"));
+                    return;
+                case MarkingStatus.Placed:
+                    if (marking.Conflict)
+                        issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingConflict", "Маркировка задевает контур или в вырезе", at));
+                    else if (marking.CenterCut && !marking.Manual)
+                        issues.Add(new PreflightIssue(IssueSeverity.Warning, "MarkingCenterCut", "Центр детали вырезан — проверьте место маркировки", at));
+                    if (marking.Shrunk)
+                        issues.Add(new PreflightIssue(IssueSeverity.Info, "MarkingShrunk",
+                            $"Маркировка уменьшена до {N(marking.Text.Height)} мм", at));
+                    return;
+            }
         }
 
         private static void CheckGeometry(PreflightPart part, PreflightSettings settings, List<PreflightIssue> issues)

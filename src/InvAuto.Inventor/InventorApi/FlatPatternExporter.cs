@@ -34,6 +34,9 @@ namespace InvAuto.InventorApi
         /// <summary>Маркировка детали (null — без маркировки). Текст — обозначение детали.</summary>
         public Func<SheetMetalPart, MarkingOptions> Marking { get; set; }
 
+        /// <summary>Место маркировки, заданное вручную (null — автоматически).</summary>
+        public Func<SheetMetalPart, MarkingPosition> MarkingPosition { get; set; }
+
         /// <summary>Слои, отрезки на которых считаются линиями гиба.</summary>
         public IReadOnlyCollection<string> BendLayers { get; set; } = DxfBendProcessor.DefaultLayers;
 
@@ -70,9 +73,12 @@ namespace InvAuto.InventorApi
                 {
                     _writer.Write(definition, raw);
                     RawDxfWritten?.Invoke(part, raw);
-                    var (_, marking) = DxfOutput.WriteFinal(raw, path, BendOptions?.Invoke(info), BendLayers,
-                        Marking?.Invoke(info), info.PartNumber);
-                    if (marking == MarkingStatus.NoRoom)
+                    var (_, marked) = DxfOutput.WriteFinal(raw, path, BendOptions?.Invoke(info), BendLayers,
+                        Marking?.Invoke(info), info.PartNumber, MarkingPosition?.Invoke(info));
+                    var marking = marked.Status;
+                    if (marked.Conflict)
+                        note = Join(note, "маркировка задевает контур");
+                    else if (marking == MarkingStatus.NoRoom)
                         note = Join(note, "маркировка не помещается");
                     else if (marking == MarkingStatus.NoText)
                         note = Join(note, "нет обозначения для маркировки");

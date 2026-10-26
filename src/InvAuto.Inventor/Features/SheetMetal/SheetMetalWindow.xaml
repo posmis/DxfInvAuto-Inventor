@@ -299,7 +299,7 @@
                                     <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Settings.Small}" Click="OnMarkingDefaults"
                                             ToolTip="Маркировка обозначением для всех деталей без своих настроек (по умолчанию выключена)">По умолчанию</Button>
                                     <Button Style="{StaticResource RibbonSmallButton}" Tag="{StaticResource Icon.Refresh.Small}" Click="OnMarkingReset"
-                                            ToolTip="Вернуть выделенным деталям общую маркировку">Сбросить к общим</Button>
+                                            ToolTip="Вернуть выделенным деталям общую маркировку и автоматическое место текста">Сбросить к общим</Button>
                                 </StackPanel>
                             </StackPanel>
                         </HeaderedContentControl>

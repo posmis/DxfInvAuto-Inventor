@@ -133,6 +133,82 @@ namespace InvAuto.Core.Tests
             Assert.Equal(MarkingStatus.NoRoom, DxfMarking.Apply(thin, "АПФД.В9.13.00.012", On()).Status);
         }
 
+        private static string Frame() => Rect(200, 100).Replace("  0\r\nENDSEC\r\n  0\r\nEOF",
+            "  0\r\nLWPOLYLINE\r\n  5\r\n21\r\n330\r\n1F\r\n100\r\nAcDbEntity\r\n  8\r\nIV_INTERIOR_PROFILES\r\n100\r\nAcDbPolyline\r\n 90\r\n4\r\n 70\r\n1\r\n" +
+            " 10\r\n20\r\n 20\r\n20\r\n 10\r\n180\r\n 20\r\n20\r\n 10\r\n180\r\n 20\r\n80\r\n 10\r\n20\r\n 20\r\n80\r\n" +
+            "  0\r\nENDSEC\r\n  0\r\nEOF");
+
+        [Fact]
+        public void CenterCut_IsReported_AndPreflightWarns()
+        {
+            var result = DxfMarking.Apply(Frame(), "АПФД.В9.13.00.012", On());
+            Assert.True(result.CenterCut);
+            Assert.False(result.Manual);
+            Assert.Contains("центр детали вырезан", result.Description);
+            var issues = PreflightChecker.Check(new PreflightPart { Key = "P", PartNumber = "P", HasFlatPattern = true, Marking = result },
+                new PreflightSettings());
+            var issue = Assert.Single(issues, i => i.Code == "MarkingCenterCut");
+            Assert.Equal(IssueSeverity.Warning, issue.Severity);
+            Assert.Single(issue.Locations); // отметка на развертке — где стоит текст
+
+            Assert.False(DxfMarking.Apply(Rect(200, 100), "A1", On()).CenterCut);
+        }
+
+        [Fact]
+        public void ManualPosition_UsedAsIs_ConflictWhenInCutoutOrOnLine()
+        {
+            // На нижней полосе рамки — годится.
+            var ok = DxfMarking.Apply(Frame(), "A-1", On(5), position: new MarkingPosition { X = 100, Y = 10 });
+            Assert.Equal(MarkingStatus.Placed, ok.Status);
+            Assert.True(ok.Manual);
+            Assert.False(ok.Conflict);
+            Assert.Equal(100, (ok.Text.MinX + ok.Text.MaxX) / 2, 6);
+            Assert.Equal(10, (ok.Text.MinY + ok.Text.MaxY) / 2, 6);
+            Assert.Contains("\r\n  1\r\nA-1\r\n", ok.Dxf);
+            DxfValidator.AssertValid(ok.Dxf);
+
+            // Вертикально на левой полосе.
+            var vertical = DxfMarking.Apply(Frame(), "A-1", On(5), position: new MarkingPosition { X = 10, Y = 50, Vertical = true });
+            Assert.Equal(90, vertical.Text.Angle);
+            Assert.False(vertical.Conflict);
+
+            // В вырезе и поперёк края выреза — ставится, как просили, но с пометкой и замечанием.
+            var inCutout = DxfMarking.Apply(Frame(), "A-1", On(5), position: new MarkingPosition { X = 100, Y = 50 });
+            Assert.True(inCutout.Conflict);
+            Assert.Contains("\r\n  1\r\nA-1\r\n", inCutout.Dxf);
+            var onEdge = DxfMarking.Apply(Frame(), "A-1", On(5), position: new MarkingPosition { X = 100, Y = 20 });
+            Assert.True(onEdge.Conflict);
+            var issues = PreflightChecker.Check(new PreflightPart { Key = "P", PartNumber = "P", HasFlatPattern = true, Marking = onEdge },
+                new PreflightSettings());
+            Assert.Contains(issues, i => i.Code == "MarkingConflict");
+            Assert.DoesNotContain(issues, i => i.Code == "MarkingCenterCut"); // место выбрано вручную
+        }
+
+        [Fact]
+        public void Shrunk_IsInfo()
+        {
+            var shrunk = DxfMarking.Apply(Rect(40, 30), "1234567890", On(5, 2.5));
+            Assert.True(shrunk.Shrunk);
+            var issues = PreflightChecker.Check(new PreflightPart { Key = "P", PartNumber = "P", HasFlatPattern = true, Marking = shrunk },
+                new PreflightSettings());
+            Assert.Equal(IssueSeverity.Info, Assert.Single(issues, i => i.Code == "MarkingShrunk").Severity);
+        }
+
+        [Fact]
+        public void Settings_ManualPositions()
+        {
+            var s = new MarkingSettings();
+            Assert.Null(s.PositionFor("C:\\a.ipt"));
+            s.SetPosition("C:\\a.ipt", 10, 20, true);
+            s.SetPosition("c:\\A.ipt", 30, 40, false); // заменяет, а не добавляет
+            var p = s.PositionFor("C:\\a.ipt");
+            Assert.Single(s.Positions);
+            Assert.Equal(30, p.X);
+            Assert.False(p.Vertical);
+            s.ClearPosition("C:\\a.ipt");
+            Assert.Null(s.PositionFor("C:\\a.ipt"));
+        }
+
         [Fact]
         public void NoPartNumber_NoText()
         {
@@ -240,10 +316,10 @@ namespace InvAuto.Core.Tests
         [Fact]
         public void Preflight_WarnsWhenMarkingDoesNotFit()
         {
-            var part = new PreflightPart { Key = "P", PartNumber = "P", HasFlatPattern = true, Marking = MarkingStatus.NoRoom };
+            var part = new PreflightPart { Key = "P", PartNumber = "P", HasFlatPattern = true, Marking = new MarkingResult(MarkingStatus.NoRoom, "") };
             Assert.Contains(PreflightChecker.Check(part, new PreflightSettings()), i => i.Code == "MarkingNoRoom");
 
-            var noNumber = new PreflightPart { Key = "Q", HasFlatPattern = true, Marking = MarkingStatus.NoText };
+            var noNumber = new PreflightPart { Key = "Q", HasFlatPattern = true, Marking = new MarkingResult(MarkingStatus.NoText, "") };
             Assert.DoesNotContain(PreflightChecker.Check(noNumber, new PreflightSettings()), i => i.Code == "MarkingNoText"); // уже «Нет обозначения»
             Assert.Contains(PreflightChecker.Check(noNumber, new PreflightSettings { RequirePartNumber = false }), i => i.Code == "MarkingNoText");
         }

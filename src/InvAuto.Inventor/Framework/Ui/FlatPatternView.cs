@@ -27,6 +27,17 @@ namespace InvAuto.Framework.Ui
         void Render(DrawingContext dc, Func<Point2, Point> map, double pixelsPerMm);
     }
 
+    /// <summary>Перетаскивание объекта на чертеже левой кнопкой (например, текста маркировки). Точки — в мм.</summary>
+    public interface IFlatDragHandler
+    {
+        /// <summary>Начать перетаскивание из точки at; false — не наш объект, будет перемещение вида.</summary>
+        bool BeginDrag(Point2 at);
+
+        void Drag(Point2 at);
+
+        void EndDrag(Point2 at);
+    }
+
     /// <summary>
     /// Рисует развертку линиями постоянной толщины 1 px при любом масштабе:
     /// контур — тёмным, линии гиба — акцентным цветом, вспомогательные — серым.
@@ -58,6 +69,22 @@ namespace InvAuto.Framework.Ui
         private Point? _pressedAt;
         private Cursor _cursorBeforeDrag;
         private IFlatOverlay _overlay;
+        private bool _modelDrag;
+        private Point2 _lastModel;
+
+        /// <summary>Кто перетаскивает объекты левой кнопкой (null — левая кнопка двигает вид).</summary>
+        public IFlatDragHandler DragHandler { get; set; }
+
+        public static readonly DependencyProperty MarkingConflictProperty = DependencyProperty.Register(
+            nameof(MarkingConflict), typeof(bool), typeof(FlatPatternView),
+            new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+
+        /// <summary>Маркировка задевает контур или в вырезе — рисуется красным.</summary>
+        public bool MarkingConflict
+        {
+            get => (bool)GetValue(MarkingConflictProperty);
+            set => SetValue(MarkingConflictProperty, value);
+        }
 
         /// <summary>Щелчок левой кнопкой без перетаскивания: точка в мм.</summary>
         public event EventHandler<Point2> ModelClicked;
@@ -175,7 +202,15 @@ namespace InvAuto.Framework.Ui
             if (_pressedAt is Point pressed && (p - pressed).Length > DragThreshold)
             {
                 _pressedAt = null;
-                BeginDrag(pressed);
+                if (Drawing != null && DragHandler != null && DragHandler.BeginDrag(ToModel(pressed)))
+                    _modelDrag = true;
+                else
+                    BeginDrag(pressed);
+            }
+            if (_modelDrag)
+            {
+                _lastModel = ToModel(p);
+                DragHandler?.Drag(_lastModel);
             }
             if (_dragFrom is Point from)
             {
@@ -197,6 +232,13 @@ namespace InvAuto.Framework.Ui
                     ModelClicked?.Invoke(this, ToModel(pressed));
                 return;
             }
+            if (_modelDrag && e.ChangedButton == MouseButton.Left)
+            {
+                _modelDrag = false;
+                ReleaseMouseCapture();
+                DragHandler?.EndDrag(ToModel(e.GetPosition(this)));
+                return;
+            }
             if (_dragFrom == null)
                 return;
             _dragFrom = null;
@@ -208,6 +250,11 @@ namespace InvAuto.Framework.Ui
         {
             base.OnLostMouseCapture(e);
             _pressedAt = null;
+            if (_modelDrag)
+            {
+                _modelDrag = false;
+                DragHandler?.EndDrag(_lastModel);
+            }
             if (_dragFrom != null)
             {
                 _dragFrom = null;
@@ -324,7 +371,7 @@ namespace InvAuto.Framework.Ui
             DrawKind(dc, drawing.Polylines.Where(p => p.Kind == LayerKind.EndFeature), Map, EndFeaturePen);
 
             foreach (var text in drawing.Texts)
-                DrawMarking(dc, text, Map, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                DrawMarking(dc, text, Map, VisualTreeHelper.GetDpi(this).PixelsPerDip, MarkingConflict);
 
             var labels = Labels;
             if (labels != null)
@@ -351,21 +398,23 @@ namespace InvAuto.Framework.Ui
             DashStyle = new DashStyle(new double[] { 3, 3 }, 0)
         });
         private static readonly Typeface MarkingFont = new Typeface("Arial");
+        private static readonly Pen ConflictPen = Freeze(new Pen(new SolidColorBrush(Color.FromRgb(0xD3, 0x2F, 0x2F)), 1.2));
+        private static readonly Brush ConflictFill = Freeze(new SolidColorBrush(Color.FromArgb(0x26, 0xD3, 0x2F, 0x2F)));
 
         /// <summary>
         /// Маркировка: текст высотой как в DXF (высота прописных букв) и пунктиром — место, отведённое под него
         /// (по оценке ширины с запасом: шрифт выбирает программа раскроя).
         /// </summary>
-        private static void DrawMarking(DrawingContext dc, FlatText text, Func<Point2, Point> map, double dpi)
+        private static void DrawMarking(DrawingContext dc, FlatText text, Func<Point2, Point> map, double dpi, bool conflict)
         {
             Point a = map(new Point2(text.MinX, text.MinY)), b = map(new Point2(text.MaxX, text.MaxY));
-            dc.DrawRectangle(null, MarkingBoxPen, new Rect(a, b));
+            dc.DrawRectangle(conflict ? ConflictFill : null, conflict ? ConflictPen : MarkingBoxPen, new Rect(a, b));
 
             double capHeight = Math.Abs(map(new Point2(0, text.Height)).Y - map(new Point2(0, 0)).Y);
             if (capHeight < 2)
                 return; // слишком мелко — только рамка
             var formatted = new FormattedText(text.Value, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
-                MarkingFont, capHeight / 0.716, MarkingBrush, dpi); // 0,716 — высота прописных Arial в долях кегля
+                MarkingFont, capHeight / 0.716, conflict ? ConflictPen.Brush : MarkingBrush, dpi); // 0,716 — высота прописных Arial в долях кегля
             var origin = map(new Point2(text.X, text.Y));
             if (text.Vertical)
                 dc.PushTransform(new RotateTransform(-90, origin.X, origin.Y));
