@@ -3,6 +3,19 @@
 Плагин для Inventor, построенный как расширяемая платформа: каждая функция — отдельный класс,
 который автоматически получает свою кнопку на панели **InvAuto** вкладки **«Среды»**.
 
+Версия **1.0.0** — что вошло, см. [CHANGELOG.md](CHANGELOG.md).
+
+## Установка (для пользователей)
+
+1. Закройте Inventor.
+2. Запустите `InvAuto-1.0.0-Inventor2025-setup.exe` (для своей версии Inventor) и пройдите мастер.
+   По умолчанию плагин ставится для текущего пользователя без прав администратора
+   (`%APPDATA%\Autodesk\ApplicationPlugins\InvAuto`); в начале можно выбрать установку для всех пользователей.
+3. Запустите Inventor — на вкладке **«Среды»** появится панель **InvAuto**.
+
+Обновление — так же, новым установщиком поверх. Удаление — «Параметры Windows → Приложения → InvAuto».
+Настройки, библиотека материалов и журнал лежат в `%APPDATA%\InvAuto` и при обновлении или удалении не затрагиваются.
+
 ## Что уже умеет
 
 **Листовые детали** (вкладка «Среды» → панель InvAuto), работает в сборке и в листовой детали.
@@ -243,6 +256,30 @@ tests/InvAuto.Core.Tests/
 
 Сторонние библиотеки: [Clipper2](https://github.com/AngusJohnson/Clipper2) (NuGet `Clipper2`, лицензия Boost) —
 булевы операции для законцовок; `Clipper2Lib.dll` копируется рядом с плагином при сборке.
+
+## Выпуск версии (установщик exe)
+
+Нужно: Windows, .NET SDK 8, установленный Inventor той версии, под которую собирается выпуск,
+[Inno Setup 6.3+](https://jrsoftware.org/isdl.php).
+
+1. Номер версии — в `Directory.Build.props` (`<Version>`), что изменилось — в `CHANGELOG.md`.
+2. Из корня репозитория:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File tools\build-release.ps1                     # Inventor 2025 (.NET 8)
+   powershell -ExecutionPolicy Bypass -File tools\build-release.ps1 -InventorVersion 2024 # .NET Framework 4.8
+   ```
+   Скрипт прогоняет тесты, собирает Release, проверяет, что в выходной папке есть все файлы
+   (`InvAuto.dll`, `InvAuto.Core.dll`, `Clipper2Lib.dll`, `InvAuto.addin`, `Config\dxf_export_config.ini`),
+   и собирает установщик `installer\Output\InvAuto-<версия>-Inventor<версия>-setup.exe` (сценарий — `installer\InvAuto.iss`).
+3. Опубликовать: тег и выпуск на GitHub с exe-файлом —
+   ```powershell
+   git tag v1.0.0
+   git push origin v1.0.0
+   gh release create v1.0.0 installer\Output\InvAuto-1.0.0-Inventor2025-setup.exe --title "InvAuto 1.0.0" --notes-file CHANGELOG.md
+   ```
+
+Сборка под .NET 8 загружается только в Inventor 2025 и новее, под .NET Framework 4.8 — в 2020…2024:
+диапазон версий в `InvAuto.addin` подставляется при сборке. Для каждой версии Inventor — свой установщик.
 
 ## Как добавить новую функцию
 

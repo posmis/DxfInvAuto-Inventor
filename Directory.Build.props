@@ -1,0 +1,11 @@
+<Project>
+  <!-- Общая версия всех проектов. Номер выпуска меняется здесь (и в installer\InvAuto.iss берётся из InvAuto.dll). -->
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Product>InvAuto</Product>
+    <Company>InvAuto</Company>
+    <Copyright>© InvAuto</Copyright>
+    <!-- Без «+хэш коммита» в версии продукта: в окне «О программе» и установщике — просто 1.0.0. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+</Project>

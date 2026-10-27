@@ -37,6 +37,20 @@ namespace InvAuto.Core.Tests
             Directory.CreateDirectory(_dir);
             File.WriteAllText(Path.Combine(_dir, "broken.xml"), "<not-xml");
             Assert.Equal(1, store.Load<FlatPatternExportSettings>("broken").QuantityMultiplier);
+
+            // Испорченный файл сохранён в backup — следующее сохранение его не потеряет.
+            var copy = Assert.Single(Directory.GetFiles(Path.Combine(_dir, "backup"), "broken_*повреждён*.xml"));
+            Assert.Equal("<not-xml", File.ReadAllText(copy));
+        }
+
+        [Fact]
+        public void Settings_SaveReplacesExistingFile_WithoutTempLeft()
+        {
+            var store = new XmlSettingsStore(_dir, new FileLogger(_dir));
+            store.Save("export", new FlatPatternExportSettings { QuantityMultiplier = 2 });
+            store.Save("export", new FlatPatternExportSettings { QuantityMultiplier = 3 });
+            Assert.Equal(3, store.Load<FlatPatternExportSettings>("export").QuantityMultiplier);
+            Assert.Empty(Directory.GetFiles(_dir, "*.tmp"));
         }
 
         [Fact]

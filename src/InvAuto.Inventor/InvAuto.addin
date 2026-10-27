@@ -10,7 +10,10 @@
   <LoadOnStartUp>1</LoadOnStartUp>
   <UserUnloadable>1</UserUnloadable>
   <Hidden>0</Hidden>
+  <!-- Диапазон версий подставляется при сборке (InvAuto.Inventor.csproj, цель AddinVersions):
+       сборка .NET 8 — Inventor 2025 и новее (29..), .NET Framework 4.8 — Inventor 2020…2024 (24…28). -->
   <SupportedSoftwareVersionGreaterThan>23..</SupportedSoftwareVersionGreaterThan>
+  <SupportedSoftwareVersionLessThan>99..</SupportedSoftwareVersionLessThan>
   <DataVersion>1</DataVersion>
   <UserInterfaceVersion>1</UserInterfaceVersion>
 </Addin>

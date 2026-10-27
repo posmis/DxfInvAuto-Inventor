@@ -28,6 +28,7 @@ namespace InvAuto
                 System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "InvAuto");
             var logger = new FileLogger(System.IO.Path.Combine(dataFolder, "logs"));
             _log = logger;
+            ErrorGuard.Install(_log);
 
             try
             {
@@ -65,6 +66,7 @@ namespace InvAuto
             }
 
             _ribbon = null;
+            ErrorGuard.Uninstall();
             GC.Collect();
             GC.WaitForPendingFinalizers();
         }

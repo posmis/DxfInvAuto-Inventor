@@ -36,7 +36,10 @@ namespace InvAuto.Core.Settings
             }
             catch (Exception ex)
             {
-                _log.Error($"Не удалось прочитать настройки '{path}', используются значения по умолчанию", ex);
+                // Испорченный файл не затираем молча при следующем сохранении — откладываем копию в backup.
+                string copy = Backup(key, path, "повреждён", move: false);
+                _log.Error($"Не удалось прочитать настройки '{path}', используются значения по умолчанию" +
+                           (copy != null ? $"; копия файла: {copy}" : string.Empty), ex);
                 return new T();
             }
         }
@@ -50,9 +53,11 @@ namespace InvAuto.Core.Settings
             using (var stream = File.Create(temp))
                 new XmlSerializer(typeof(T)).Serialize(stream, settings);
 
+            // Замена одним действием: при сбое остаётся либо старый файл, либо новый — не пустота.
             if (File.Exists(path))
-                File.Delete(path);
-            File.Move(temp, path);
+                File.Replace(temp, path, null);
+            else
+                File.Move(temp, path);
         }
 
         public bool Exists(string key) => File.Exists(PathFor(key));
@@ -67,15 +72,33 @@ namespace InvAuto.Core.Settings
             if (!File.Exists(path))
                 return null;
 
-            string backupFolder = Path.Combine(_folder, "backup");
-            Directory.CreateDirectory(backupFolder);
-            string backup = Path.Combine(backupFolder, $"{key}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.xml");
-            for (int i = 2; File.Exists(backup); i++)
-                backup = Path.Combine(backupFolder, $"{key}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}_{i}.xml");
-
-            File.Move(path, backup);
+            string backup = Backup(key, path, null, move: true);
             _log.Info($"Настройки '{key}' сброшены, резервная копия: {backup}");
             return backup;
+        }
+
+        /// <summary>Копия (или перенос) файла настроек в папку backup с отметкой времени. null — не удалось.</summary>
+        private string Backup(string key, string path, string note, bool move)
+        {
+            try
+            {
+                string backupFolder = Path.Combine(_folder, "backup");
+                Directory.CreateDirectory(backupFolder);
+                string stamp = $"{key}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}" + (note == null ? string.Empty : "_" + note);
+                string backup = Path.Combine(backupFolder, stamp + ".xml");
+                for (int i = 2; File.Exists(backup); i++)
+                    backup = Path.Combine(backupFolder, $"{stamp}_{i}.xml");
+                if (move)
+                    File.Move(path, backup);
+                else
+                    File.Copy(path, backup);
+                return backup;
+            }
+            catch (Exception ex) when (!move)
+            {
+                _log.Error($"Не удалось сохранить копию повреждённых настроек '{path}'", ex);
+                return null;
+            }
         }
 
         private string PathFor(string key) => Path.Combine(_folder, key + ".xml");

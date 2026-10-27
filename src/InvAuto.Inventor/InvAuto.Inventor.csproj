@@ -55,6 +55,21 @@
     <Error Text="Не найден Autodesk.Inventor.Interop.dll: '$(InventorInteropPath)'. Укажите версию (-p:InventorVersion=2023) или путь (-p:InventorInteropPath=...)." />
   </Target>
 
+  <!--
+    Версии Inventor в манифесте: сборка под .NET 8 загружается только в Inventor 2025+ (внутренняя версия 29),
+    под .NET Framework 4.8 — только до 2024 (28). Иначе Inventor попытается загрузить несовместимую DLL.
+  -->
+  <Target Name="AddinVersions" AfterTargets="CopyFilesToOutputDirectory">
+    <PropertyGroup>
+      <AddinGreaterThan Condition="'$(TargetFramework)' == 'net48'">23..</AddinGreaterThan>
+      <AddinLessThan Condition="'$(TargetFramework)' == 'net48'">29..</AddinLessThan>
+      <AddinGreaterThan Condition="'$(TargetFramework)' != 'net48'">28..</AddinGreaterThan>
+      <AddinLessThan Condition="'$(TargetFramework)' != 'net48'">99..</AddinLessThan>
+    </PropertyGroup>
+    <XmlPoke XmlInputPath="$(TargetDir)InvAuto.addin" Query="/Addin/SupportedSoftwareVersionGreaterThan" Value="$(AddinGreaterThan)" />
+    <XmlPoke XmlInputPath="$(TargetDir)InvAuto.addin" Query="/Addin/SupportedSoftwareVersionLessThan" Value="$(AddinLessThan)" />
+  </Target>
+
   <Target Name="DeployToInventor" AfterTargets="Build" Condition="'$(DeployToInventor)' == 'true'">
     <ItemGroup>
       <DeployFiles Include="$(TargetDir)**\*.*" />

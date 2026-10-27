@@ -233,10 +233,20 @@ namespace InvAuto.Features.Service
 
         #region О программе
 
+        /// <summary>Версия продукта (1.0.0) из Directory.Build.props; нет — версия сборки.</summary>
+        internal static string Version(System.Reflection.Assembly assembly)
+        {
+            var info = (System.Reflection.AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(
+                assembly, typeof(System.Reflection.AssemblyInformationalVersionAttribute));
+            string version = info?.InformationalVersion ?? assembly.GetName().Version?.ToString() ?? "—";
+            int plus = version.IndexOf('+');
+            return plus > 0 ? version.Substring(0, plus) : version;
+        }
+
         private void BuildAbout()
         {
             var assembly = typeof(AppSettingsWindow).Assembly;
-            Add("Версия InvAuto", assembly.GetName().Version?.ToString() ?? "—");
+            Add("Версия InvAuto", Version(assembly));
             Add("Inventor", InventorVersion());
             Add("Плагин", Path.GetDirectoryName(assembly.Location) ?? "—");
             Add("Настройки", _context.Settings.Folder);

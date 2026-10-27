@@ -128,8 +128,9 @@ namespace InvAuto.Features.SheetMetal
 
             // Необработанное исключение в обработчике окна ушло бы в диспетчер Inventor и могло уронить его.
             // Пока окно открыто, перехватываем, пишем в лог и показываем сообщение.
-            Dispatcher.UnhandledException += OnDispatcherUnhandledException;
-            Closed += (s, e) => Dispatcher.UnhandledException -= OnDispatcherUnhandledException;
+            // Сама ошибка перехватывается и показывается ErrorGuard; окно только снимает «занято».
+            ErrorGuard.Failed += OnFailed;
+            Closed += (s, e) => ErrorGuard.Failed -= OnFailed;
         }
 
         private string AssemblyName => string.IsNullOrEmpty(_document.FullFileName)
@@ -2303,13 +2304,10 @@ namespace InvAuto.Features.SheetMetal
 
         #endregion
 
-        private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+        private void OnFailed(Exception exception)
         {
-            e.Handled = true;
-            _context.Log.Error("Необработанная ошибка в окне «Листовые детали»", e.Exception);
             if (_busy)
                 SetBusy(false, 0);
-            ShowError("Произошла ошибка: " + e.Exception.Message + "\n\nПодробности в логе: %APPDATA%\\InvAuto\\logs");
         }
 
         private void SetStatus(string text) => StatusText.Text = text;
