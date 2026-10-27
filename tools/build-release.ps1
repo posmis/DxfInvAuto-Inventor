@@ -35,14 +35,26 @@ foreach ($file in "InvAuto.dll", "InvAuto.Core.dll", "Clipper2Lib.dll", "InvAuto
 }
 
 if (-not $Iscc) {
+    # Обычные папки установки, затем запись Inno Setup в реестре (установка в другую папку), затем PATH.
     $candidates = @(
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
         "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
         "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
     )
-    $Iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+    foreach ($key in "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+                     "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1",
+                     "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1") {
+        $location = (Get-ItemProperty $key -ErrorAction SilentlyContinue).InstallLocation
+        if ($location) { $candidates += (Join-Path $location "ISCC.exe") }
+    }
+    $onPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if ($onPath) { $candidates += $onPath.Source }
+    $Iscc = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 }
-if (-not $Iscc) { throw "Не найден ISCC.exe (Inno Setup 6). Установите его или укажите путь: -Iscc 'C:\...\ISCC.exe'." }
+if (-not $Iscc) {
+    throw ("Не найден ISCC.exe (Inno Setup 6). Установите Inno Setup: winget install JRSoftware.InnoSetup " +
+           "(или https://jrsoftware.org/isdl.php) и запустите скрипт снова; либо укажите путь: -Iscc 'C:\...\ISCC.exe'.")
+}
 
 Write-Host "== Установщик" -ForegroundColor Cyan
 & $Iscc "installer\InvAuto.iss" "/DInventorVersion=$InventorVersion" "/DSourceDir=$output"
