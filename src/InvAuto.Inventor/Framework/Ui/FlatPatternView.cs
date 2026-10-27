@@ -407,8 +407,16 @@ namespace InvAuto.Framework.Ui
         /// </summary>
         private static void DrawMarking(DrawingContext dc, FlatText text, Func<Point2, Point> map, double dpi, bool conflict)
         {
-            Point a = map(new Point2(text.MinX, text.MinY)), b = map(new Point2(text.MaxX, text.MaxY));
-            dc.DrawRectangle(conflict ? ConflictFill : null, conflict ? ConflictPen : MarkingBoxPen, new Rect(a, b));
+            // Рамка — повёрнутый прямоугольник по четырём углам.
+            var frame = new StreamGeometry();
+            using (var ctx = frame.Open())
+            {
+                ctx.BeginFigure(map(text.Corners[0]), true, true);
+                for (int k = 1; k < 4; k++)
+                    ctx.LineTo(map(text.Corners[k]), true, false);
+            }
+            frame.Freeze();
+            dc.DrawGeometry(conflict ? ConflictFill : null, conflict ? ConflictPen : MarkingBoxPen, frame);
 
             double capHeight = Math.Abs(map(new Point2(0, text.Height)).Y - map(new Point2(0, 0)).Y);
             if (capHeight < 2)
@@ -416,11 +424,10 @@ namespace InvAuto.Framework.Ui
             var formatted = new FormattedText(text.Value, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
                 MarkingFont, capHeight / 0.716, conflict ? ConflictPen.Brush : MarkingBrush, dpi); // 0,716 — высота прописных Arial в долях кегля
             var origin = map(new Point2(text.X, text.Y));
-            if (text.Vertical)
-                dc.PushTransform(new RotateTransform(-90, origin.X, origin.Y));
+            // Ось Y экрана направлена вниз — угол против часовой на развертке здесь со знаком минус.
+            dc.PushTransform(new RotateTransform(-text.Angle, origin.X, origin.Y));
             dc.DrawText(formatted, new Point(origin.X, origin.Y - formatted.Baseline));
-            if (text.Vertical)
-                dc.Pop();
+            dc.Pop();
         }
 
         private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xFF, 0xFF, 0xFF)));

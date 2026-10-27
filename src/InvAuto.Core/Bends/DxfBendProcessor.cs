@@ -10,12 +10,29 @@ namespace InvAuto.Core.Bends
     public sealed class BendLineInfo
     {
         public BendLineInfo(int index, string layer, double x1, double y1, double x2, double y2)
+            : this(index, layer, x1, y1, x2, y2, MakeKey(layer, x1, y1, x2, y2))
+        {
+        }
+
+        private BendLineInfo(int index, string layer, double x1, double y1, double x2, double y2, string key)
         {
             Index = index;
             Layer = layer;
             X1 = x1; Y1 = y1; X2 = x2; Y2 = y2;
             Length = Math.Sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-            Key = MakeKey(layer, x1, y1, x2, y2);
+            Key = key;
+        }
+
+        /// <summary>
+        /// Та же линия на повёрнутой развертке (поворот вокруг начала координат против часовой). Ключ прежний —
+        /// свои настройки линии продолжают действовать.
+        /// </summary>
+        public BendLineInfo Rotated(double degrees)
+        {
+            if (Math.Abs(degrees % 360) < 1e-12)
+                return this;
+            double a = degrees * Math.PI / 180, cos = Math.Cos(a), sin = Math.Sin(a);
+            return new BendLineInfo(Index, Layer, X1 * cos - Y1 * sin, X1 * sin + Y1 * cos, X2 * cos - Y2 * sin, X2 * sin + Y2 * cos, Key);
         }
 
         /// <summary>Номер линии гиба в файле (с 1) — для подписи на развертке.</summary>

@@ -23,6 +23,7 @@ namespace InvAuto.Features.SheetMetal
         private readonly List<LineItem> _items;
         private readonly Dictionary<string, BendLineOptions> _own;
         private bool _loading;
+        private readonly double _rotation;
 
         /// <param name="partName">Имя детали для заголовка.</param>
         /// <param name="preview">Сформированная развертка детали (исходный DXF).</param>
@@ -30,11 +31,12 @@ namespace InvAuto.Features.SheetMetal
         /// <param name="partSummary">Описание параметров детали: «общие: …» или «своя: …».</param>
         /// <param name="ownLines">Текущие свои параметры линий: ключ линии → параметры.</param>
         public BendLinesWindow(string partName, FlatPreview preview, BendLineOptions partOptions, string partSummary,
-            IReadOnlyDictionary<string, BendLineOptions> ownLines, IReadOnlyCollection<string> layers)
+            IReadOnlyDictionary<string, BendLineOptions> ownLines, IReadOnlyCollection<string> layers, double rotation = 0)
         {
             _loading = true;
             InitializeComponent();
             _preview = preview;
+            _rotation = rotation;
             _partOptions = partOptions;
             _layers = layers;
 
@@ -50,7 +52,9 @@ namespace InvAuto.Features.SheetMetal
             AsPartBox.Content = "Как у детали (" + partOptions.FullSummary + ")";
             Editor.Fallback = partOptions;
 
-            Preview.Labels = lines.Select(l => new FlatLabel(new Point2((l.X1 + l.X2) / 2, (l.Y1 + l.Y2) / 2), l.Index.ToString())).ToList();
+            // Развертка — с поворотом детали, как в окне просмотра.
+            Preview.Labels = lines.Select(l => l.Rotated(rotation))
+                .Select(l => new FlatLabel(new Point2((l.X1 + l.X2) / 2, (l.Y1 + l.Y2) / 2), l.Index.ToString())).ToList();
             LinesList.ItemsSource = _items;
             RefreshItems();
             _loading = false;
@@ -158,7 +162,7 @@ namespace InvAuto.Features.SheetMetal
         {
             try
             {
-                var (drawing, processed) = _preview.Render(Effective, _layers);
+                var (drawing, processed) = _preview.Render(Effective, _layers, _rotation);
                 Preview.Drawing = drawing;
 
                 var selected = new HashSet<string>(Selected.Select(s => s.Line.Key));

@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Flat;
 using InvAuto.Core.Marking;
 using InvAuto.Core.Materials;
 using InvAuto.Core.Preview;
@@ -50,6 +51,7 @@ namespace InvAuto.Features.SheetMetal
         private SheetMetalViewSettings _viewSettings;
         private BendSettings _bendSettings;
         private MarkingSettings _markingSettings;
+        private FlatRotationSettings _rotationSettings;
 
         private readonly FlatTree<TreeRow> _tree = new FlatTree<TreeRow>();
         private readonly ObservableCollection<PartRow> _rows = new ObservableCollection<PartRow>();
@@ -102,6 +104,7 @@ namespace InvAuto.Features.SheetMetal
             _viewSettings.Normalize();
             _bendSettings = context.Settings.Load<BendSettings>(BendSettingsKey);
             _markingSettings = context.Settings.Load<MarkingSettings>(MarkingSettings.Key);
+            _rotationSettings = context.Settings.Load<FlatRotationSettings>(FlatRotationSettings.Key);
 
             Title = $"Листовые детали — {AssemblyName}";
             ApplyViewSettings();
@@ -231,6 +234,7 @@ namespace InvAuto.Features.SheetMetal
             var row = new PartRow(part, ProductQuantity) { IsChecked = _checked.Contains(part.FullFileName) };
             ApplyBends(row);
             ApplyMarking(row);
+            row.ApplyRotation(_rotationSettings.For(part.FullFileName));
             ApplyMaterial(row);
             if (_results.TryGetValue(part.FullFileName, out var result))
                 row.ApplyResult(result);
@@ -668,8 +672,8 @@ namespace InvAuto.Features.SheetMetal
                 case PartColumns.FlatState: return r => r.HasFlatPattern;
                 // Габариты — по большей стороне, при равенстве — по меньшей.
                 case PartColumns.FlatSize:
-                    return r => r.Part.FlatLengthMm > 0
-                        ? Math.Round(Math.Max(r.Part.FlatLengthMm, r.Part.FlatWidthMm), 3) * 1e6 + Math.Min(r.Part.FlatLengthMm, r.Part.FlatWidthMm)
+                    return r => r.FlatLength > 0
+                        ? Math.Round(Math.Max(r.FlatLength, r.FlatWidth), 3) * 1e6 + Math.Min(r.FlatLength, r.FlatWidth)
                         : (object)null;
                 default: return null;
             }
@@ -1166,6 +1170,20 @@ namespace InvAuto.Features.SheetMetal
                 ShowDetails(selected);
         }
 
+        /// <summary>Поворот развертки из окна просмотра (0 — без поворота): сохраняется для детали.</summary>
+        private void SetRotation(PartRow row, double rotation)
+        {
+            _rotationSettings.Set(row.FilePath, rotation);
+            _context.Settings.Save(FlatRotationSettings.Key, _rotationSettings);
+            row.ApplyRotation(_rotationSettings.For(row.FilePath));
+            ScheduleChecks();
+            if (PartsGrid.SelectedItem == row)
+                ShowDetails(row);
+            SetStatus(row.Rotated
+                ? $"Развертка «{row.FileName}» повёрнута на {row.Rotation.ToString("0.##", CultureInfo.CurrentCulture)}°"
+                : $"Поворот развертки «{row.FileName}» сброшен");
+        }
+
         /// <summary>Место маркировки из окна просмотра: null — снова автоматически.</summary>
         private void SetMarkingPosition(PartRow row, MarkingPosition position)
         {
@@ -1173,7 +1191,7 @@ namespace InvAuto.Features.SheetMetal
             if (position == null)
                 _markingSettings.ClearPosition(key);
             else
-                _markingSettings.SetPosition(key, position.X, position.Y, position.Vertical, position.Height);
+                _markingSettings.SetPosition(key, position.X, position.Y, position.EffectiveAngle, position.Height);
             _context.Settings.Save(MarkingSettings.Key, _markingSettings);
             ApplyMarking(row);
             ScheduleChecks();
@@ -1303,7 +1321,7 @@ namespace InvAuto.Features.SheetMetal
                     return true;
                 await GenerateFlatsAsync(new List<PartRow> { row }, force: false);
                 return row.FlatPreviewState == FlatPreviewState.Ready;
-            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key), SetMarkingPosition, SetDismissed) { Owner = this };
+            }, _collapsedDetails, (r, key) => _bendSettings.HasLineOverride(r.Part.FullFileName, key), SetMarkingPosition, SetDismissed, SetRotation) { Owner = this };
             viewer.ShowDialog();
         }
 
@@ -1339,7 +1357,7 @@ namespace InvAuto.Features.SheetMetal
             string key = row.Part.FullFileName;
             string partSummary = (_bendSettings.HasOverride(key) ? "своя — " : "общие — ") + _bendSettings.For(key).FullSummary;
             var dialog = new BendLinesWindow(row.FileName, row.Preview, _bendSettings.For(key), partSummary,
-                _bendSettings.LineOverrides(key), BendLayers) { Owner = this };
+                _bendSettings.LineOverrides(key), BendLayers, row.Rotation) { Owner = this };
             if (dialog.ShowDialog() != true)
                 return;
 
@@ -1454,6 +1472,7 @@ namespace InvAuto.Features.SheetMetal
                 BendOptions = part => _bendSettings.Resolver(part.FullFileName),
                 Marking = part => _markingSettings.For(part.FullFileName),
                 MarkingPosition = part => _markingSettings.PositionFor(part.FullFileName),
+                Rotation = part => _rotationSettings.For(part.FullFileName),
                 BendLayers = BendLayers,
                 RawDxfWritten = (collected, raw) => RememberRawFlat(collected.Info.FullFileName, raw)
             };
@@ -1651,6 +1670,12 @@ namespace InvAuto.Features.SheetMetal
             }
             if (reset.Contains(BendSettingsKey))
                 _bendSettings = _context.Settings.Load<BendSettings>(BendSettingsKey);
+            if (reset.Contains(FlatRotationSettings.Key))
+            {
+                _rotationSettings = _context.Settings.Load<FlatRotationSettings>(FlatRotationSettings.Key);
+                foreach (var row in _rows)
+                    row.ApplyRotation(_rotationSettings.For(row.FilePath));
+            }
             if (reset.Contains(MarkingSettings.Key))
             {
                 _markingSettings = _context.Settings.Load<MarkingSettings>(MarkingSettings.Key);
@@ -1810,8 +1835,8 @@ namespace InvAuto.Features.SheetMetal
             Drawing = row.FlatPreviewState == FlatPreviewState.Ready ? row.Flat : null,
             FlatError = row.FlatPreviewState == FlatPreviewState.Failed ? row.FlatPreviewError : string.Empty,
             BendLines = row.BendLines.Select(b => b.Line).ToList(),
-            FlatLength = row.Part.FlatLengthMm,
-            FlatWidth = row.Part.FlatWidthMm,
+            FlatLength = row.FlatLength,
+            FlatWidth = row.FlatWidth,
             Marking = row.FlatPreviewState == FlatPreviewState.Ready ? row.Marking : null
         };
 
@@ -2037,8 +2062,8 @@ namespace InvAuto.Features.SheetMetal
                 Material = row.LibraryMaterial.Material?.Name ?? string.Empty,
                 Thickness = row.Thickness,
                 Quantity = row.Total,
-                FlatLength = row.Part.FlatLengthMm,
-                FlatWidth = row.Part.FlatWidthMm,
+                FlatLength = row.FlatLength,
+                FlatWidth = row.FlatWidth,
                 Area = row.AreaM2,
                 Mass = row.Mass,
                 CutLength = row.CutLengthM,

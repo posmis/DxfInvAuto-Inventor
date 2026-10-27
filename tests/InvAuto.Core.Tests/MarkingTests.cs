@@ -214,7 +214,7 @@ namespace InvAuto.Core.Tests
                 var store = new InvAuto.Core.Settings.XmlSettingsStore(dir, new InvAuto.Core.Logging.FileLogger(Path.Combine(dir, "logs")));
                 var s = new MarkingSettings { Default = On(4) };
                 s.SetOverride(@"C:\Детали\Рамка.ipt", new MarkingOptions { Enabled = false });
-                s.SetPosition(@"C:\Детали\Опора.ipt", 12.5, 30, true, 3);
+                s.SetPosition(@"C:\Детали\Опора.ipt", 12.5, 30, 90, 3);
 
                 store.Save(MarkingSettings.Key, s);
                 var loaded = store.Load<MarkingSettings>(MarkingSettings.Key);
@@ -227,7 +227,7 @@ namespace InvAuto.Core.Tests
                 Assert.Single(loaded.Parts);
                 var p = Assert.Single(loaded.Positions);
                 Assert.Equal(12.5, p.X);
-                Assert.True(p.Vertical);
+                Assert.Equal(90, p.EffectiveAngle);
                 Assert.Equal(3, p.Height);
                 Assert.False(new MarkingSettings().Default.Enabled); // по умолчанию выключена
             }
@@ -243,12 +243,12 @@ namespace InvAuto.Core.Tests
         {
             var s = new MarkingSettings();
             Assert.Null(s.PositionFor("C:\\a.ipt"));
-            s.SetPosition("C:\\a.ipt", 10, 20, true);
-            s.SetPosition("c:\\A.ipt", 30, 40, false); // заменяет, а не добавляет
+            s.SetPosition("C:\\a.ipt", 10, 20, 90);
+            s.SetPosition("c:\\A.ipt", 30, 40, 0); // заменяет, а не добавляет
             var p = s.PositionFor("C:\\a.ipt");
             Assert.Single(s.Positions);
             Assert.Equal(30, p.X);
-            Assert.False(p.Vertical);
+            Assert.Equal(0, p.EffectiveAngle);
             s.ClearPosition("C:\\a.ipt");
             Assert.Null(s.PositionFor("C:\\a.ipt"));
         }

@@ -32,8 +32,14 @@ namespace InvAuto.Core.Marking
         public double X { get; set; }
         public double Y { get; set; }
 
-        /// <summary>Текст снизу вверх (90°).</summary>
+        /// <summary>Текст снизу вверх (90°). Устарело: из старых настроек, новые места пишут Angle.</summary>
         public bool Vertical { get; set; }
+
+        /// <summary>Угол текста в градусах против часовой (в координатах развертки до поворота детали).</summary>
+        public double Angle { get; set; }
+
+        /// <summary>Угол с учётом старого признака Vertical.</summary>
+        public double EffectiveAngle => Math.Abs(Angle) > 1e-12 ? Angle : Vertical ? 90 : 0;
 
         /// <summary>Высота текста, мм (как было при переносе; 0 — высота из параметров). Не выходит за MinHeight…Height.</summary>
         public double Height { get; set; }
@@ -75,7 +81,7 @@ namespace InvAuto.Core.Marking
         public bool Shrunk => Text != null && RequestedHeight > 0 && Text.Height < RequestedHeight - 1e-9;
 
         /// <summary>Центр текста — для отметок замечаний на развертке.</summary>
-        public Point2? Center => Text == null ? (Point2?)null : new Point2((Text.MinX + Text.MaxX) / 2, (Text.MinY + Text.MaxY) / 2);
+        public Point2? Center => Text?.Center;
 
         /// <summary>Для панели свойств.</summary>
         public string Description
@@ -88,8 +94,11 @@ namespace InvAuto.Core.Marking
                     case MarkingStatus.NoRoom: return "не помещается";
                     case MarkingStatus.Placed:
                         var notes = new List<string>();
-                        if (Text.Vertical)
+                        double angle = ((Text.Angle % 360) + 360) % 360;
+                        if (Math.Abs(angle - 90) < 1e-6)
                             notes.Add("вертикально");
+                        else if (angle > 1e-6 && angle < 360 - 1e-6)
+                            notes.Add(string.Format(CultureInfo.CurrentCulture, "под {0:0.#}°", angle));
                         if (Manual)
                             notes.Add("вручную");
                         if (Conflict)
@@ -196,14 +205,13 @@ namespace InvAuto.Core.Marking
         /// <summary>Центр детали вырезан (попадает в отверстие).</summary>
         public bool CenterCut => _outer != null && _holes.Any(h => h.Contains(Center));
 
-        /// <summary>Текст на металле и с отступом margin от всех линий.</summary>
+        /// <summary>Текст (под любым углом) на металле и с отступом margin от всех линий.</summary>
         public bool Fits(FlatText text, double margin)
         {
             if (text == null || _outer == null)
                 return false;
-            var center = new Point2((text.MinX + text.MaxX) / 2, (text.MinY + text.MaxY) / 2);
             // Рамку не пересекает ни одна линия — значит, она целиком там же, где её центр.
-            return Clear(text.MinX - margin, text.MinY - margin, text.MaxX + margin, text.MaxY + margin) && OnMetal(center);
+            return Clear(text.Center, text.Angle, text.Width / 2 + margin, text.Height / 2 + margin) && OnMetal(text.Center);
         }
 
         /// <summary>Место для текста; null — не помещается.</summary>
@@ -231,7 +239,7 @@ namespace InvAuto.Core.Marking
 
                     foreach (var c in candidates.OrderBy(c => c.D))
                     {
-                        var candidate = DxfMarking.At(text, c.X, c.Y, h, vertical);
+                        var candidate = DxfMarking.At(text, c.X, c.Y, h, vertical ? 90 : 0);
                         if (Fits(candidate, o.Margin))
                             return candidate;
                     }
@@ -242,11 +250,16 @@ namespace InvAuto.Core.Marking
             return null;
         }
 
-        /// <summary>Ни один отрезок не задевает прямоугольник.</summary>
-        private bool Clear(double x0, double y0, double x1, double y1)
+        /// <summary>Ни один отрезок не задевает прямоугольник с центром center, углом angle и полуразмерами hw × hh.</summary>
+        private bool Clear(Point2 center, double angle, double hw, double hh)
         {
             if (_grid == null)
                 return true;
+            double a = angle * Math.PI / 180, cos = Math.Cos(a), sin = Math.Sin(a);
+            double ex = Math.Abs(cos) * hw + Math.Abs(sin) * hh, ey = Math.Abs(sin) * hw + Math.Abs(cos) * hh;
+            double x0 = center.X - ex, y0 = center.Y - ey, x1 = center.X + ex, y1 = center.Y + ey;
+            // Отрезки — в систему прямоугольника (центр в начале, стороны вдоль осей).
+            Point2 Local(Point2 p) => new Point2((p.X - center.X) * cos + (p.Y - center.Y) * sin, -(p.X - center.X) * sin + (p.Y - center.Y) * cos);
             _query++;
             Cells(x0, y0, x1, y1, out int i0, out int j0, out int i1, out int j1);
             for (int x = i0; x <= i1; x++)
@@ -261,10 +274,10 @@ namespace InvAuto.Core.Marking
                         if (_seen[i] == _query)
                             continue; // отрезок в нескольких ячейках — проверяем один раз
                         _seen[i] = _query;
-                        var (a, b) = _segments[i];
-                        if (Math.Max(a.X, b.X) < x0 || Math.Min(a.X, b.X) > x1 || Math.Max(a.Y, b.Y) < y0 || Math.Min(a.Y, b.Y) > y1)
+                        var (p, q) = _segments[i];
+                        if (Math.Max(p.X, q.X) < x0 || Math.Min(p.X, q.X) > x1 || Math.Max(p.Y, q.Y) < y0 || Math.Min(p.Y, q.Y) > y1)
                             continue;
-                        if (Crosses(a, b, x0, y0, x1, y1))
+                        if (Crosses(Local(p), Local(q), -hw, -hh, hw, hh))
                             return false;
                     }
                 }
@@ -312,13 +325,13 @@ namespace InvAuto.Core.Marking
 
         public static double TextWidth(string text, double height) => (text ?? string.Empty).Trim().Length * height * CharWidth;
 
-        /// <summary>Текст с центром в (cx; cy). Вертикальный идёт снизу вверх, верх букв — влево.</summary>
-        public static FlatText At(string text, double cx, double cy, double height, bool vertical)
+        /// <summary>Текст с центром в (cx; cy) под углом angle (градусы против часовой; 90 — снизу вверх, верх букв влево).</summary>
+        public static FlatText At(string text, double cx, double cy, double height, double angle)
         {
             double w = TextWidth(text, height);
-            return vertical
-                ? new FlatText(text.Trim(), cx + height / 2, cy - w / 2, height, 90, w)
-                : new FlatText(text.Trim(), cx - w / 2, cy - height / 2, height, 0, w);
+            double a = angle * Math.PI / 180, ux = Math.Cos(a), uy = Math.Sin(a), nx = -uy, ny = ux;
+            // Точка вставки — начало базовой линии: от центра назад на полширины и вниз на полвысоты.
+            return new FlatText(text.Trim(), cx - ux * w / 2 - nx * height / 2, cy - uy * w / 2 - ny * height / 2, height, angle, w);
         }
 
         /// <summary>
@@ -339,7 +352,7 @@ namespace InvAuto.Core.Marking
             if (position != null)
             {
                 double height = position.Height > 0 ? Math.Max(o.MinHeight, Math.Min(o.Height, position.Height)) : o.Height;
-                var manual = At(text, position.X, position.Y, height, position.Vertical);
+                var manual = At(text, position.X, position.Y, height, position.EffectiveAngle);
                 return new MarkingResult(MarkingStatus.Placed, DxfBendProcessor.AddText(dxf, manual, o.Layer, LayerColor), manual,
                     manual: true, conflict: !area.Fits(manual, o.Margin), requestedHeight: o.Height);
             }

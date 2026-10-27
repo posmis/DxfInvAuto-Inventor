@@ -44,8 +44,17 @@
                                   ToolTip="Место маркировки вручную (M): перетащите текст или щёлкните, куда его поставить.&#x0a;Место запоминается для детали и используется при выгрузке.">Маркировка</ToggleButton>
                     <Button x:Name="MarkingRotateButton" Style="{StaticResource ToolButton}" Click="OnMarkingRotate" Visibility="Collapsed"
                             ToolTip="Повернуть текст на 90° (R)">Повернуть</Button>
+                    <ToggleButton x:Name="MarkingAlongTool" Style="{StaticResource ToolButton}" Click="OnMarkingAlong" Visibility="Collapsed"
+                                  ToolTip="Текст вдоль прямой линии развертки: нажмите и щёлкните по отрезку">Вдоль линии</ToggleButton>
+                    <Button x:Name="MarkingFlipButton" Style="{StaticResource ToolButton}" Click="OnMarkingFlip" Visibility="Collapsed"
+                            ToolTip="Перевернуть текст на 180° (F)">Перевернуть</Button>
                     <Button x:Name="MarkingAutoButton" Style="{StaticResource ToolButton}" Click="OnMarkingAuto" Visibility="Collapsed"
                             ToolTip="Вернуть автоматическое место маркировки">Авто</Button>
+                    <Border Style="{StaticResource ToolSeparator}" />
+                    <ToggleButton x:Name="RotateTool" Style="{StaticResource ToolButton}" Click="OnRotateTool"
+                                  ToolTip="Повернуть развертку (T): щёлкните по прямому отрезку — он станет горизонтальным.&#x0a;Щелчок по горизонтальному отрезку — разворот на 180°. Поворот запоминается для детали и используется при выгрузке.">Повернуть по линии</ToggleButton>
+                    <Button x:Name="RotateResetButton" Style="{StaticResource ToolButton}" Click="OnRotateReset" IsEnabled="False"
+                            ToolTip="Вернуть развертку без поворота">Сбросить поворот</Button>
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <ToggleButton x:Name="NumbersToggle" Style="{StaticResource ToolButton}" Tag="{StaticResource Icon.BendNumbers.Small}"

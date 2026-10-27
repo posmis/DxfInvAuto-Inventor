@@ -75,6 +75,9 @@ namespace InvAuto.Features.SheetMetal
             if (!row.HasFlatPattern)
                 table.Row("Развертка", "нет в детали", null, PropertyKind.Warning);
             table.Row("Габариты", row.FlatSize, "мм");
+            if (row.Rotated)
+                table.Row("Поворот", N(row.Rotation, "0.##") + "°", null, PropertyKind.Normal,
+                    "Развертка повёрнута вручную (окно просмотра — «Повернуть по линии»); так она и выгружается");
 
             var m = row.Metrics;
             bool hasMetrics = m != null && m.Pierces > 0;

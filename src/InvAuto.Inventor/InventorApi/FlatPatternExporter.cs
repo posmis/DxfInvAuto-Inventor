@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Inventor;
 using InvAuto.Core.Bends;
 using InvAuto.Core.Export;
+using InvAuto.Core.Flat;
 using InvAuto.Core.Marking;
 using IO = System.IO;
 
@@ -36,6 +37,9 @@ namespace InvAuto.InventorApi
 
         /// <summary>Место маркировки, заданное вручную (null — автоматически).</summary>
         public Func<SheetMetalPart, MarkingPosition> MarkingPosition { get; set; }
+
+        /// <summary>Поворот развертки детали, градусы (null — без поворота).</summary>
+        public Func<SheetMetalPart, double> Rotation { get; set; }
 
         /// <summary>Слои, отрезки на которых считаются линиями гиба.</summary>
         public IReadOnlyCollection<string> BendLayers { get; set; } = DxfBendProcessor.DefaultLayers;
@@ -73,8 +77,15 @@ namespace InvAuto.InventorApi
                 {
                     _writer.Write(definition, raw);
                     RawDxfWritten?.Invoke(part, raw);
-                    var (_, marked) = DxfOutput.WriteFinal(raw, path, BendOptions?.Invoke(info), BendLayers,
-                        Marking?.Invoke(info), info.PartNumber, MarkingPosition?.Invoke(info));
+                    var (_, marked) = DxfOutput.WriteFinal(raw, path, new FlatRequest
+                    {
+                        Bends = BendOptions?.Invoke(info),
+                        BendLayers = BendLayers,
+                        Rotation = Rotation?.Invoke(info) ?? 0,
+                        Marking = Marking?.Invoke(info),
+                        MarkingText = info.PartNumber,
+                        MarkingPosition = MarkingPosition?.Invoke(info)
+                    });
                     var marking = marked.Status;
                     if (marked.Conflict)
                         note = Join(note, "маркировка задевает контур");

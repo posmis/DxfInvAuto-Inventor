@@ -69,8 +69,8 @@ namespace InvAuto.Core.Preview
     }
 
     /// <summary>
-    /// Текст на развертке (маркировка): точка вставки — левый нижний угол по базовой линии, угол 0° или 90°.
-    /// Width — оценка ширины текста; Box — занимаемый прямоугольник (с ним сверяются отступы до контуров).
+    /// Текст на развертке (маркировка): точка вставки — левый нижний угол по базовой линии, угол — любой.
+    /// Width — оценка ширины текста; занимаемый прямоугольник — Corners (с ним сверяются отступы до контуров).
     /// </summary>
     public sealed class FlatText
     {
@@ -82,6 +82,19 @@ namespace InvAuto.Core.Preview
             Height = height;
             Angle = angle;
             Width = width;
+
+            double a = angle * Math.PI / 180, ux = Math.Cos(a), uy = Math.Sin(a), nx = -uy, ny = ux;
+            Corners = new[]
+            {
+                new Point2(x, y),
+                new Point2(x + ux * width, y + uy * width),
+                new Point2(x + ux * width + nx * height, y + uy * width + ny * height),
+                new Point2(x + nx * height, y + ny * height)
+            };
+            MinX = Corners.Min(p => p.X);
+            MinY = Corners.Min(p => p.Y);
+            MaxX = Corners.Max(p => p.X);
+            MaxY = Corners.Max(p => p.Y);
         }
 
         public string Value { get; }
@@ -89,17 +102,22 @@ namespace InvAuto.Core.Preview
         public double Y { get; }
         public double Height { get; }
 
-        /// <summary>Угол в градусах (0 — слева направо, 90 — снизу вверх).</summary>
+        /// <summary>Угол в градусах против часовой (0 — слева направо, 90 — снизу вверх).</summary>
         public double Angle { get; }
 
         public double Width { get; }
 
         public bool Vertical => Math.Abs(Angle - 90) < 1e-9;
 
-        public double MinX => Vertical ? X - Height : X;
-        public double MinY => Y;
-        public double MaxX => Vertical ? X : X + Width;
-        public double MaxY => Vertical ? Y + Width : Y + Height;
+        /// <summary>Углы занимаемого прямоугольника: начало базовой линии, её конец, верх конца, верх начала.</summary>
+        public IReadOnlyList<Point2> Corners { get; }
+
+        public Point2 Center => new Point2((Corners[0].X + Corners[2].X) / 2, (Corners[0].Y + Corners[2].Y) / 2);
+
+        public double MinX { get; }
+        public double MinY { get; }
+        public double MaxX { get; }
+        public double MaxY { get; }
     }
 
     /// <summary>Плоский чертёж развертки: набор полилиний в миллиметрах (единицы DXF).</summary>

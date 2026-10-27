@@ -36,6 +36,7 @@ namespace InvAuto.Features.Service
             (SheetMetalWindow.ExportSettingsKey, "Параметры выгрузки DXF", "папка, шаблоны имён, ini-файл, раскладка по толщине"),
             (SheetMetalWindow.BendSettingsKey, "Линии гиба", "общие параметры, параметры деталей и отдельных линий"),
             (InvAuto.Core.Marking.MarkingSettings.Key, "Маркировка", "общие параметры и параметры деталей"),
+            (InvAuto.Core.Flat.FlatRotationSettings.Key, "Поворот разверток", "повороты разверток, заданные в окне просмотра"),
             (SheetMetalWindow.ViewSettingsKey, "Вид окна «Листовые детали»", "колонки, размеры окна и панелей"),
             (AppSettings.Key, "Настройки приложения", "сроки хранения кэша и журнала, запоминание списков"),
             (SavedPartLists.Key, "Сохранённые списки деталей", "списки окна «Листовые детали» по сборкам"),

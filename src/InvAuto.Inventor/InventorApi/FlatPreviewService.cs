@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using InvAuto.Core.Bends;
+using InvAuto.Core.Flat;
 using InvAuto.Core.Marking;
 using InvAuto.Core.Preview;
 using IO = System.IO;
@@ -50,25 +51,27 @@ namespace InvAuto.InventorApi
         /// (resolve — параметры каждой линии с учётом настроек линии, детали и общих).
         /// </summary>
         public (FlatDrawing Drawing, IReadOnlyList<ProcessedBendLine> BendLines) Render(
-            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers)
+            Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers, double rotation = 0)
         {
-            var (drawing, lines, _) = Render(resolve, bendLayers, null, null, null);
+            var (drawing, lines, _) = Render(resolve, bendLayers, null, null, null, rotation);
             return (drawing, lines);
         }
 
         /// <summary>То же с маркировкой: текст ставится так же, как при выгрузке, и показывается на развертке.</summary>
         public (FlatDrawing Drawing, IReadOnlyList<ProcessedBendLine> BendLines, MarkingResult Marking) Render(
             Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers, MarkingOptions marking, string markingText,
-            MarkingPosition position)
+            MarkingPosition position, double rotation = 0)
         {
             if (State != FlatPreviewState.Ready)
                 return (null, Array.Empty<ProcessedBendLine>(), null);
 
-            var processed = DxfBendProcessor.Process(RawText, bendLayers, resolve);
-            var drawing = DxfReader.Read(new IO.StringReader(processed.Text));
-            var marked = DxfMarking.Apply(processed.Text, markingText, marking, drawing, position);
-            // Законцовки добавляются отдельными линиями — окно рисует их красным поверх контура.
-            return (drawing.WithEndFeatures(processed.EndFeatures).WithText(marked.Text), processed.Items, marked);
+            // Тот же конвейер, что при выгрузке: линии гиба → поворот → маркировка. Законцовки — красным поверх контура.
+            var result = FlatPipeline.Run(RawText, new FlatRequest
+            {
+                Bends = resolve, BendLayers = bendLayers, Rotation = rotation,
+                Marking = marking, MarkingText = markingText, MarkingPosition = position
+            }, withDrawing: true);
+            return (result.Drawing, result.BendLines, result.Marking);
         }
     }
 

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using InvAuto.Core.Flat;
 using InvAuto.Core.Marking;
 using InvAuto.Core.Measuring;
 using InvAuto.Core.Preview;
@@ -24,7 +25,12 @@ namespace InvAuto.Features.SheetMetal
     public partial class FlatViewerWindow : Window, IFlatDragHandler
     {
         private const string MarkingHint =
-            "Перетащите текст или щёлкните, куда его поставить · R — повернуть · «Авто» — автоматическое место · Esc — выйти";
+            "Перетащите текст или щёлкните, куда его поставить · R — повернуть на 90° · F — перевернуть · «Авто» — автоматическое место · Esc — выйти";
+
+        private const string MarkingAlongHint = "Щёлкните по прямому отрезку — текст встанет вдоль него · Esc — отмена";
+
+        private const string RotateHint =
+            "Щёлкните по прямому отрезку — он станет горизонтальным · щелчок по горизонтальному — разворот на 180° · Esc — выйти";
 
         /// <summary>Радиус захвата привязки, px экрана.</summary>
         private const double SnapPixels = 10;
@@ -39,6 +45,10 @@ namespace InvAuto.Features.SheetMetal
         private readonly Func<PartRow, string, bool> _isOwnLine;
         private readonly Action<PartRow, MarkingPosition> _setMarkingPosition;
         private readonly Action<PartRow, InvAuto.Core.Preflight.PreflightIssue, bool> _dismiss;
+        private readonly Action<PartRow, double> _setRotation;
+        private bool _rotateMode;
+        private double _shownRotation;
+        private bool _alongMode;
         private bool _markingMode;
         private object _markingToolTip;
         private MarkingArea _markingArea;
@@ -56,9 +66,11 @@ namespace InvAuto.Features.SheetMetal
         public FlatViewerWindow(IReadOnlyList<PartRow> rows, int index, Func<PartRow, Task<bool>> ensureFlat,
             ISet<string> collapsedSections = null, Func<PartRow, string, bool> isOwnLine = null,
             Action<PartRow, MarkingPosition> setMarkingPosition = null,
-            Action<PartRow, InvAuto.Core.Preflight.PreflightIssue, bool> dismiss = null)
+            Action<PartRow, InvAuto.Core.Preflight.PreflightIssue, bool> dismiss = null,
+            Action<PartRow, double> setRotation = null)
         {
             _dismiss = dismiss;
+            _setRotation = setRotation;
             InitializeComponent();
             _rows = rows;
             _ensureFlat = ensureFlat;
@@ -94,9 +106,17 @@ namespace InvAuto.Features.SheetMetal
                 return;
             if (e.PropertyName == nameof(PartRow.Flat) && Current.Flat != null && !Current.Flat.IsEmpty && EmptyText.Visibility != Visibility.Visible)
             {
-                // Развертка перерисована (например, после переноса маркировки) — показываем новую, не сбрасывая вид.
+                // Развертка перерисована (перенос маркировки, поворот) — показываем новую.
                 _draft = null;
                 ShowFlat(Current);
+                ApplyLabels(); // номера линий гиба — по новым координатам
+                if (Math.Abs(Current.Rotation - _shownRotation) > 1e-9)
+                {
+                    // Повернули: прежние измерения к новым координатам не относятся, развертку — целиком в окно.
+                    _shownRotation = Current.Rotation;
+                    _measure.SetDrawing(Current.Flat);
+                    View.Fit();
+                }
                 FillProperties(Current);
                 return;
             }
@@ -149,6 +169,7 @@ namespace InvAuto.Features.SheetMetal
             _draft = null;
             ShowFlat(row);
             _measure.SetDrawing(row.Flat); // измерения относятся к одной детали
+            _shownRotation = row.Rotation;
             _overlay.Issues = row.Issues;   // места замечаний проверки
             ApplyLabels();
             FillProperties(row); // после формирования появились площадь, масса, рез и линии гиба
@@ -162,6 +183,7 @@ namespace InvAuto.Features.SheetMetal
             View.MarkingConflict = row.Marking?.Conflict == true;
             _markingArea = null;
             UpdateMarkingTool();
+            UpdateRotateTool();
         }
 
         private void ShowMessage(string text)
@@ -170,6 +192,7 @@ namespace InvAuto.Features.SheetMetal
             View.MarkingConflict = false;
             _markingArea = null;
             UpdateMarkingTool();
+            UpdateRotateTool();
             _measure.SetDrawing(null);
             View.Labels = null;
             EmptyText.Text = text;
@@ -253,6 +276,8 @@ namespace InvAuto.Features.SheetMetal
         {
             if (mode != MeasureMode.None && _markingMode)
                 SetMarkingMode(false);
+            if (mode != MeasureMode.None && _rotateMode)
+                SetRotateMode(false);
             _measure.SetMode(mode);
             DistanceTool.IsChecked = mode == MeasureMode.Distance;
             AngleTool.IsChecked = mode == MeasureMode.Angle;
@@ -263,12 +288,35 @@ namespace InvAuto.Features.SheetMetal
 
         private void OnModelClicked(object sender, Point2 position)
         {
+            if (_rotateMode)
+            {
+                if (PickLine(position) is Segment2 line && Current != null)
+                {
+                    double angle = Math.Atan2(line.B.Y - line.A.Y, line.B.X - line.A.X) * 180 / Math.PI;
+                    _setRotation(Current, FlatRotationSettings.AlignToLine(Current.Rotation, angle));
+                }
+                return;
+            }
             if (_markingMode)
             {
-                // Щелчок — поставить текст центром в эту точку.
                 var text = CurrentMarkingText();
-                if (text != null)
-                    CommitMarking(text, position.X, position.Y);
+                if (text == null)
+                    return;
+                if (_alongMode)
+                {
+                    // Вдоль отрезка: угол — направление отрезка, читаемый слева направо (−90°…90°); центр на месте.
+                    if (PickLine(position) is Segment2 line)
+                    {
+                        double angle = Math.Atan2(line.B.Y - line.A.Y, line.B.X - line.A.X) * 180 / Math.PI;
+                        if (angle > 90) angle -= 180;
+                        if (angle <= -90) angle += 180;
+                        CommitMarking(text, text.Center.X, text.Center.Y, angle);
+                        SetAlongMode(false);
+                    }
+                    return;
+                }
+                // Щелчок — поставить текст центром в эту точку.
+                CommitMarking(text, position.X, position.Y);
                 return;
             }
             if (_measure.Mode == MeasureMode.None)
@@ -319,7 +367,53 @@ namespace InvAuto.Features.SheetMetal
         }
 
         private void UpdateHint() =>
-            HintText.Text = _markingMode ? MarkingHint : _measure.Mode == MeasureMode.None ? NavigationHint : _measure.Prompt;
+            HintText.Text = _rotateMode ? RotateHint
+                : _markingMode ? (_alongMode ? MarkingAlongHint : MarkingHint)
+                : _measure.Mode == MeasureMode.None ? NavigationHint : _measure.Prompt;
+
+        /// <summary>Прямой отрезок развертки под курсором (с допуском в несколько пикселей); null — рядом нет.</summary>
+        private Segment2? PickLine(Point2 at)
+        {
+            var drawing = Current?.Flat;
+            if (drawing == null)
+                return null;
+            var pick = new FlatSnapper(drawing).PickLine(at, SnapPixels / Math.Max(View.PixelsPerMm, 1e-9));
+            return pick?.Segment;
+        }
+
+        #endregion
+
+        #region Поворот развертки
+
+        private void UpdateRotateTool()
+        {
+            bool can = _setRotation != null && Current != null && View.Drawing != null;
+            RotateTool.IsEnabled = can;
+            RotateResetButton.IsEnabled = can && Current.Rotated;
+            if (!can && _rotateMode)
+                SetRotateMode(false);
+        }
+
+        private void OnRotateTool(object sender, RoutedEventArgs e) => SetRotateMode(RotateTool.IsChecked == true);
+
+        private void SetRotateMode(bool on)
+        {
+            on = on && RotateTool.IsEnabled;
+            _rotateMode = on;
+            RotateTool.IsChecked = on;
+            if (on && _markingMode)
+                SetMarkingMode(false);
+            if (on && _measure.Mode != MeasureMode.None)
+                SetMeasureMode(MeasureMode.None);
+            View.DoubleClickFits = !on && !_markingMode && _measure.Mode == MeasureMode.None;
+            UpdateHint();
+        }
+
+        private void OnRotateReset(object sender, RoutedEventArgs e)
+        {
+            if (Current != null && _setRotation != null && Current.Rotated)
+                _setRotation(Current, 0);
+        }
 
         #endregion
 
@@ -356,12 +450,33 @@ namespace InvAuto.Features.SheetMetal
             on = on && CanMoveMarking;
             _markingMode = on;
             MarkingTool.IsChecked = on;
-            MarkingRotateButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
-            MarkingAutoButton.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var button in new UIElement[] { MarkingRotateButton, MarkingAlongTool, MarkingFlipButton, MarkingAutoButton })
+                button.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            if (!on)
+                SetAlongMode(false);
             if (on && _measure.Mode != MeasureMode.None)
                 SetMeasureMode(MeasureMode.None);
-            View.DoubleClickFits = !on && _measure.Mode == MeasureMode.None;
+            if (on && _rotateMode)
+                SetRotateMode(false);
+            View.DoubleClickFits = !on && !_rotateMode && _measure.Mode == MeasureMode.None;
             UpdateHint();
+        }
+
+        private void OnMarkingAlong(object sender, RoutedEventArgs e) => SetAlongMode(MarkingAlongTool.IsChecked == true);
+
+        /// <summary>Ожидание щелчка по отрезку, вдоль которого встанет текст.</summary>
+        private void SetAlongMode(bool on)
+        {
+            _alongMode = on && _markingMode;
+            MarkingAlongTool.IsChecked = _alongMode;
+            UpdateHint();
+        }
+
+        private void OnMarkingFlip(object sender, RoutedEventArgs e)
+        {
+            var text = CurrentMarkingText();
+            if (_markingMode && text != null)
+                CommitMarking(text, text.Center.X, text.Center.Y, text.Angle + 180);
         }
 
         /// <summary>Текст маркировки как он сейчас стоит (или в черновике при перетаскивании); null — не поставлен.</summary>
@@ -376,7 +491,7 @@ namespace InvAuto.Features.SheetMetal
             if (row?.Marking?.Status == MarkingStatus.NoRoom && row.Flat != null)
             {
                 var c = Area().Center;
-                return DxfMarking.At(row.PartNumber, c.X, c.Y, row.MarkingOptions.Normalized().Height, false);
+                return DxfMarking.At(row.PartNumber, c.X, c.Y, row.MarkingOptions.Normalized().Height, 0);
             }
             return null;
         }
@@ -388,12 +503,16 @@ namespace InvAuto.Features.SheetMetal
             if (!_markingMode)
                 return false;
             var text = CurrentMarkingText();
-            double tolerance = 4 / Math.Max(View.PixelsPerMm, 1e-9); // захват с запасом 4 px
-            if (text == null || at.X < text.MinX - tolerance || at.X > text.MaxX + tolerance ||
-                at.Y < text.MinY - tolerance || at.Y > text.MaxY + tolerance)
+            if (text == null || _alongMode)
+                return false;
+            // Попадание в повёрнутую рамку текста (с запасом 4 px): точка — в систему текста.
+            double tolerance = 4 / Math.Max(View.PixelsPerMm, 1e-9);
+            double a = text.Angle * Math.PI / 180, dx = at.X - text.Center.X, dy = at.Y - text.Center.Y;
+            double along = dx * Math.Cos(a) + dy * Math.Sin(a), across = -dx * Math.Sin(a) + dy * Math.Cos(a);
+            if (Math.Abs(along) > text.Width / 2 + tolerance || Math.Abs(across) > text.Height / 2 + tolerance)
                 return false; // не по тексту — обычное перемещение вида
-            _dragDx = (text.MinX + text.MaxX) / 2 - at.X;
-            _dragDy = (text.MinY + text.MaxY) / 2 - at.Y;
+            _dragDx = text.Center.X - at.X;
+            _dragDy = text.Center.Y - at.Y;
             return true;
         }
 
@@ -402,7 +521,7 @@ namespace InvAuto.Features.SheetMetal
             var text = CurrentMarkingText();
             if (text == null)
                 return;
-            ShowDraft(DxfMarking.At(text.Value, at.X + _dragDx, at.Y + _dragDy, text.Height, text.Vertical));
+            ShowDraft(DxfMarking.At(text.Value, at.X + _dragDx, at.Y + _dragDy, text.Height, text.Angle));
         }
 
         void IFlatDragHandler.EndDrag(Point2 at)
@@ -426,16 +545,14 @@ namespace InvAuto.Features.SheetMetal
         }
 
         /// <summary>Сохранить место (центр текста) — деталь перерисуется с текстом там же, где и при выгрузке.</summary>
-        private void CommitMarking(FlatText text, double cx, double cy, bool? vertical = null)
+        private void CommitMarking(FlatText text, double cx, double cy, double? angle = null)
         {
             var row = Current;
             if (row == null || _setMarkingPosition == null)
                 return;
             // Высота — как у текста сейчас (автоматически мог быть уменьшен): после переноса размер не меняется.
-            _setMarkingPosition(row, new MarkingPosition
-            {
-                PartPath = row.FilePath, X = cx, Y = cy, Vertical = vertical ?? text.Vertical, Height = text.Height
-            });
+            // Место хранится в координатах развертки до поворота — при повороте детали текст поворачивается с ней.
+            _setMarkingPosition(row, FlatPipeline.FromDrawing(row.FilePath, new Point2(cx, cy), angle ?? text.Angle, text.Height, row.Rotation));
             _draft = null;
             UpdateMarkingTool();
         }
@@ -445,7 +562,7 @@ namespace InvAuto.Features.SheetMetal
             var text = CurrentMarkingText();
             if (!_markingMode || text == null)
                 return;
-            CommitMarking(text, (text.MinX + text.MaxX) / 2, (text.MinY + text.MaxY) / 2, !text.Vertical);
+            CommitMarking(text, text.Center.X, text.Center.Y, text.Angle + 90);
         }
 
         private void OnMarkingAuto(object sender, RoutedEventArgs e)
@@ -507,9 +624,19 @@ namespace InvAuto.Features.SheetMetal
                 case Key.R when _markingMode:
                     OnMarkingRotate(sender, e);
                     break;
+                case Key.F when _markingMode:
+                    OnMarkingFlip(sender, e);
+                    break;
+                case Key.T:
+                    SetRotateMode(!_rotateMode);
+                    break;
                 case Key.Escape:
                     // Сначала отменяется начатое измерение, затем выключается инструмент, затем закрывается окно.
-                    if (_markingMode)
+                    if (_alongMode)
+                        SetAlongMode(false);
+                    else if (_rotateMode)
+                        SetRotateMode(false);
+                    else if (_markingMode)
                         SetMarkingMode(false);
                     else if (_measure.Cancel())
                     {

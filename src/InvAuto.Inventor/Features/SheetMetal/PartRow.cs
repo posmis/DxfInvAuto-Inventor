@@ -59,8 +59,16 @@ namespace InvAuto.Features.SheetMetal
         public bool HasFlatPattern => Part.HasFlatPattern;
         public string FlatState => Part.HasFlatPattern ? "Есть" : "Нет";
 
-        public string FlatSize => Part.FlatLengthMm > 0
-            ? string.Format(CultureInfo.CurrentCulture, "{0:0.#} × {1:0.#}", Part.FlatLengthMm, Part.FlatWidthMm)
+        /// <summary>
+        /// Габарит развертки по X и Y, мм: у повёрнутой — по сформированной развертке (поворот меняет габарит),
+        /// иначе — как считает Inventor.
+        /// </summary>
+        public double FlatLength => Rotated && _metrics != null ? _metrics.Width : Part.FlatLengthMm;
+
+        public double FlatWidth => Rotated && _metrics != null ? _metrics.Height : Part.FlatWidthMm;
+
+        public string FlatSize => FlatLength > 0
+            ? string.Format(CultureInfo.CurrentCulture, "{0:0.#} × {1:0.#}", FlatLength, FlatWidth)
             : string.Empty;
 
         public string FlatSizeText => FlatSize.Length > 0 ? FlatSize + " мм" : string.Empty;
@@ -161,6 +169,23 @@ namespace InvAuto.Features.SheetMetal
 
         public bool BendsPersonal => _bendsPersonal;
 
+        private double _rotation;
+
+        /// <summary>Поворот развертки, градусы против часовой (окно просмотра — «Повернуть по линии»).</summary>
+        public double Rotation => _rotation;
+
+        public bool Rotated => Math.Abs(_rotation) > 1e-9;
+
+        /// <summary>Поворот изменился — перерисовываем развертку (без обращения к Inventor).</summary>
+        public void ApplyRotation(double rotation)
+        {
+            if (Math.Abs(rotation - _rotation) < 1e-12)
+                return;
+            _rotation = rotation;
+            OnPropertyChanged(nameof(Rotation));
+            Render();
+        }
+
         private MarkingOptions _markingOptions = new MarkingOptions();
         private bool _markingPersonal;
         private MarkingPosition _markingPosition;
@@ -184,7 +209,7 @@ namespace InvAuto.Features.SheetMetal
         /// <summary>Развертка с другими параметрами маркировки — для примера в окне настроек.</summary>
         public (FlatDrawing Drawing, MarkingResult Marking) RenderWithMarking(MarkingOptions options)
         {
-            var (drawing, _, marking) = Preview.Render(_resolve, _bendLayers, options, PartNumber, _markingPosition);
+            var (drawing, _, marking) = Preview.Render(_resolve, _bendLayers, options, PartNumber, _markingPosition, _rotation);
             return (drawing, marking);
         }
 
@@ -228,7 +253,7 @@ namespace InvAuto.Features.SheetMetal
         {
             try
             {
-                var (drawing, lines, marking) = Preview.Render(_resolve, _bendLayers, _markingOptions, PartNumber, _markingPosition);
+                var (drawing, lines, marking) = Preview.Render(_resolve, _bendLayers, _markingOptions, PartNumber, _markingPosition, _rotation);
                 Flat = drawing;
                 BendLines = lines;
                 Marking = marking;
@@ -374,6 +399,8 @@ namespace InvAuto.Features.SheetMetal
             OnPropertyChanged(nameof(TotalMass));
             OnPropertyChanged(nameof(CutLengthM));
             OnPropertyChanged(nameof(Pierces));
+            OnPropertyChanged(nameof(FlatSize));
+            OnPropertyChanged(nameof(FlatSizeText));
         }
 
         #endregion

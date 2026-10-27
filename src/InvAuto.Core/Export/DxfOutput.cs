@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using InvAuto.Core.Bends;
+using InvAuto.Core.Flat;
 using InvAuto.Core.Marking;
 
 namespace InvAuto.Core.Export
@@ -37,28 +38,36 @@ namespace InvAuto.Core.Export
         /// </summary>
         public static (IReadOnlyList<ProcessedBendLine> Lines, MarkingResult Marking) WriteFinal(string rawPath, string finalPath,
             Func<BendLineInfo, BendLineOptions> resolve, IEnumerable<string> bendLayers, MarkingOptions marking, string markingText,
-            MarkingPosition position)
+            MarkingPosition position) =>
+            WriteFinal(rawPath, finalPath, new FlatRequest
+            {
+                Bends = resolve, BendLayers = bendLayers, Marking = marking, MarkingText = markingText, MarkingPosition = position
+            });
+
+        /// <summary>
+        /// Итоговый файл по запросу (линии гиба, поворот, маркировка) — так же, как в превью. Если менять нечего,
+        /// сырой файл переносится байт в байт.
+        /// </summary>
+        public static (IReadOnlyList<ProcessedBendLine> Lines, MarkingResult Marking) WriteFinal(string rawPath, string finalPath, FlatRequest request)
         {
             if (File.Exists(finalPath))
                 File.Delete(finalPath);
 
-            bool mark = marking != null && marking.Enabled;
-            if (resolve == null && !mark)
+            bool mark = request.Marking != null && request.Marking.Enabled;
+            bool rotate = Math.Abs(request.Rotation % 360) > 1e-12;
+            if (request.Bends == null && !mark && !rotate)
             {
                 File.Move(rawPath, finalPath);
                 return (new ProcessedBendLine[0], new MarkingResult(MarkingStatus.Off, null));
             }
 
             string text = File.ReadAllText(rawPath, DxfBendProcessor.FileEncoding);
-            var processed = resolve == null
-                ? new BendProcessResult(text, new ProcessedBendLine[0])
-                : DxfBendProcessor.Process(text, bendLayers, resolve);
-            var marked = DxfMarking.Apply(processed.Text, markingText, marking, null, position);
-            if (ReferenceEquals(marked.Dxf, text))
+            var result = FlatPipeline.Run(text, request, withDrawing: false);
+            if (ReferenceEquals(result.Dxf, text))
                 File.Move(rawPath, finalPath);
             else
-                File.WriteAllText(finalPath, marked.Dxf, DxfBendProcessor.FileEncoding);
-            return (processed.Items, marked);
+                File.WriteAllText(finalPath, result.Dxf, DxfBendProcessor.FileEncoding);
+            return (result.BendLines, result.Marking);
         }
     }
 }
