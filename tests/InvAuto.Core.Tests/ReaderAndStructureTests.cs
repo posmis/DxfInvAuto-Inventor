@@ -168,7 +168,8 @@ namespace InvAuto.Core.Tests
         public void Collect_SortsByPartNumberThenName()
         {
             var root = new AssemblyNode("A.iam", NodeKind.Assembly, 1, null);
-            foreach (var (file, number) in new[] { ("c.ipt", "ЕЛГ.003"), ("a.ipt", ""), ("b.ipt", "ЕЛГ.001") })
+            // Обозначения латиницей: порядок кириллицы и латиницы зависит от языка Windows (в русской кириллица раньше).
+            foreach (var (file, number) in new[] { ("c.ipt", "ELG.003"), ("a.ipt", ""), ("b.ipt", "ELG.001") })
             {
                 root.Children.Add(new AssemblyNode(file, NodeKind.SheetMetal, 1, root)
                 {

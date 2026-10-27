@@ -20,11 +20,12 @@ namespace InvAuto.Core.Tests
             return DxfReader.Read(new StringReader(sb.ToString()));
         }
 
+        // Числа в DXF — всегда с точкой, независимо от языка Windows.
         private static string Line(double x1, double y1, double x2, double y2) =>
-            $"0\nLINE\n8\nIV_OUTER_PROFILE\n10\n{x1}\n20\n{y1}\n11\n{x2}\n21\n{y2}\n";
+            FormattableString.Invariant($"0\nLINE\n8\nIV_OUTER_PROFILE\n10\n{x1}\n20\n{y1}\n11\n{x2}\n21\n{y2}\n");
 
         private static string Circle(double x, double y, double r) =>
-            $"0\nCIRCLE\n8\nIV_INTERIOR_PROFILES\n10\n{x}\n20\n{y}\n40\n{r}\n";
+            FormattableString.Invariant($"0\nCIRCLE\n8\nIV_INTERIOR_PROFILES\n10\n{x}\n20\n{y}\n40\n{r}\n");
 
         /// <summary>Пластина 100×50, правый верхний угол скруглён R10 (bulge), отверстие Ø10 в (20; 25).</summary>
         private static FlatDrawing Plate() => Read(
