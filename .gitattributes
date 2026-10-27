@@ -1,2 +1,4 @@
 # ini-файл экспорта сохранён в кодировке Windows-1251 (как его пишет Inventor) — не перекодировать
 *.ini -text
+*.iss text eol=crlf
+*.ps1 text eol=crlf

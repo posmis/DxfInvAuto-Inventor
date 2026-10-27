@@ -1,4 +1,4 @@
-; Установщик InvAuto (Inno Setup 6.3+, https://jrsoftware.org/isinfo.php). Манифест InvAuto.addin входит
+﻿; Установщик InvAuto (Inno Setup 6.3+, https://jrsoftware.org/isinfo.php). Манифест InvAuto.addin входит
 ; в выходную папку сборки — он и есть «регистрация» плагина в Inventor, реестр не нужен.
 ; Обычно собирается скриптом tools\build-release.ps1. Вручную:
 ;   ISCC.exe installer\InvAuto.iss /DInventorVersion=2025 /DSourceDir=..\src\InvAuto.Inventor\bin\Release\net8.0-windows

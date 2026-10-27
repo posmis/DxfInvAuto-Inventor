@@ -1,4 +1,4 @@
-<#
+﻿<#
   Сборка выпуска InvAuto и установщика (exe).
 
   Нужно: Windows, .NET SDK 8, установленный Inventor нужной версии (для Autodesk.Inventor.Interop.dll),
